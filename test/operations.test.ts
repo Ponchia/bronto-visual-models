@@ -188,3 +188,13 @@ test("missing timestamps cannot be silently replaced on stored documents", () =>
   const value = model(); delete (value as any).createdAt;
   assert.throws(() => assertVisualModel(value), code("invalid"));
 });
+test("portable links permit explicit HTTP or local paths, never script or protocol-relative URLs", () => {
+  for (const href of ["https://external.example", "http://localhost/path", "/docs/item", "#chapter"]) {
+    const value = content(); (value.nodes[0] as any).href = href;
+    assert.doesNotThrow(() => createModel({ id: "linked", title: "Linked", renderer: "diagram", content: value }, context));
+  }
+  for (const href of ["javascript:alert(1)", "data:text/html,test", "//external.example", "https://bad host.example"]) {
+    const value = content(); (value.nodes[0] as any).href = href;
+    assert.throws(() => createModel({ id: "linked", title: "Linked", renderer: "diagram", content: value }, context), code("invalid"));
+  }
+});

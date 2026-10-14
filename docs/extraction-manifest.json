@@ -153,6 +153,46 @@
     {
       "source": "apps/server/src/visual-models/item-edits.ts",
       "target": "src/item-edits.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/graph-matrix.ts",
+      "target": "src/render/graph-matrix.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/network-model.ts",
+      "target": "src/render/network-model.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/analysis-grammar.ts",
+      "target": "src/render/analysis-grammar.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/chart-fill.ts",
+      "target": "src/render/chart-fill.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/infographic-placement.ts",
+      "target": "src/render/infographic-placement.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/diagram-camera.ts",
+      "target": "src/render/diagram-camera.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/visual-render-queue.ts",
+      "target": "src/render/visual-render-queue.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/engines/engine-lifecycle.ts",
+      "target": "src/engines/engine-lifecycle.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/engines/vega-surface.ts",
+      "target": "src/engines/vega-surface.ts"
+    },
+    {
+      "source": "apps/web/src/visual-models/engines/vis-timeline.ts",
+      "target": "src/engines/vis-timeline.ts"
     }
   ]
 }

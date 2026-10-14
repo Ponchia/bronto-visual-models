@@ -80,7 +80,10 @@
     "vega": "^6.4.0",
     "vega-lite": "^6.4.3",
     "vis-timeline": "^8.5.4",
-    "vis-data": "^8.0.5"
+    "vis-data": "^8.0.5",
+    "@ponchia/ui": "^0.16.3",
+    "vega-tooltip": "^1.1.0",
+    "d3-sankey": "^0.12.3"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -106,6 +109,15 @@
     },
     "vis-data": {
       "optional": true
+    },
+    "@ponchia/ui": {
+      "optional": true
+    },
+    "vega-tooltip": {
+      "optional": true
+    },
+    "d3-sankey": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -125,6 +137,7 @@
     "playwright": "1.63.0",
     "@ponchia/ui": "0.16.3",
     "d3-sankey": "0.12.3",
-    "@types/d3-sankey": "0.12.5"
+    "@types/d3-sankey": "0.12.5",
+    "vega-tooltip": "1.1.0"
   }
 }

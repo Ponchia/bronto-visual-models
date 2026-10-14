@@ -62,7 +62,7 @@ test("diagram relationships require existing nodes, groups, unique ports and acy
       nodes: [{ id: "a", label: "A", x: 0, y: 0, ports: [{ id: "custom", side: "right" }] }],
       edges: [{ id: "edge", label: "self", source: "a", target: "a", sourcePort: "right" }],
     },
-    { nodes: [{ id: "a", label: "A", x: 0, y: 0, href: "https://external.example" }], edges: [] },
+    { nodes: [{ id: "a", label: "A", x: 0, y: 0, href: "javascript:alert(1)" }], edges: [] },
   ])
     assert.throws(() =>
       validateVisualContent("diagram", "graph", { ...content("architecture"), ...patch }),

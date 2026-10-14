@@ -198,3 +198,18 @@ test("portable links permit explicit HTTP or local paths, never script or protoc
     assert.throws(() => createModel({ id: "linked", title: "Linked", renderer: "diagram", content: value }, context), code("invalid"));
   }
 });
+test("validation rejects executable object accessors without invoking them", () => {
+  let reads = 0;
+  const unsafe = { get title() { reads++; return "Unexpected"; } };
+  assert.throws(() => createModel(unsafe as any), code("invalid"));
+  assert.equal(reads, 0);
+  assert.throws(() => createModel(new Date() as any), code("invalid"));
+});
+test("imported inverse cannot rewrite model IDs or prototype-bearing fields", () => {
+  const original = model();
+  for (const field of ["id", "generation", "renderer", "__proto__", "constructor"]) {
+    const record = { key: "unsafe", id: original.id, generation: original.generation, at: context.at, identityVersion: 2 as const,
+      changes: [{ field, before: { present: true, value: "other" }, after: { present: true, value: (original as any)[field] ?? null } }] };
+    assert.throws(() => undoModel(original, record, context), code("invalid"));
+  }
+});

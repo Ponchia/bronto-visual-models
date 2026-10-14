@@ -218,10 +218,17 @@ export function assertVisualJson(value: unknown): void {
     }
     if (!visualRecord(item))
       throw new VisualModelError("invalid", "Visual data must contain only JSON values");
-    for (const [key, child] of Object.entries(item)) {
-      if (RESERVED_OBJECT_KEYS.includes(key))
+    const prototype = Object.getPrototypeOf(item);
+    if (prototype !== null && prototype !== Object.prototype)
+      throw new VisualModelError("invalid", "Visual data requires plain JSON objects");
+    const fields = Object.getOwnPropertyDescriptors(item);
+    for (const key of Reflect.ownKeys(fields)) {
+      if (typeof key !== "string" || RESERVED_OBJECT_KEYS.includes(key))
         throw new VisualModelError("invalid", "Reserved visual field name");
-      visit(child, depth + 1);
+      const descriptor = fields[key];
+      if (!descriptor || !Object.hasOwn(descriptor, "value") || !descriptor.enumerable)
+        throw new VisualModelError("invalid", "Visual data cannot contain getters or hidden fields");
+      visit(descriptor.value, depth + 1);
     }
   };
   visit(value, 0);

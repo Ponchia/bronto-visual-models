@@ -1,3 +1,4 @@
+import { assertUndoRecord } from "./undo-validation.ts";
 import { visualRenderer, validateVisualContent, VISUAL_TEMPLATES } from "./catalog.ts";
 import { assertModelCompatible } from "./compatibility.ts";
 import type { VisualFamilyResolver } from "./family-resolver.ts";
@@ -148,7 +149,7 @@ export function editModel<M extends VisualModel>(model: M, patch: ModelEdit, con
 /** Undo guards changed fields and element lifetimes, preserving disjoint later edits. */
 export function undoModel<M extends VisualModel>(model: M, record: VisualUndoRecord, context: AuthorContext = {}, registry?: VisualFamilyResolver): ModelTransition<M> {
   assertVisualModel(model, registry);
-  assertVisualJson(record);
+  assertUndoRecord(record, model, registry);
   if (model.role !== "model") throw new VisualModelError("forbidden", "Templates and snapshots cannot be edited");
   const candidate = applyVisualUndo(model, record);
   validateVisualContent(candidate.renderer, candidate.modelType, candidate.content, registry);

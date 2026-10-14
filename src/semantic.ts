@@ -31,7 +31,7 @@ const source = record(
   ["language", "text"],
 );
 
-interface SemanticEntity {
+export interface SemanticEntity {
   id: string;
   label: string;
   description?: string;
@@ -47,7 +47,7 @@ export interface GraphNode extends SemanticEntity {
   href?: string;
   ports?: Array<{ id: string; label?: string; side: "top" | "right" | "bottom" | "left" }>;
 }
-interface GraphEdge extends SemanticEntity {
+export interface GraphEdge extends SemanticEntity {
   source: string;
   target: string;
   sourcePort?: string;
@@ -68,7 +68,7 @@ export const GRAPH_ENTITY_SIZE = { width: 180, height: 90 } as const;
 export const GRAPH_GROUP_TITLE_BAND = 44;
 /** Where a laid-out group's children sit: below its title band, inset from its other sides. */
 export const GRAPH_GROUP_PADDING = { top: GRAPH_GROUP_TITLE_BAND + 24, side: 24 } as const;
-interface TimelineEvent extends SemanticEntity {
+export interface TimelineEvent extends SemanticEntity {
   start: number;
   end?: number;
   lane: string;
@@ -98,12 +98,12 @@ export interface GanttContent {
   tasks: GanttTask[];
   dependencies: GanttDependency[];
 }
-interface AnalysisNode extends SemanticEntity {
+export interface AnalysisNode extends SemanticEntity {
   value?: number;
   parentId?: string;
   metrics?: Record<string, number>;
 }
-interface AnalysisLink extends SemanticEntity {
+export interface AnalysisLink extends SemanticEntity {
   source: string;
   target: string;
   value: number;

@@ -1,3 +1,4 @@
+import { assertUndoRecord } from "./undo-validation.ts";
 import type { VisualFamilyResolver } from "./family-resolver.ts";
 import { sha256Hex } from "./hash.ts";
 import { assertKnownFields, assertVisualJson, assertVisualKey, canonicalVisualJson, modelSummary,
@@ -169,7 +170,9 @@ export class MemoryModelStore {
       this.#models.set(model.id, structuredClone(model));
     }
     for (const receipt of initial.receipts) {
-      assertVisualJson(receipt); assertVisualKey(receipt.key);
+      assertVisualJson(receipt);
+      if (!visualRecord(receipt)) throw new VisualModelError("invalid", "Invalid receipt in snapshot");
+      assertVisualKey(receipt.key);
       const model = this.#models.get(receipt.id);
       if (!model || model.generation !== receipt.generation || !/^[a-f0-9]{64}$/.test(receipt.hash) ||
           !Number.isSafeInteger(receipt.revision) || receipt.revision < 1 || receipt.revision > model.revision || this.#receipts.has(receipt.key))
@@ -178,6 +181,10 @@ export class MemoryModelStore {
     }
     for (const record of initial.inverses) {
       assertVisualJson(record);
+      if (!visualRecord(record)) throw new VisualModelError("invalid", "Invalid undo record in snapshot");
+      const model = this.#models.get(record.id);
+      if (!model) throw new VisualModelError("invalid", "Undo record names a missing model");
+      assertUndoRecord(record, model, this.#registry);
       const receipt = this.#receipts.get(record.key);
       if (!receipt || receipt.id !== record.id || receipt.generation !== record.generation || record.identityVersion !== 2 ||
           !Array.isArray(record.changes) || this.#inverses.has(record.key))

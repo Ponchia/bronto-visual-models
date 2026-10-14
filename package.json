@@ -74,7 +74,7 @@
     "site:build:packed": "node scripts/build-packed-demo.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "lint:docs": "markdownlint-cli2 && node scripts/check-doc-links.mjs"
+    "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs"
   },
   "dependencies": {
     "lib0": "0.2.119"
@@ -142,12 +142,9 @@
     "@types/d3-sankey": "0.12.5",
     "vega-tooltip": "1.1.0",
     "@biomejs/biome": "2.5.15",
-    "markdownlint-cli2": "0.23.3"
+    "markdownlint": "0.41.1"
   },
   "overrides": {
-    "markdownlint-cli2": {
-      "smol-toml": "1.9.0"
-    },
     "micromark-extension-math": {
       "katex": "0.18.2"
     }

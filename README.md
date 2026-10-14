@@ -14,6 +14,9 @@ identified elements. Edits can name the values they read; stale edits are refuse
 without discarding unrelated changes. Repeating a committed operation key returns
 its receipt instead of applying the edit again.
 
+The demo’s agent buttons execute deterministic example commands; they do not call
+an AI service. Real agents can use the same typed API or CLI.
+
 This is an extracted library, not a canvas application, database, CRDT or a new
 rendering engine. It builds on React Flow, Vega and vis-timeline. The host owns
 access control, persistence, data access and navigation. It belongs to the Bronto

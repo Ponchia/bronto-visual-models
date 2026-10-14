@@ -213,8 +213,10 @@ export function assertVisualJson(value: unknown): void {
     if (item === null || typeof item === "string" || typeof item === "boolean") return;
     if (typeof item === "number" && Number.isFinite(item)) return;
     if (Array.isArray(item)) {
-      if (item.length > 100_000 || Object.getPrototypeOf(item) !== Array.prototype)
-        throw new VisualModelError("invalid", "Visual data requires bounded JSON arrays");
+      if (item.length > 100_000)
+        throw new VisualModelError("invalid", "Visual data is too deep or large");
+      if (Object.getPrototypeOf(item) !== Array.prototype)
+        throw new VisualModelError("invalid", "Visual data requires JSON arrays");
       const fields = Object.getOwnPropertyDescriptors(item);
       const keys = Reflect.ownKeys(fields).filter((key) => key !== "length");
       if (keys.length !== item.length)

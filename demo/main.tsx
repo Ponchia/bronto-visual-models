@@ -383,8 +383,9 @@ function App() {
             Export model JSON ↓
           </button>
           <p className="fine-print">
-            Exports contain authored data, not external datasets, assets or renderer binaries. This
-            demo resets on reload.
+            Agent buttons run deterministic example commands, not an AI service. Exports contain
+            authored data, not external datasets, assets or renderer binaries. This demo resets on
+            reload.
           </p>
         </div>
       </section>

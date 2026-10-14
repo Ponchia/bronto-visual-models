@@ -1,8 +1,0 @@
-globs:
-  - '*.md'
-  - 'docs/**/*.md'
-  - '.github/**/*.md'
-config:
-  default: true
-  MD013: false
-  MD033: false

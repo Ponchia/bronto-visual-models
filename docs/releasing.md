@@ -35,8 +35,12 @@ The public repository remains the sole owner of extracted algorithms.
 
 ## Development dependency exceptions
 
-The documentation toolchain pins smol-toml 1.9.0 under markdownlint-cli2 and
-KaTeX 0.18.2 under micromark-extension-math. These narrow development-only
-overrides replace the affected parser versions admitted by their parent packages.
-CI still runs the documentation gate; neither parser is a core runtime dependency.
-Remove these overrides when the parent packages admit the fixed versions themselves.
+The documentation gate runs the markdownlint library directly against root,
+`docs/` and `.github/` Markdown, including new untracked files, with
+`.markdownlint.json` as its one configuration. This avoids the CLI's globbing
+stack while retaining the existing rules and diagnostic format.
+
+The development-only KaTeX 0.18.2 override applies under
+`micromark-extension-math`. Revisit the override when the parent dependency
+selects a fixed version itself. CI runs the documentation gate; none of these
+packages is a core runtime dependency.

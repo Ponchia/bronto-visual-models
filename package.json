@@ -143,5 +143,13 @@
     "vega-tooltip": "1.1.0",
     "@biomejs/biome": "2.5.15",
     "markdownlint-cli2": "0.23.3"
+  },
+  "overrides": {
+    "markdownlint-cli2": {
+      "smol-toml": "1.9.0"
+    },
+    "micromark-extension-math": {
+      "katex": "0.18.2"
+    }
   }
 }

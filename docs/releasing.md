@@ -32,3 +32,11 @@ and verify the registry version and integrity after publication.
 
 Changing a release channel must not create two independently edited source trees.
 The public repository remains the sole owner of extracted algorithms.
+
+## Development dependency exceptions
+
+The documentation toolchain pins smol-toml 1.9.0 under markdownlint-cli2 and
+KaTeX 0.18.2 under micromark-extension-math. These narrow development-only
+overrides replace the affected parser versions admitted by their parent packages.
+CI still runs the documentation gate; neither parser is a core runtime dependency.
+Remove these overrides when the parent packages admit the fixed versions themselves.

@@ -28,6 +28,14 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:pack
+      - name: Retain installable beta package
+        if: matrix.node == '24'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: npm-package
+          path: .tmp/*.tgz
+          include-hidden-files: true
+          if-no-files-found: error
   browser:
     name: Packed UI / Chromium
     runs-on: ubuntu-latest
@@ -51,3 +59,24 @@ jobs:
           path: .tmp/browser/
           include-hidden-files: true
           if-no-files-found: warn
+      - name: Prepare Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: site-dist
+  publish-demo:
+    name: Publish verified demo
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [core, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the tested site
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -22,6 +22,7 @@
   "packageManager": "npm@11.13.0",
   "files": [
     "dist",
+    "src",
     "bin",
     "README.md",
     "LICENSE",
@@ -76,7 +77,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@xyflow/react": "^12.12.0",
-    "@antv/g6": "^5.1.1",
     "vega": "^6.4.0",
     "vega-lite": "^6.4.3",
     "vis-timeline": "^8.5.4",
@@ -93,9 +93,6 @@
       "optional": true
     },
     "@xyflow/react": {
-      "optional": true
-    },
-    "@antv/g6": {
       "optional": true
     },
     "vega": {
@@ -128,7 +125,6 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "@xyflow/react": "12.12.0",
-    "@antv/g6": "5.1.1",
     "vega": "6.4.0",
     "vega-lite": "6.4.3",
     "vis-timeline": "8.5.4",

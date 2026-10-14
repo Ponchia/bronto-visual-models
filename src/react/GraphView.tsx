@@ -52,7 +52,7 @@ export default function GraphView(props: AdapterProps) {
   }));
   const select = useCallback((collection: string, id: string) => onSelect?.(targets.find((target) => target.collection === collection && target.elementId === id) ?? null), [onSelect, targets]);
   return <ReactFlow<GraphFlowNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes}
-    fitView fitViewOptions={{ padding: 0.22 }} minZoom={0.1} maxZoom={2.5}
+    fitView fitViewOptions={{ padding: 0.22, minZoom: 0.75, maxZoom: 1 }} minZoom={0.1} maxZoom={2.5}
     colorMode={tokens.scheme} nodesConnectable={false} deleteKeyCode={null} multiSelectionKeyCode={null}
     onNodesChange={(changes) => setNodes((current) => applyNodeChanges(changes, current))}
     onNodeClick={(_event, node) => select("nodes", node.id)} onEdgeClick={(_event, edge) => select("edges", edge.id)} onPaneClick={() => onSelect?.(null)}
@@ -65,6 +65,6 @@ export default function GraphView(props: AdapterProps) {
         .catch((error) => { setNodes(derived); report(error instanceof Error ? error.message : String(error)); });
     }}
     proOptions={{ hideAttribution: false }}>
-    <Background color={tokens.line} gap={22} /><Controls showInteractive={false} />
+    <Background color={tokens.line} gap={22} /><Controls showInteractive={false} fitViewOptions={{ padding: 0.22, minZoom: 0.1, maxZoom: 1 }} />
   </ReactFlow>;
 }

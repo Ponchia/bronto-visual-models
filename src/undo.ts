@@ -1,3 +1,4 @@
+import { RESERVED_OBJECT_KEYS } from "./reserved-keys.ts";
 import type { VisualFamilyResolver } from "./family-resolver.ts";
 import { visualRenderer } from "./catalog.ts";
 import {
@@ -205,6 +206,24 @@ export function visualReceiptSummary(changes: readonly VisualReceiptChange[]): {
     : { changes: [...changes] };
 }
 export function applyVisualUndo<M extends VisualModel>(model: M, record: VisualUndoRecord): M {
+  if (!record || !Array.isArray(record.changes))
+    throw new VisualModelError("invalid", "An undo record needs a list of changes");
+  for (const change of record.changes) {
+    if (
+      !change ||
+      typeof change.field !== "string" ||
+      [change.field, change.collection, change.id].some(
+        (key) =>
+          key !== undefined && (typeof key !== "string" || RESERVED_OBJECT_KEYS.includes(key)),
+      )
+    )
+      throw new VisualModelError("invalid", "Undo names a reserved or invalid field");
+    if (
+      !change.collection &&
+      !["title", "description", "status", "schemaVersion"].includes(change.field)
+    )
+      throw new VisualModelError("invalid", "Undo cannot rewrite model identity or ownership");
+  }
   if (record.id !== model.id || record.generation !== model.generation)
     throw new VisualModelError("conflict", "The model identity has changed");
   if (record.identityVersion !== 2 && record.changes.some((change) => change.collection))
@@ -231,8 +250,14 @@ export function applyVisualUndo<M extends VisualModel>(model: M, record: VisualU
         "conflict",
         `Later edits changed ${change.collection ?? "model"}.${change.id ?? ""}.${field}; undo refused`,
       );
-    if (change.before.present) object[field] = structuredClone(change.before.value);
-    else delete object[field];
+    if (change.before.present)
+      Object.defineProperty(object, field, {
+        value: structuredClone(change.before.value),
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    else Reflect.deleteProperty(object, field);
   };
   // Guard the original ordering before membership inverses alter the rows.
   // Unrelated inserted rows may remain; a later reorder/removal of our targets

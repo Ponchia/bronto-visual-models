@@ -30,5 +30,10 @@ export interface TimelineFields {
 
 /** An ISO timestamp with an explicit offset, in epoch milliseconds; NaN for anything else. */
 export function offsetInstant(value: string): number {
-  return /T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? Date.parse(value) : Number.NaN;
+  // An unanchored `T.*` can rescan a hostile run of T characters quadratically.
+  // Separate the linear separator scan from a fixed-width suffix check.
+  if (typeof value !== "string" || !/[Tt]/.test(value)) return Number.NaN;
+  const suffix = value.slice(-6);
+  const zoned = /[Zz]$/.test(suffix) || /^[+-]\d{2}:\d{2}$/.test(suffix);
+  return zoned ? Date.parse(value) : Number.NaN;
 }

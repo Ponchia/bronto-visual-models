@@ -547,3 +547,32 @@ test("array validation does not execute accessors or inherited serializers", () 
   );
   assert.equal(reads, 0);
 });
+test("low-level undo refuses reserved field and collection names without touching prototypes", async () => {
+  const { applyVisualUndo } = await import("../src/undo.ts");
+  const original = model();
+  for (const change of [
+    { field: "__proto__", collection: "content" },
+    { field: "polluted", collection: "__proto__", identity: true },
+    { field: "polluted", collection: "constructor", identity: true },
+    { field: "id" },
+  ]) {
+    const record = {
+      key: "unsafe",
+      id: original.id,
+      generation: original.generation,
+      at: context.at,
+      identityVersion: 2 as const,
+      changes: [{ ...change, before: { present: true, value: true }, after: { present: false } }],
+    };
+    assert.throws(() => applyVisualUndo(original, record), code("invalid"));
+    assert.equal(Object.hasOwn(Object.prototype, "polluted"), false);
+  }
+});
+test("timestamp offset parsing handles adversarial separator runs without unbounded backtracking", async () => {
+  const { offsetInstant } = await import("../src/timeline-source.ts");
+  assert.equal(offsetInstant("2026-10-14T12:00:00+02:00"), Date.parse("2026-10-14T10:00:00Z"));
+  assert.equal(offsetInstant("2026-10-14t10:00:00z"), Date.parse("2026-10-14T10:00:00Z"));
+  assert.equal(Number.isNaN(offsetInstant("2026-10-14T12:00:00")), true);
+  assert.equal(Number.isNaN(offsetInstant("t".repeat(100000))), true);
+  assert.equal(Number.isNaN(offsetInstant("t".repeat(100000) + "+02:00")), true);
+});

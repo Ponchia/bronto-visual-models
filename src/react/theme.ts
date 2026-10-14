@@ -1,0 +1,14 @@
+import type { RendererTokens } from "@ponchia/ui/renderer";
+/** Resolved defaults; hosts can pass their own Bronto renderer tokens without global CSS reads. */
+export const lightTheme: RendererTokens = {
+  scheme: "light", bg: "#f6f7f4", bgElevated: "#ffffff", panel: "#ffffff", panelStrong: "#eef1e9",
+  text: "#202923", textSoft: "#4e5e53", textDim: "#67766b", line: "#dce2d8", lineStrong: "#9aaa9c",
+  edge: "#687c6b", accent: "#4d6740", accentText: "#354f2b", onAccent: "#ffffff", focus: "#506fbc",
+  selection: "rgba(96,132,67,0.16)", success: "#33774a", warning: "#986315", danger: "#b7413f", info: "#386aad",
+  sans: "Inter, ui-sans-serif, system-ui, sans-serif", mono: "ui-monospace, SFMono-Regular, monospace",
+  categorical: ["#4f6d45", "#4c75aa", "#b98037", "#8e5c96", "#468784", "#b35c58", "#748544", "#777d99"],
+  categoricalTint: ["#e8efdf", "#e4edf8", "#f7ead8", "#f1e4f3", "#dfeeeb", "#f7e5e2", "#ecefdc", "#e9eaf2"],
+  categoricalInk: ["#334a2a", "#305784", "#7c5022", "#683e6f", "#2d5e5b", "#803f3b", "#4e5d2d", "#50566f"],
+  sequential: ["#eff3e9", "#d5e1c5", "#a5bf8b", "#749554", "#4f6d45"],
+  diverging: ["#9a4945", "#dfaaa4", "#f0f1e9", "#b5c6a4", "#4f6d45"],
+};

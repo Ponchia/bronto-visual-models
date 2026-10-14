@@ -7,7 +7,6 @@ import {
   type TimelineItem,
   type TimelineOptions,
 } from "vis-timeline/peer";
-import "vis-timeline/styles/vis-timeline-graph2d.css";
 import type { EngineLifecycle } from "./engine-lifecycle.ts";
 
 export interface TimeWindow {

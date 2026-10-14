@@ -1,0 +1,3 @@
+{
+  "items": [{ "field": "nodes", "set": [{ "id": "api", "label": "Orders service", "expect": { "label": "Orders API" } }] }]
+}

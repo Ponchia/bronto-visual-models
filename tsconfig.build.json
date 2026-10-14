@@ -17,7 +17,12 @@
     "rootDir": "src",
     "jsx": "react-jsx",
     "rewriteRelativeImportExtensions": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ]
   },
   "include": [
     "src/**/*.ts",

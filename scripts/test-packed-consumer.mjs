@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+await mkdir('.tmp', { recursive: true });
+const info = JSON.parse(execFileSync(npm, ['pack', '--json', '--ignore-scripts', '--pack-destination', '.tmp'], { encoding: 'utf8' }))[0];
+const tarball = resolve('.tmp', info.filename);
+const entries = info.files.map((file) => file.path);
+for (const required of ['dist/index.js', 'dist/index.d.ts', 'dist/react/index.js', 'dist/react/styles.css', 'dist/node/index.js', 'bin/bronto-visual-models.mjs', 'LICENSE'])
+  assert(entries.includes(required), `Packed package lacks ${required}`);
+assert(!entries.some((name) => /(^|\/)(node_modules|\.git|\.env|test-results)(\/|$)/.test(name)), 'Private/generated workspace material entered package');
+const directory = await mkdtemp(join(tmpdir(), 'bronto-visual-models-consumer-'));
+try {
+  await writeFile(join(directory, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
+  execFileSync(npm, ['install', tarball, '--ignore-scripts', '--omit=optional', '--no-audit', '--no-fund'], { cwd: directory, stdio: 'pipe' });
+  await writeFile(join(directory, 'consumer.mjs'), `
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { MemoryModelStore, createVisualRegistry, modelTargets } from '@ponchia/visual-models';
+import { readFileStore, executeFileCommand } from '@ponchia/visual-models/node';
+const require = createRequire(import.meta.url);
+for (const engine of ['react', '@xyflow/react', 'vega', 'vis-timeline', '@ponchia/ui']) {
+  assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
+}
+const store = new MemoryModelStore({ registry: createVisualRegistry() });
+const command = { type: 'create', key: 'consumer-create', model: { id: 'graph', title: 'Independent consumer', renderer: 'diagram', content: { nodes: [{ id: 'a', label: 'App', x: 0, y: 0 }], edges: [] } } };
+await store.execute(command);
+const edit = { type: 'edit', id: 'graph', key: 'consumer-edit', patch: { items: [{ field: 'nodes', set: [{ id: 'a', label: 'API', expect: { label: 'App' } }] }] } };
+await store.execute(edit);
+assert.equal((await store.execute(edit)).replayed, true);
+assert.equal(modelTargets(store.get('graph'))[0].label, 'API');
+await store.execute({ type: 'undo', id: 'graph', key: 'consumer-undo', operation: 'consumer-edit' });
+assert.equal(modelTargets(store.get('graph'))[0].label, 'App');
+await executeFileCommand('models.json', command);
+assert.equal((await readFileStore('models.json')).get('graph').title, 'Independent consumer');
+console.log('Packed core, local transactions, identities and undo work without Spatial or UI peers.');
+`);
+  execFileSync(process.execPath, ['consumer.mjs'], { cwd: directory, stdio: 'inherit' });
+  const bin = join(directory, 'node_modules/@ponchia/visual-models/bin/bronto-visual-models.mjs');
+  const catalog = JSON.parse(execFileSync(process.execPath, [bin, 'catalog'], { cwd: directory, encoding: 'utf8' }));
+  assert.equal(catalog.renderers.length, 10);
+  const inspect = JSON.parse(execFileSync(process.execPath, [bin, 'inspect', 'graph', '--store', 'models.json'], { cwd: directory, encoding: 'utf8' }));
+  assert.equal(inspect.targets.length, 1);
+  const manifest = JSON.parse(await readFile(join(directory, 'node_modules/@ponchia/visual-models/package.json'), 'utf8'));
+  assert.equal(manifest.name, '@ponchia/visual-models');
+  console.log(JSON.stringify({ package: manifest.name, version: manifest.version, bytes: info.size, unpackedBytes: info.unpackedSize, files: entries.length, integrity: info.integrity }, null, 2));
+} finally { await rm(directory, { recursive: true, force: true }); }

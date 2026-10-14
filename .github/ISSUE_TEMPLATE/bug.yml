@@ -1,0 +1,17 @@
+name: Bug report
+description: A reproducible failure in a model operation, integration or renderer.
+body:
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Include the package version, minimal synthetic model, command or view props, and expected versus actual behavior. Do not include private models or credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node/browser version, host integration, and the exact error or receipt.
+    validations:
+      required: true

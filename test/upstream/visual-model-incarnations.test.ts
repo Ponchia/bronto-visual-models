@@ -18,7 +18,7 @@ function stored(renderer: (typeof VISUAL_RENDERERS)[number]): VisualModel {
       generation: "generation",
       schemaVersion: VISUAL_MODEL_VERSION,
       revision: 1,
-      
+
       title: "Example",
       description: "",
       modelType: renderer.modelType,

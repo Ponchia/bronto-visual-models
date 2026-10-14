@@ -1,0 +1,70 @@
+import { execFileSync } from "node:child_process";
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve, join } from "node:path";
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+await mkdir(".tmp", { recursive: true });
+const metadata = JSON.parse(await readFile("package.json", "utf8"));
+const packed = JSON.parse(
+  execFileSync(npm, ["pack", "--json", "--ignore-scripts", "--pack-destination", ".tmp"], {
+    encoding: "utf8",
+  }),
+)[0];
+const directory = await mkdtemp(join(tmpdir(), "bvm-ui-consumer-"));
+const output = resolve("site-dist");
+try {
+  const dependencies = { "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}` };
+  for (const name of [
+    "react",
+    "react-dom",
+    "@xyflow/react",
+    "vega",
+    "vega-tooltip",
+    "vis-timeline",
+    "vis-data",
+    "@ponchia/ui",
+    "vite",
+  ])
+    dependencies[name] = metadata.devDependencies[name];
+  await writeFile(
+    join(directory, "package.json"),
+    JSON.stringify({ private: true, type: "module", dependencies }),
+  );
+  await cp("demo", join(directory, "demo"), { recursive: true });
+  execFileSync(npm, ["install", "--ignore-scripts", "--no-audit", "--no-fund"], {
+    cwd: directory,
+    stdio: "pipe",
+  });
+  execFileSync(
+    process.execPath,
+    [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      "demo",
+      "--base=/bronto-visual-models/",
+      "--outDir",
+      output,
+      "--emptyOutDir",
+    ],
+    { cwd: directory, stdio: "inherit" },
+  );
+  await writeFile(
+    ".tmp/packed-ui-evidence.json",
+    JSON.stringify(
+      {
+        version: metadata.version,
+        packageIntegrity: packed.integrity,
+        isolatedConsumer: true,
+        importedByPackageName: true,
+        spatialDependencies: false,
+      },
+      null,
+      2,
+    ),
+  );
+  console.log(
+    "Site built from a packed package installed in an independent consumer, without workspace aliases.",
+  );
+} finally {
+  await rm(directory, { recursive: true, force: true });
+}

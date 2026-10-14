@@ -33,7 +33,11 @@ export const VISUAL_PROJECTIONS: readonly {
   ),
 );
 
-function shownAdapter(model: Pick<VisualModel, "renderer" | "content">, requested?: string, registry?: VisualFamilyResolver) {
+function shownAdapter(
+  model: Pick<VisualModel, "renderer" | "content">,
+  requested?: string,
+  registry?: VisualFamilyResolver,
+) {
   const projection = resolveVisualProjection(model, requested, registry);
   if (!projection) return;
   const adapters = visualFamilyIdentity(model.renderer, registry)?.adapters;
@@ -75,10 +79,18 @@ export function visualFollowsEntity(
   );
 }
 
-export function visualProjectionChoices(model: Pick<VisualModel, "renderer" | "content">, registry?: VisualFamilyResolver) {
+export function visualProjectionChoices(
+  model: Pick<VisualModel, "renderer" | "content">,
+  registry?: VisualFamilyResolver,
+) {
   const family = visualFamilyIdentity(model.renderer, registry);
-  const projections = registry ? (family?.adapters ?? []).flatMap((entry) => entry.projection
-    ? [{ ...entry.projection, renderer: family!.id, adapter: entry.adapter }] : []) : VISUAL_PROJECTIONS;
+  const projections = registry
+    ? (family?.adapters ?? []).flatMap((entry) =>
+        entry.projection
+          ? [{ ...entry.projection, renderer: family!.id, adapter: entry.adapter }]
+          : [],
+      )
+    : VISUAL_PROJECTIONS;
   return projections.filter(
     (entry) =>
       entry.renderer === model.renderer &&
@@ -122,7 +134,9 @@ export function visualViewProjection(
     shown: resolved ?? resolveVisualProjection(model, undefined, registry) ?? model.renderer,
     compatible: resolved !== undefined,
     // A family with one representation is chosen by its default.
-    choices: choices.length ? choices : [resolveVisualProjection(model, undefined, registry) ?? model.renderer],
+    choices: choices.length
+      ? choices
+      : [resolveVisualProjection(model, undefined, registry) ?? model.renderer],
   };
 }
 

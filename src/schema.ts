@@ -424,4 +424,8 @@ function validateValue(
 }
 
 /** Public, host-neutral names; the original aliases keep existing consumers compatible. */
-export { AgentSchemaValidationError as SchemaValidationError, assertAgentSchema as assertSchema, validateAgentSchemaValue as validateSchemaValue };
+export {
+  AgentSchemaValidationError as SchemaValidationError,
+  assertAgentSchema as assertSchema,
+  validateAgentSchemaValue as validateSchemaValue,
+};

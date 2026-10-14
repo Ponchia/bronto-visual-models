@@ -46,7 +46,11 @@ function withTimes(record: Content, paths: readonly string[][], owner: string): 
  * names. Text without an offset is refused, because a device's timezone is not
  * the author's. Content with nothing to convert is answered as it came.
  */
-export function withAuthoredTimes(renderer: string, content: Content, registry?: VisualFamilyResolver): Content {
+export function withAuthoredTimes(
+  renderer: string,
+  content: Content,
+  registry?: VisualFamilyResolver,
+): Content {
   const family = visualFamily(renderer, registry);
   if (!family) return content;
   let result = content;

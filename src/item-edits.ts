@@ -5,13 +5,12 @@ import {
   type VisualMismatch,
   type VisualModel,
   VisualModelError,
-  type VisualRemoval,
-  visualCollectionLimit,
-  visualFamily,
   visualRecord,
-  visualRemoval,
   visualText,
-} from "./index.ts";
+} from "./model.ts";
+import { type VisualRemoval, visualRemoval } from "./families/family.ts";
+import { visualFamily } from "./families/index.ts";
+import { visualCollectionLimit } from "./catalog.ts";
 
 /** Shown whole in a refusal up to this size; past it, the refusal shows the shape. */
 const RECOVERY_SAMPLE_CHARS = 400;

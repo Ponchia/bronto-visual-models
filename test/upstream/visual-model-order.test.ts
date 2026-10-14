@@ -12,7 +12,7 @@ const original = (): VisualModel => ({
   id: "sequence",
   generation: "generation",
   revision: 1,
-  
+
   title: "Sequence",
   description: "",
   modelType: "infographic",

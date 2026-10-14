@@ -31,7 +31,10 @@ export const VISUAL_FAMILIES: readonly (VisualFamily & { id: VisualRendererId })
 );
 
 /** The one authoring lookup by renderer id; undefined for a renderer this build does not know. */
-export function visualFamily(id: string, registry?: VisualFamilyResolver): VisualFamily | undefined {
+export function visualFamily(
+  id: string,
+  registry?: VisualFamilyResolver,
+): VisualFamily | undefined {
   if (registry) return registry.family(id);
   return Object.hasOwn(families, id) ? families[id as VisualRendererId] : undefined;
 }

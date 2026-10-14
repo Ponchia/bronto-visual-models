@@ -77,59 +77,73 @@ function freePlace(nodes: readonly GraphNode[]) {
 }
 
 export function createDiagramFamily(options: { linkPattern?: string } = {}) {
-const nodes = GRAPH_SCHEMA.properties.nodes as { type: string; maxItems: number; items: { properties: Record<string, unknown>; [key: string]: unknown } };
-return defineVisualFamily("diagram", {
-  schema: options.linkPattern ? { ...GRAPH_SCHEMA, properties: { ...GRAPH_SCHEMA.properties,
-    nodes: { ...nodes, items: { ...nodes.items,
-      properties: { ...nodes.items.properties,
-        href: { type: "string", pattern: options.linkPattern, maxLength: 300 },
-      },
-    } },
-  } } : GRAPH_SCHEMA,
-  validate: diagramIssues,
-  additions: () => [
-    { label: "Add entity", collection: "nodes" },
-    { label: "Add group", collection: "nodes", group: true },
-  ],
-  fields: {
-    direction: { label: "Layout direction", control: "choice" },
-    source: { label: "Imported source", readOnly: true, hidden: true },
-  },
-  collections: {
-    nodes: {
-      search: SEMANTIC_SEARCH,
-      fields: {
-        ...SEMANTIC_FIELDS,
-        parentId: { label: "Group", control: "ref", ref: "nodes" },
-        group: { label: "Holds other nodes", section: "Structure" },
-        href: { label: "Canvas link", control: "text", section: "Structure" },
-        ports: { label: "Ports", section: "Structure", hidden: true },
-        x: { label: "X", control: "number", section: "Layout" },
-        y: { label: "Y", control: "number", section: "Layout" },
-        width: { label: "Width", control: "number", section: "Layout" },
-        height: { label: "Height", control: "number", section: "Layout" },
-      },
-      newItem: (content, { id, near, group }) => ({
-        id,
-        label: group ? "New group" : "New entity",
-        ...(near ?? freePlace((content as unknown as GraphContent).nodes)),
-        ...(group ? { ...NEW_GROUP, group: true } : NEW_NODE),
-      }),
-      cascade: nestedCascade("nodes", "edges"),
-      removalNote: NESTED_REMOVAL,
+  const nodes = GRAPH_SCHEMA.properties.nodes as {
+    type: string;
+    maxItems: number;
+    items: { properties: Record<string, unknown>; [key: string]: unknown };
+  };
+  return defineVisualFamily("diagram", {
+    schema: options.linkPattern
+      ? {
+          ...GRAPH_SCHEMA,
+          properties: {
+            ...GRAPH_SCHEMA.properties,
+            nodes: {
+              ...nodes,
+              items: {
+                ...nodes.items,
+                properties: {
+                  ...nodes.items.properties,
+                  href: { type: "string", pattern: options.linkPattern, maxLength: 300 },
+                },
+              },
+            },
+          },
+        }
+      : GRAPH_SCHEMA,
+    validate: diagramIssues,
+    additions: () => [
+      { label: "Add entity", collection: "nodes" },
+      { label: "Add group", collection: "nodes", group: true },
+    ],
+    fields: {
+      direction: { label: "Layout direction", control: "choice" },
+      source: { label: "Imported source", readOnly: true, hidden: true },
     },
-    edges: {
-      search: SEMANTIC_SEARCH,
-      fields: {
-        ...SEMANTIC_FIELDS,
-        source: { label: "From", control: "ref", ref: "nodes", order: 2 },
-        target: { label: "To", control: "ref", ref: "nodes", order: 3 },
-        sourcePort: { label: "From port", control: "ref", ref: "ports", of: "source" },
-        targetPort: { label: "To port", control: "ref", ref: "ports", of: "target" },
+    collections: {
+      nodes: {
+        search: SEMANTIC_SEARCH,
+        fields: {
+          ...SEMANTIC_FIELDS,
+          parentId: { label: "Group", control: "ref", ref: "nodes" },
+          group: { label: "Holds other nodes", section: "Structure" },
+          href: { label: "Canvas link", control: "text", section: "Structure" },
+          ports: { label: "Ports", section: "Structure", hidden: true },
+          x: { label: "X", control: "number", section: "Layout" },
+          y: { label: "Y", control: "number", section: "Layout" },
+          width: { label: "Width", control: "number", section: "Layout" },
+          height: { label: "Height", control: "number", section: "Layout" },
+        },
+        newItem: (content, { id, near, group }) => ({
+          id,
+          label: group ? "New group" : "New entity",
+          ...(near ?? freePlace((content as unknown as GraphContent).nodes)),
+          ...(group ? { ...NEW_GROUP, group: true } : NEW_NODE),
+        }),
+        cascade: nestedCascade("nodes", "edges"),
+        removalNote: NESTED_REMOVAL,
+      },
+      edges: {
+        search: SEMANTIC_SEARCH,
+        fields: {
+          ...SEMANTIC_FIELDS,
+          source: { label: "From", control: "ref", ref: "nodes", order: 2 },
+          target: { label: "To", control: "ref", ref: "nodes", order: 3 },
+          sourcePort: { label: "From port", control: "ref", ref: "ports", of: "source" },
+          targetPort: { label: "To port", control: "ref", ref: "ports", of: "target" },
+        },
       },
     },
-  },
-});
-
+  });
 }
 export const diagramFamily = createDiagramFamily();

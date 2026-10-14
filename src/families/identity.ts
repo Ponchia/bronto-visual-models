@@ -425,9 +425,17 @@ export const VISUAL_FAMILY_IDENTITIES: readonly (Omit<VisualFamilyIdentity, "id"
 })[] = Object.freeze(identities);
 
 /** The one lookup by renderer id; undefined for a renderer this build does not know. */
-export function visualFamilyIdentity(id: string): (typeof VISUAL_FAMILY_IDENTITIES)[number] | undefined;
-export function visualFamilyIdentity(id: string, registry: VisualFamilyResolver | undefined): VisualFamilyIdentity | undefined;
-export function visualFamilyIdentity(id: string, registry?: VisualFamilyResolver): VisualFamilyIdentity | undefined {
+export function visualFamilyIdentity(
+  id: string,
+): (typeof VISUAL_FAMILY_IDENTITIES)[number] | undefined;
+export function visualFamilyIdentity(
+  id: string,
+  registry: VisualFamilyResolver | undefined,
+): VisualFamilyIdentity | undefined;
+export function visualFamilyIdentity(
+  id: string,
+  registry?: VisualFamilyResolver,
+): VisualFamilyIdentity | undefined {
   return registry ? registry.family(id) : VISUAL_FAMILY_IDENTITIES.find((entry) => entry.id === id);
 }
 

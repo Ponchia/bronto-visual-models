@@ -1,4 +1,5 @@
-import { type ChartFill, chartFill, visualRecord } from "../index.ts";
+import { type ChartFill, chartFill } from "../families/vega-lite.ts";
+import { visualRecord } from "../model.ts";
 import type { View } from "vega";
 
 /** A discrete axis never draws its bands thinner than this: below it the body scrolls. */

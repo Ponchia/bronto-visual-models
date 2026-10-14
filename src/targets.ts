@@ -65,7 +65,12 @@ function modelRecordIndex(
   const collections = visualFamilyIdentity(model.renderer, registry)?.records ?? [];
   const from = collections.map((collection) => model.content[collection]);
   const held = recordIndexes.get(model);
-  if (held && held.registry === registry && held.from.length === from.length && held.from.every((rows, at) => rows === from[at]))
+  if (
+    held &&
+    held.registry === registry &&
+    held.from.length === from.length &&
+    held.from.every((rows, at) => rows === from[at])
+  )
     return held.index;
   const index = new Map<string, Record<string, unknown>>();
   collections.forEach((collection, at) => {
@@ -117,7 +122,9 @@ export function resolveModelTarget(
     if (rows.length !== 1 || !record)
       return { state: "missing", reason: "The selected row no longer resolves uniquely." };
   } else {
-    record = modelRecordIndex(model, built, registry).get(`${target.collection}:${target.elementId}`);
+    record = modelRecordIndex(model, built, registry).get(
+      `${target.collection}:${target.elementId}`,
+    );
     if (!record)
       return {
         state: "missing",
@@ -155,4 +162,3 @@ export function resolveModelTarget(
     current,
   };
 }
-

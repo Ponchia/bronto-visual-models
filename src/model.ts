@@ -195,9 +195,9 @@ export function visualModelIdForKey(key: string): string {
   return `model-${sha256Hex(key).slice(0, 24)}`;
 }
 /** A model's summary; also drops what a library entry written by an earlier build still carries. */
-export function modelSummary<M extends VisualModelSummary & Partial<Pick<VisualModel, "content" | "elementIncarnations">>>(
-  model: M,
-): Omit<M, "content" | "elementIncarnations"> {
+export function modelSummary<
+  M extends VisualModelSummary & Partial<Pick<VisualModel, "content" | "elementIncarnations">>,
+>(model: M): Omit<M, "content" | "elementIncarnations"> {
   const { content: _content, elementIncarnations: _incarnations, ...summary } = model;
   return summary;
 }
@@ -213,7 +213,24 @@ export function assertVisualJson(value: unknown): void {
     if (item === null || typeof item === "string" || typeof item === "boolean") return;
     if (typeof item === "number" && Number.isFinite(item)) return;
     if (Array.isArray(item)) {
-      for (const child of item) visit(child, depth + 1);
+      if (item.length > 100_000 || Object.getPrototypeOf(item) !== Array.prototype)
+        throw new VisualModelError("invalid", "Visual data requires bounded JSON arrays");
+      const fields = Object.getOwnPropertyDescriptors(item);
+      const keys = Reflect.ownKeys(fields).filter((key) => key !== "length");
+      if (keys.length !== item.length)
+        throw new VisualModelError(
+          "invalid",
+          "Visual arrays cannot contain holes or named properties",
+        );
+      for (let index = 0; index < item.length; index++) {
+        const descriptor = fields[String(index)];
+        if (!descriptor || !Object.hasOwn(descriptor, "value") || !descriptor.enumerable)
+          throw new VisualModelError(
+            "invalid",
+            "Visual arrays cannot contain getters or hidden entries",
+          );
+        visit(descriptor.value, depth + 1);
+      }
       return;
     }
     if (!visualRecord(item))
@@ -227,7 +244,10 @@ export function assertVisualJson(value: unknown): void {
         throw new VisualModelError("invalid", "Reserved visual field name");
       const descriptor = fields[key];
       if (!descriptor || !Object.hasOwn(descriptor, "value") || !descriptor.enumerable)
-        throw new VisualModelError("invalid", "Visual data cannot contain getters or hidden fields");
+        throw new VisualModelError(
+          "invalid",
+          "Visual data cannot contain getters or hidden fields",
+        );
       visit(descriptor.value, depth + 1);
     }
   };

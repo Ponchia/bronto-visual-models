@@ -14,7 +14,7 @@ const graph = (patch: Partial<VisualModel> = {}): VisualModel => ({
   id: "graph",
   generation: "generation-one",
   revision: 1,
-  
+
   title: "Graph",
   description: "",
   modelType: "graph",

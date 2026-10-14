@@ -25,6 +25,8 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run lint:docs
       - run: npm run build
       - run: npm test
       - run: npm run test:pack
@@ -47,9 +49,11 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run lint:docs
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npm run site:build
+      - run: npm run site:build:packed
       - run: npm run test:browser
       - name: Retain browser evidence
         if: always()

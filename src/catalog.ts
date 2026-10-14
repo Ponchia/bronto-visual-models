@@ -43,12 +43,26 @@ export const VISUAL_RENDERERS: readonly (VisualRendererDefinition & { id: Visual
       schema: family.schema,
     })),
   );
-export function rendererDefinition(family: import("./families/family.ts").VisualFamily): VisualRendererDefinition {
-  return { id: family.id, label: family.label, category: family.category, description: family.description,
-    modelType: family.modelType, version: family.version, environment: family.environment,
-    records: family.records, capabilities: family.adapters[0]?.capabilities ?? [], schema: family.schema };
+export function rendererDefinition(
+  family: import("./families/family.ts").VisualFamily,
+): VisualRendererDefinition {
+  return {
+    id: family.id,
+    label: family.label,
+    category: family.category,
+    description: family.description,
+    modelType: family.modelType,
+    version: family.version,
+    environment: family.environment,
+    records: family.records,
+    capabilities: family.adapters[0]?.capabilities ?? [],
+    schema: family.schema,
+  };
 }
-export function visualRenderer(id: string, registry?: VisualFamilyResolver): VisualRendererDefinition {
+export function visualRenderer(
+  id: string,
+  registry?: VisualFamilyResolver,
+): VisualRendererDefinition {
   if (registry) {
     const family = registry.family(id);
     if (!family) throw new VisualModelError("invalid", `Unknown renderer: ${id}`);
@@ -63,7 +77,11 @@ export function visualModelType(renderer: string, registry?: VisualFamilyResolve
   return visualRenderer(renderer, registry).modelType;
 }
 /** How many items one editable collection holds: its family schema's bound, not a second copy. */
-export function visualCollectionLimit(renderer: string, collection: string, registry?: VisualFamilyResolver): number {
+export function visualCollectionLimit(
+  renderer: string,
+  collection: string,
+  registry?: VisualFamilyResolver,
+): number {
   const definition = visualRenderer(renderer, registry);
   const properties = definition.schema.properties as
     | Readonly<Record<string, { maxItems?: unknown }>>

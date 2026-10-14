@@ -24,7 +24,12 @@ export * from "./families/authored-times.ts";
 export * from "./families/family.ts";
 export * from "./families/identity.ts";
 export * from "./families/index.ts";
-export { createVegaLiteFamily, chartFill, type ChartFill, type VegaLiteContent } from "./families/vega-lite.ts";
+export {
+  createVegaLiteFamily,
+  chartFill,
+  type ChartFill,
+  type VegaLiteContent,
+} from "./families/vega-lite.ts";
 export { createDiagramFamily } from "./families/diagram.ts";
 export * from "./operations.ts";
 export * from "./memory.ts";

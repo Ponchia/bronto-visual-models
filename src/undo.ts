@@ -60,7 +60,11 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 /** Each inverse guards only what the edit changed. Disjoint later edits survive. */
-export function visualUndoChanges(before: VisualModel, after: VisualModel, registry?: VisualFamilyResolver): VisualUndoChange[] {
+export function visualUndoChanges(
+  before: VisualModel,
+  after: VisualModel,
+  registry?: VisualFamilyResolver,
+): VisualUndoChange[] {
   const changes: VisualUndoChange[] = [];
   const compare = (field: string, a: Value, b: Value, rest: Partial<VisualUndoChange> = {}) => {
     if (!same(a, b)) changes.push({ field, before: recorded(a), after: recorded(b), ...rest });
@@ -175,7 +179,10 @@ export function visualReceiptChanges(changes: readonly VisualUndoChange[]): Visu
   return [...entries.values()];
 }
 /** A created model's receipt: its records, listed without a diff, and its other content fields. */
-export function visualCreatedChanges(model: VisualModel, registry?: VisualFamilyResolver): VisualReceiptChange[] {
+export function visualCreatedChanges(
+  model: VisualModel,
+  registry?: VisualFamilyResolver,
+): VisualReceiptChange[] {
   const records = visualRenderer(model.renderer, registry).records;
   const changes: VisualReceiptChange[] = [];
   for (const collection of records)

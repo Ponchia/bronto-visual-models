@@ -25,11 +25,14 @@ export type VisualCompatibility =
  * renderer's version. One reading for every reader and writer, so a model is
  * never editable in one place and refused as unreadable in another.
  */
-export function modelCompatibility(model: {
-  readonly schemaVersion: unknown;
-  readonly renderer: unknown;
-  readonly rendererVersion?: unknown;
-}, registry?: VisualFamilyResolver): VisualCompatibility {
+export function modelCompatibility(
+  model: {
+    readonly schemaVersion: unknown;
+    readonly renderer: unknown;
+    readonly rendererVersion?: unknown;
+  },
+  registry?: VisualFamilyResolver,
+): VisualCompatibility {
   const { schemaVersion } = model;
   if (schemaVersion === 1) return { ok: false, reason: "retired-model" };
   if (typeof schemaVersion === "number" && schemaVersion > VISUAL_MODEL_VERSION)

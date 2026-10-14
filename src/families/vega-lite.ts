@@ -1,5 +1,8 @@
 const MAX_DATASOURCE_PARAM_CHARS = 2000;
-export interface VisualConnectionRef { instanceId: string; connectionId: string; }
+export interface VisualConnectionRef {
+  instanceId: string;
+  connectionId: string;
+}
 import { visualRecord } from "../model.ts";
 import {
   datasetSearchText,
@@ -101,7 +104,8 @@ const VEGA_LITE_SCHEMA = {
     // Hosts can supply an allowlist. Naming a source never authorizes or loads it.
     datasource: {
       type: "string",
-      minLength: 1, maxLength: 128,
+      minLength: 1,
+      maxLength: 128,
     },
     connection: {
       type: "object",
@@ -175,55 +179,71 @@ const anchor = (label: string): VisualFieldDescriptors[string] => ({
   section: "Anchor",
 });
 
-export function createVegaLiteFamily(options: { datasources?: readonly string[]; maxParameterChars?: number } = {}) {
-return defineVisualFamily("vega-lite", {
-  schema: { ...VEGA_LITE_SCHEMA, properties: {
-    ...VEGA_LITE_SCHEMA.properties,
-    datasource: { ...VEGA_LITE_SCHEMA.properties.datasource, ...(options.datasources ? { enum: [...options.datasources] } : {}) },
-    params: { ...VEGA_LITE_SCHEMA.properties.params, additionalProperties: {
-      anyOf: [{ type: "string", maxLength: options.maxParameterChars ?? MAX_DATASOURCE_PARAM_CHARS }, { type: "integer" }],
-    } },
-  } },
-  retired: ["snapshot"],
-  advise: (content) =>
-    visualRecord(content.spec) && chartFill(content.spec) === "fit"
-      ? storedSizes(content.spec, ["spec"])
-      : [],
-  fields: {
-    spec: { label: "Chart grammar", hidden: true },
-    values: { label: "Rows", hidden: true },
-    datasource: { label: "Source", control: "choice", section: "Data" },
-    params: { label: "Source parameters", section: "Data" },
-    connection: { label: "Connection", section: "Data", hidden: true },
-  },
-  collections: {
-    annotations: {
-      search: [],
-      fields: {
-        "note.title": { label: "Title", control: "text", order: 0 },
-        "note.body": { label: "Note", control: "multiline", order: 1 },
-        type: { label: "Anchor kind", control: "choice", order: 2 },
-        x: anchor("X"),
-        y: anchor("Y"),
-        x2: anchor("X end"),
-        y2: anchor("Y end"),
-        match: { label: "Matching row", section: "Anchor" },
-        orientation: { label: "Orientation", control: "choice", section: "Anchor" },
-        tone: { label: "Tone", control: "tone", section: "Presentation" },
-        side: { label: "Note side", control: "choice", section: "Presentation" },
-        dx: { label: "Note offset X", control: "number", section: "Presentation" },
-        dy: { label: "Note offset Y", control: "number", section: "Presentation" },
+export function createVegaLiteFamily(
+  options: { datasources?: readonly string[]; maxParameterChars?: number } = {},
+) {
+  return defineVisualFamily("vega-lite", {
+    schema: {
+      ...VEGA_LITE_SCHEMA,
+      properties: {
+        ...VEGA_LITE_SCHEMA.properties,
+        datasource: {
+          ...VEGA_LITE_SCHEMA.properties.datasource,
+          ...(options.datasources ? { enum: [...options.datasources] } : {}),
+        },
+        params: {
+          ...VEGA_LITE_SCHEMA.properties.params,
+          additionalProperties: {
+            anyOf: [
+              {
+                type: "string",
+                maxLength: options.maxParameterChars ?? MAX_DATASOURCE_PARAM_CHARS,
+              },
+              { type: "integer" },
+            ],
+          },
+        },
       },
     },
-  },
-  // The chosen source is authored and names no secret, so searching a
-  // datasource id (or a dataset's address) answers "which charts read it".
-  // Its other parameters stay out: they may carry credentials.
-  searchText: (content) => [
-    ...(visualRecord(content.spec) ? [content.spec.title, content.spec.description] : []),
-    ...(content.datasource === "dataset" ? datasetSearchText(content) : [content.datasource]),
-  ],
-});
-
+    retired: ["snapshot"],
+    advise: (content) =>
+      visualRecord(content.spec) && chartFill(content.spec) === "fit"
+        ? storedSizes(content.spec, ["spec"])
+        : [],
+    fields: {
+      spec: { label: "Chart grammar", hidden: true },
+      values: { label: "Rows", hidden: true },
+      datasource: { label: "Source", control: "choice", section: "Data" },
+      params: { label: "Source parameters", section: "Data" },
+      connection: { label: "Connection", section: "Data", hidden: true },
+    },
+    collections: {
+      annotations: {
+        search: [],
+        fields: {
+          "note.title": { label: "Title", control: "text", order: 0 },
+          "note.body": { label: "Note", control: "multiline", order: 1 },
+          type: { label: "Anchor kind", control: "choice", order: 2 },
+          x: anchor("X"),
+          y: anchor("Y"),
+          x2: anchor("X end"),
+          y2: anchor("Y end"),
+          match: { label: "Matching row", section: "Anchor" },
+          orientation: { label: "Orientation", control: "choice", section: "Anchor" },
+          tone: { label: "Tone", control: "tone", section: "Presentation" },
+          side: { label: "Note side", control: "choice", section: "Presentation" },
+          dx: { label: "Note offset X", control: "number", section: "Presentation" },
+          dy: { label: "Note offset Y", control: "number", section: "Presentation" },
+        },
+      },
+    },
+    // The chosen source is authored and names no secret, so searching a
+    // datasource id (or a dataset's address) answers "which charts read it".
+    // Its other parameters stay out: they may carry credentials.
+    searchText: (content) => [
+      ...(visualRecord(content.spec) ? [content.spec.title, content.spec.description] : []),
+      ...(content.datasource === "dataset" ? datasetSearchText(content) : [content.datasource]),
+    ],
+  });
 }
 export const vegaLiteFamily = createVegaLiteFamily();

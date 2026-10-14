@@ -23,4 +23,3 @@ export function sha256BytesHex(bytes: Uint8Array): string {
   for (const byte of digest(bytes)) hex += byte.toString(16).padStart(2, "0");
   return hex;
 }
-

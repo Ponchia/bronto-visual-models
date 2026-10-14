@@ -27,7 +27,7 @@ function ceiling(): VisualModel {
     id: "graph",
     generation: "generation-one",
     revision: 1,
-    
+
     title: "Graph",
     description: "",
     modelType: "graph",

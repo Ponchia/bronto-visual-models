@@ -14,4 +14,3 @@ export const SOURCE_DIAGRAM_SCHEMA = {
     source: { type: "string", minLength: 1, maxLength: MAX_DIAGRAM_SOURCE_CHARS },
   },
 } as const;
-

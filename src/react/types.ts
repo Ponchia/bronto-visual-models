@@ -14,7 +14,12 @@ export interface VisualModelViewProps {
   active?: boolean;
   height?: number;
   className?: string;
-  onReady?(identity: { id: string; generation: string; revision: number; projection: string }): void;
+  onReady?(identity: {
+    id: string;
+    generation: string;
+    revision: number;
+    projection: string;
+  }): void;
   onError?(message: string): void;
 }
 export interface AdapterProps extends VisualModelViewProps {

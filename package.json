@@ -1,0 +1,130 @@
+{
+  "name": "@ponchia/visual-models",
+  "version": "0.1.0-beta.1",
+  "description": "Persistent, editable visual artifacts with identified elements, guarded operations and optional React renderers.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Zeno Trevisan",
+    "url": "https://brontolotto.observer/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ponchia/bronto-visual-models.git"
+  },
+  "homepage": "https://ponchia.github.io/bronto-visual-models/",
+  "bugs": {
+    "url": "https://github.com/Ponchia/bronto-visual-models/issues"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "packageManager": "npm@11.13.0",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "docs"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.js"
+    },
+    "./styles.css": "./dist/react/styles.css",
+    "./package.json": "./package.json",
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "bronto-visual-models": "./bin/bronto-visual-models.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/build-assets.mjs",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 test/*.test.ts test/upstream/*.test.ts",
+    "test:pack": "node scripts/test-packed-consumer.mjs",
+    "test:browser": "node scripts/test-browser.mjs",
+    "check": "npm run build && npm test && npm run test:pack",
+    "demo": "vite demo --host 127.0.0.1",
+    "site:build": "vite build demo --base=/bronto-visual-models/ --outDir ../site-dist",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "lib0": "0.2.119"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@xyflow/react": "^12.12.0",
+    "@antv/g6": "^5.1.1",
+    "vega": "^6.4.0",
+    "vega-lite": "^6.4.3",
+    "vis-timeline": "^8.5.4",
+    "vis-data": "^8.0.5"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "@xyflow/react": {
+      "optional": true
+    },
+    "@antv/g6": {
+      "optional": true
+    },
+    "vega": {
+      "optional": true
+    },
+    "vega-lite": {
+      "optional": true
+    },
+    "vis-timeline": {
+      "optional": true
+    },
+    "vis-data": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/node": "24.13.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@xyflow/react": "12.12.0",
+    "@antv/g6": "5.1.1",
+    "vega": "6.4.0",
+    "vega-lite": "6.4.3",
+    "vis-timeline": "8.5.4",
+    "vis-data": "8.0.5",
+    "vite": "8.3.3",
+    "playwright": "1.63.0",
+    "@ponchia/ui": "0.16.3",
+    "d3-sankey": "0.12.3",
+    "@types/d3-sankey": "0.12.5"
+  }
+}

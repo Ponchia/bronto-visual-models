@@ -1,0 +1,158 @@
+{
+  "sourceRepository": "Ponchia/spatial-workspace",
+  "sourceRevision": "8080ec640473ac6ecebac6dde6f1f1a84bfdcf45",
+  "files": [
+    {
+      "source": "packages/shared/src/visual-models/capture.ts",
+      "target": "src/capture.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/catalog.ts",
+      "target": "src/catalog.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/compare.ts",
+      "target": "src/compare.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/compatibility.ts",
+      "target": "src/compatibility.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/creative-templates.ts",
+      "target": "src/creative-templates.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/analysis.ts",
+      "target": "src/families/analysis.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/authored-times.ts",
+      "target": "src/families/authored-times.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/cycles.ts",
+      "target": "src/families/cycles.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/diagram.ts",
+      "target": "src/families/diagram.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/family.ts",
+      "target": "src/families/family.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/gantt.ts",
+      "target": "src/families/gantt.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/geography.ts",
+      "target": "src/families/geography.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/identity.ts",
+      "target": "src/families/identity.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/index.ts",
+      "target": "src/families/index.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/infographic.ts",
+      "target": "src/families/infographic.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/scene3d.ts",
+      "target": "src/families/scene3d.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/source-diagram.ts",
+      "target": "src/families/source-diagram.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/spatial-layers.ts",
+      "target": "src/families/spatial-layers.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/timeline.ts",
+      "target": "src/families/timeline.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/families/vega-lite.ts",
+      "target": "src/families/vega-lite.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/identity-entry.ts",
+      "target": "src/identity-entry.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/incarnations.ts",
+      "target": "src/incarnations.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/infographic.ts",
+      "target": "src/infographic.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/model.ts",
+      "target": "src/model.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/projections.ts",
+      "target": "src/projections.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/retired.ts",
+      "target": "src/retired.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/scene-look.ts",
+      "target": "src/scene-look.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/scene3d.ts",
+      "target": "src/scene3d.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/search.ts",
+      "target": "src/search.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/semantic-templates.ts",
+      "target": "src/semantic-templates.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/semantic.ts",
+      "target": "src/semantic.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/spatial-layers.ts",
+      "target": "src/spatial-layers.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/spatial-templates.ts",
+      "target": "src/spatial-templates.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/targets.ts",
+      "target": "src/targets.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/timeline-source.ts",
+      "target": "src/timeline-source.ts"
+    },
+    {
+      "source": "packages/shared/src/visual-models/undo.ts",
+      "target": "src/undo.ts"
+    },
+    {
+      "source": "packages/shared/src/agents/agent-schema.ts",
+      "target": "src/schema.ts"
+    },
+    {
+      "source": "apps/server/src/visual-models/item-edits.ts",
+      "target": "src/item-edits.ts"
+    }
+  ]
+}

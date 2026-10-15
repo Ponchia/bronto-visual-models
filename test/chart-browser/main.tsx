@@ -33,6 +33,14 @@ function App() {
     setReadyHistory((old) => (old.includes(identity.revision) ? old : [...old, identity.revision]));
   }, []);
   const [failures, setFailures] = useState<string[]>([]);
+  const [errorHistory, setErrorHistory] = useState<number[]>([]);
+  const report = useCallback(
+    (message: string) => {
+      setFailures((old) => (old.at(-1) === message ? old : [...old, message]));
+      setErrorHistory((old) => (old.includes(model.revision) ? old : [...old, model.revision]));
+    },
+    [model.revision],
+  );
   const change = (content: ModelEdit["content"]) =>
     setModel((current) => editModel(current, { ifRevision: current.revision, content }).model);
   return (
@@ -148,16 +156,19 @@ function App() {
       </label>
       <output data-testid="revision">{model.revision}</output>
       <output data-testid="ready">{ready}</output>
-      <output data-testid="ready-history">{JSON.stringify(readyHistory)}</output>
+      <output data-testid="ready-history" style={{ display: "block", overflowWrap: "anywhere" }}>
+        {JSON.stringify(readyHistory)}
+      </output>
+      <output data-testid="error-history" style={{ display: "block", overflowWrap: "anywhere" }}>
+        {JSON.stringify(errorHistory)}
+      </output>
       <output data-testid="active">{String(active)}</output>
       <VisualModelView
         model={model}
         height={460}
         active={active}
         onReady={acknowledge}
-        onError={(message) =>
-          setFailures((old) => (old.at(-1) === message ? old : [...old, message]))
-        }
+        onError={report}
       />
       <output data-testid="failures" style={{ overflowWrap: "anywhere" }}>
         {JSON.stringify(failures)}

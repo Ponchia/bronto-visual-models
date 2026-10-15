@@ -4,6 +4,8 @@
 
 - Never acknowledge failed same-grammar chart data updates. Invalidate queued frame
   acknowledgements and stale row caches; preserve structured errors and recovery.
+- Recreate partially failed dataflows on the next explicit request rather than
+  reusing corrupted pulse state; healthy data updates still reuse their engine.
 - Cover repeated invalid calculation rows and repair without changing the grammar
   in the independently packed real-browser fixture.
 - Handle malformed optional routing/port/label responses without TypeErrors;

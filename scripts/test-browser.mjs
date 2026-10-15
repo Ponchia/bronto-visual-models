@@ -57,7 +57,14 @@ try {
     await delay(100);
   }
   assert(online, `Preview did not start: ${serverLog}`);
-  browser = await browserType.launch({ headless: true });
+  browser = await browserType.launch({
+    headless: true,
+    // Optional local launcher can supply rootless system libraries for the same
+    // Playwright binary. CI uses the pinned default; tests are never skipped.
+    ...(process.env.BVM_BROWSER_EXECUTABLE
+      ? { executablePath: process.env.BVM_BROWSER_EXECUTABLE }
+      : {}),
+  });
   for (const device of [
     { name: "desktop", width: 1440, height: 1100 },
     { name: "mobile", width: 390, height: 844 },

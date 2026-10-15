@@ -83,13 +83,24 @@ export async function testChartContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Nested chart", exact: true }).click();
     await ready();
     const evaluated = await canvasDigest();
+    const evaluatedCanvas = await page.locator(".bvm-chart canvas").elementHandle();
+    const evaluatedSize = await evaluatedCanvas.evaluate((c) => [c.width, c.height]);
+    await page.getByRole("button", { name: "Restore calculation rows", exact: true }).click();
+    await ready();
+    assert.ok(
+      await evaluatedCanvas.evaluate((c) => c.isConnected),
+      "A healthy rows-only revision recreated the engine",
+    );
     for (let attempt = 0; attempt < 2; attempt++) {
       await page.getByRole("button", { name: "Invalid calculation rows", exact: true }).click();
       const refusedRevision = Number(await page.getByTestId("revision").textContent());
-      await page
-        .getByTestId("failures")
-        .filter({ hasText: "The inline chart could not be rendered" })
-        .waitFor();
+      await page.waitForFunction(
+        (revision) =>
+          JSON.parse(document.querySelector('[data-testid="error-history"]').textContent).includes(
+            revision,
+          ),
+        refusedRevision,
+      );
       // Drain painted acknowledgements, not a machine-speed-dependent sleep.
       await page.evaluate(
         () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
@@ -105,6 +116,15 @@ export async function testChartContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Restore calculation rows", exact: true }).click();
     await ready();
     assert.equal(await page.getByRole("alert").count(), 0);
+    assert.equal(
+      await evaluatedCanvas.evaluate((c) => c.isConnected),
+      false,
+      "The partly failed dataflow was reused",
+    );
+    assert.deepEqual(
+      await page.locator(".bvm-chart canvas").evaluate((c) => [c.width, c.height]),
+      evaluatedSize,
+    );
     assert.equal(
       await canvasDigest(),
       evaluated,
@@ -205,7 +225,8 @@ export async function testChartContract(browser, outputDirectory) {
       "no resource requests",
       "compiler error recovery without source-data disclosure",
       "failed data updates and repeated invalid rows never acknowledge undrawn revisions",
-      "same-grammar recovery restores the valid frame",
+      "same-grammar recovery rebuilds failed dataflow and restores the exact valid pixels",
+      "healthy row updates retain the existing canvas",
       "small-screen fit",
     );
     return { device: "chart-contract", passed: true, assertions: results };

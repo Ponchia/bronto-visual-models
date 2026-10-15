@@ -126,9 +126,12 @@ publishes a data identity only after evaluation and layout settling succeed.
 Failed data updates never acknowledge the new model revision or clear the error
 surface as if it rendered. This does not roll back or rewrite the saved model.
 
-A failed dataflow may have partially consumed rows, so its cached data identities
-are discarded. Repeating the same invalid rows is evaluated again rather than
-being accepted as an unchanged frame. Supplying repaired rows with the same chart
-grammar recovers normally. Pending acknowledgements are scoped to the current
+A failed dataflow may have partially consumed rows and corrupted its internal
+pulse state, so cached identities are discarded and that engine is not reused.
+The next explicit data/grammar request finalizes it and creates a clean engine;
+there is no automatic retry loop on the same failed request. Repeating invalid
+rows fails again instead of being accepted as an unchanged frame. Repaired rows
+with the same chart grammar recover through a fresh engine. Healthy rows-only
+updates still retain their existing compiled view. Pending acknowledgements are scoped to the current
 engine and frame; invalidation or unmount withdraws them. Source-row values remain
 excluded from public error messages.

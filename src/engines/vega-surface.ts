@@ -93,6 +93,8 @@ interface Engine {
   /** Only a successfully evaluated/settled frame may carry this key. */
   dataKey: string | null;
   validFrame: boolean;
+  /** Evaluation failures can leave internal pulses inconsistent; never reuse that dataflow. */
+  failed: boolean;
   frameEpoch: number;
   held: Map<string, string>;
   release(): void;
@@ -145,6 +147,25 @@ function releaseSurfaces(surface: HTMLElement, bindings: HTMLElement | null): vo
   bindings?.remove();
 }
 
+/** Invalid internal dataflow state is not repaired by simply replaying a changeset. */
+function poisonFrame(engine: Engine): void {
+  engine.validFrame = false;
+  engine.failed = true;
+  engine.frameEpoch++;
+  engine.dataKey = null;
+  engine.held.clear();
+}
+
+/** Guard the actual engine being evaluated even if its React request was superseded. */
+async function evaluateFrame<T>(engine: Engine, work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    poisonFrame(engine);
+    throw error;
+  }
+}
+
 /** Replaces the named datasets the view does not already hold; true when any changed. */
 async function hold(engine: Engine, sets: SurfaceData): Promise<boolean> {
   const held = new Map(engine.held);
@@ -166,8 +187,7 @@ async function hold(engine: Engine, sets: SurfaceData): Promise<boolean> {
   } catch (error) {
     // Evaluation can fail after mutating the dataflow. Neither the old nor the
     // attempted rows may be assumed to remain held; a retry must reapply them.
-    engine.held.clear();
-    engine.dataKey = null;
+    poisonFrame(engine);
     throw error;
   }
   engine.held = held;
@@ -289,19 +309,15 @@ export function useVegaSurface(
     const current = engine.current;
     // Even a queued onReady callback must not attest a partly evaluated frame.
     attested.current = undefined;
-    if (current) {
-      current.validFrame = false;
-      current.frameEpoch++;
-      current.dataKey = null;
-      current.held.clear();
-    }
+    if (current) poisonFrame(current);
+    setShown(null);
     latest.current.onError(message(error));
   }, []);
   // Lays the retained view out again when its container measures differently.
   const relayout = useCallback(async () => {
     const current = engine.current;
     const size = current && measure(current.container);
-    if (!current || !size || !latest.current.active) return;
+    if (!current || current.failed || !size || !latest.current.active) return;
     if (
       current.validFrame &&
       current.size.width === size.width &&
@@ -314,24 +330,26 @@ export function useVegaSurface(
       setNarrow(narrow);
       return;
     }
-    const { data, key, ack } = request();
-    invalidate(current);
-    const { resize } = latest.current;
-    if (resize) resize(current.view, size);
-    else current.view.width(size.width).height(size.height);
-    if (data?.sized) {
-      await hold(current, data.sets(size));
-    }
-    await current.view.runAsync();
-    if (await latest.current.settle?.(current.view, size)) return;
-    current.size = size;
-    if (data?.sized) current.dataKey = key;
-    // Rows still queued belong to a frame their own work will attest.
-    if (current.dataKey === key) drawn(current, ack);
-    else {
-      current.validFrame = true;
-      latest.current.onDrawn?.(current.view);
-    }
+    await evaluateFrame(current, async () => {
+      const { data, key, ack } = request();
+      invalidate(current);
+      const { resize } = latest.current;
+      if (resize) resize(current.view, size);
+      else current.view.width(size.width).height(size.height);
+      if (data?.sized) {
+        await hold(current, data.sets(size));
+      }
+      await current.view.runAsync();
+      if (await latest.current.settle?.(current.view, size)) return;
+      current.size = size;
+      if (data?.sized) current.dataKey = key;
+      // Rows still queued belong to a frame their own work will attest.
+      if (current.dataKey === key) drawn(current, ack);
+      else {
+        current.validFrame = true;
+        latest.current.onDrawn?.(current.view);
+      }
+    });
   }, [request, drawn, invalidate]);
 
   useEffect(() => {
@@ -364,33 +382,35 @@ export function useVegaSurface(
      * a picture that never appears.
      */
     const present = async (current: Engine, frame: ReturnType<typeof request>) => {
-      const { view } = current;
-      // A hidden, never-presented engine can be resumed over newer rows. Its
-      // newest acknowledgement must not describe the old constructor seed.
-      invalidate(current);
-      if (frame.data) await hold(current, frame.data.sets(current.size));
-      if (cancelled) return;
-      if (current.rederive) {
+      await evaluateFrame(current, async () => {
+        const { view } = current;
+        // A hidden, never-presented engine can be resumed over newer rows. Its
+        // newest acknowledgement must not describe the old constructor seed.
+        invalidate(current);
+        if (frame.data) await hold(current, frame.data.sets(current.size));
+        if (cancelled) return;
+        if (current.rederive) {
+          await view.runAsync();
+          if (cancelled) return;
+          view.setState(current.rederive);
+          current.rederive = undefined;
+        }
         await view.runAsync();
         if (cancelled) return;
-        view.setState(current.rederive);
-        current.rederive = undefined;
-      }
-      await view.runAsync();
-      if (cancelled) return;
-      const superseded = await latest.current.settle?.(view, current.size);
-      if (cancelled || superseded) return;
-      current.dataKey = frame.key;
-      drawn(current, frame.ack);
-      current.shown = true;
-      setShown(view);
+        const superseded = await latest.current.settle?.(view, current.size);
+        if (cancelled || superseded) return;
+        current.dataKey = frame.key;
+        drawn(current, frame.ack);
+        current.shown = true;
+        setShown(view);
+      });
     };
     void owned
       .run(async () => {
         const target = container.current;
         if (cancelled || !target) return;
         const current = engine.current;
-        if (current?.identity === identity) {
+        if (current?.identity === identity && !current.failed) {
           await relayout();
           // Built by a run cancelled before its first frame (hidden meanwhile).
           if (!current.shown && !cancelled) await present(current, request());
@@ -406,7 +426,7 @@ export function useVegaSurface(
         const previous = engine.current;
         engine.current = null;
         const carried =
-          previous?.grammar === grammar && latest.current.carry?.length
+          previous?.grammar === grammar && !previous.failed && latest.current.carry?.length
             ? carriedState(previous.view, latest.current.carry)
             : undefined;
         if (previous) {
@@ -443,6 +463,7 @@ export function useVegaSurface(
           rederive: carried && brushRederivation(carried, latest.current.carry ?? []),
           dataKey: null,
           validFrame: false,
+          failed: false,
           frameEpoch: 0,
           held: new Map(Object.entries(sets).map(([name, rows]) => [name, JSON.stringify(rows)])),
           release: latest.current.onAcquire?.() ?? (() => {}),
@@ -458,6 +479,7 @@ export function useVegaSurface(
     };
   }, [
     identity,
+    dataKey,
     active,
     container,
     bindings,
@@ -478,17 +500,19 @@ export function useVegaSurface(
       .run(async () => {
         const current = engine.current;
         const { data, key, ack } = request();
-        if (cancelled || current?.view !== shown || !data) return;
+        if (cancelled || current?.view !== shown || current.failed || !data) return;
         // Held already: this render's rows, or newer ones a later task drew.
         if (current.validFrame && (current.dataKey === dataKey || current.dataKey === key)) return;
-        const wasValid = current.validFrame;
-        invalidate(current);
-        const changed = await hold(current, data.sets(current.size));
-        if (!changed && !wasValid) await current.view.runAsync();
-        if (await latest.current.settle?.(current.view, current.size)) return;
-        // Publish the identity only after every draw/settle step has succeeded.
-        current.dataKey = key;
-        drawn(current, ack);
+        await evaluateFrame(current, async () => {
+          const wasValid = current.validFrame;
+          invalidate(current);
+          const changed = await hold(current, data.sets(current.size));
+          if (!changed && !wasValid) await current.view.runAsync();
+          if (await latest.current.settle?.(current.view, current.size)) return;
+          // Publish the identity only after every draw/settle step has succeeded.
+          current.dataKey = key;
+          drawn(current, ack);
+        });
       })
       .catch((error) => {
         if (!cancelled) fail(error);
@@ -536,16 +560,16 @@ export function useVegaSurface(
     await queue.current?.run(async () => {
       const current = engine.current;
       if (current && latest.current.active) {
+        if (current.failed)
+          throw new Error("The failed visual engine requires a fresh data or grammar request");
         try {
           await work(current.view);
         } catch (error) {
           // The caller still owns error presentation, but a failed exploration
           // cannot retain a reusable acknowledgement of a partly changed view.
           attested.current = undefined;
-          current.validFrame = false;
-          current.frameEpoch++;
-          current.dataKey = null;
-          current.held.clear();
+          poisonFrame(current);
+          setShown(null);
           throw error;
         }
       }

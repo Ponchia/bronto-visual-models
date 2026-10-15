@@ -79,3 +79,16 @@ row pagination, controlled updates, advice, errors with no source-data disclosur
 and expression interpretation under a script policy without unsafe-eval.
 These fixtures run on the same Chromium/Firefox/WebKit matrix as the other views;
 passing them is not a claim of arbitrary-graph optimality or a CPU sandbox.
+
+## Local browser runtime prerequisites
+
+The repository's pinned Playwright browsers also require OS shared libraries.
+CI uses Playwright's documented `install --with-deps` command; missing libraries
+are a test-environment failure, never evidence that the UI passed or failed.
+A developer using an isolated runtime may set `BVM_BROWSER_EXECUTABLE` to a local
+launcher for the same pinned browser binary. This changes only the launch path;
+all assertions, resource policies and evidence remain enabled. Record the
+browser version, launcher and library provenance with that local result.
+
+A custom launcher is a local development convenience, not a substitute for the
+hosted default-browser release gate. See [Playwright browser dependencies](https://playwright.dev/docs/browsers#install-system-dependencies).

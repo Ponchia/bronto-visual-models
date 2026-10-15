@@ -141,9 +141,8 @@ try {
           .waitFor({ state: "attached" });
         if (projection === "Matrix") {
           await page.locator(".bvm-matrix svg").waitFor();
-          const matrixRegion = page.getByLabel("Dependency matrix for Order service", {
-            exact: true,
-          });
+          // Vega supplies this region's graphics-document role and semantic description.
+          const matrixRegion = page.locator(".bvm-matrix .bvm-engine");
           await matrixRegion.focus();
           assert.ok(
             await matrixRegion.evaluate((element) => document.activeElement === element),

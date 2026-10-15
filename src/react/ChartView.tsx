@@ -90,7 +90,7 @@ function DataCell({ value, row, column }: { value: unknown; row: number; column:
   return (
     <details className="bvm-cell-detail" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary aria-label={`Full value, row ${row}, column ${column}`}>
-        {chartCellText(value)}
+        {open ? "Hide complete value" : chartCellText(value)}
       </summary>
       {open && (
         <pre tabIndex={0} aria-label={`Complete value, row ${row}, column ${column}`}>

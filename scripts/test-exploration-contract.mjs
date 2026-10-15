@@ -212,6 +212,14 @@ export async function testExplorationContract(browser, outputDirectory) {
     await page.setViewportSize({ width: 390, height: 844 });
     await scan("exploration-data");
     assert.ok(
+      await page
+        .locator(".bvm-chart thead th:not(:first-child)")
+        .evaluateAll((headers) =>
+          headers.every((header) => header.getBoundingClientRect().width >= 45),
+        ),
+      "Narrow viewport compressed ordinary headers into single-letter columns",
+    );
+    assert.ok(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       "Wide table caused document overflow",
     );

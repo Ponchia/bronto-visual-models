@@ -315,3 +315,28 @@
   font-size: 11px;
   border-top: 1px solid var(--bvm-line);
 }
+
+/* Wide data belongs to the inner scroll region, not letter-wide compressed columns. */
+.bvm-chart table {
+  table-layout: auto;
+}
+.bvm-chart th,
+.bvm-chart td {
+  vertical-align: top;
+}
+.bvm-chart thead th:first-child,
+.bvm-chart tbody th {
+  min-width: 3ch;
+  white-space: nowrap;
+  word-break: normal;
+}
+.bvm-chart thead th:not(:first-child),
+.bvm-chart tbody td {
+  min-width: 9ch;
+}
+.bvm-chart thead th {
+  word-break: normal;
+}
+.bvm-cell-detail[open] summary {
+  white-space: normal;
+}

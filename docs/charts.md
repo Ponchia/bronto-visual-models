@@ -64,7 +64,10 @@ every page click. There is no automatic sort or mutation of source rows.
 Cells longer than 240 characters have a native disclosure. Activate it with the
 keyboard to read the complete original value in a bounded, scrollable text area.
 The complete text region mounts only when its disclosure is opened. The short
-form is a presentation preview, not inaccessible data loss. The existing
+form is a presentation preview, not inaccessible data loss. On narrow screens,
+the table scrolls horizontally instead of compressing ordinary headers into
+single-letter columns. An expanded cell uses a short disclosure label rather
+than repeating its long preview above the full value. The existing
 2,000-row family limit still applies. Missing values display an em dash;
 JSON `null`, false and zero remain distinct. Full cell text, including HTML-looking
 strings, is still rendered as text and creates no image, link or other resource.

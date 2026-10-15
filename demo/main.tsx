@@ -69,7 +69,12 @@ function App() {
   const [proposal, setProposal] = useState<{
     command: ModelCommand;
     preview: CommandPreview;
+    layout?: boolean;
   } | null>(null);
+  const [layoutDirection, setLayoutDirection] = useState<"RIGHT" | "DOWN">("RIGHT");
+  const [arranging, setArranging] = useState(false);
+  const layoutRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => layoutRequest.current?.abort(), []);
   const [redo, setRedo] = useState<string | null>(null);
   const [projection, setProjection] = useState("diagram");
   const [selected, setSelected] = useState<VisualTarget | null>(null);
@@ -183,6 +188,43 @@ function App() {
       setBusy(false);
     }
   };
+  const previewLayout = async () => {
+    const controller = new AbortController();
+    layoutRequest.current?.abort();
+    layoutRequest.current = controller;
+    setBusy(true);
+    setArranging(true);
+    try {
+      const { computeDiagramLayout } = await import("./layout.ts");
+      const layout = await computeDiagramLayout(
+        store.get("architecture")!,
+        { direction: layoutDirection },
+        controller.signal,
+      );
+      controller.signal.throwIfAborted();
+      const command: ModelCommand = {
+        type: "edit",
+        key: key("layout"),
+        id: "architecture",
+        patch: layout.patch,
+      };
+      const preview = await store.preview(command, { actor: "demo" });
+      controller.signal.throwIfAborted();
+      setProposal({ command, preview, layout: true });
+      setProjection("diagram");
+      setStatus(
+        `Layout preview: ${layout.nodeCount} nodes, ${layout.edgeCount} unchanged relationships. Nothing saved.`,
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (layoutRequest.current === controller) {
+        layoutRequest.current = null;
+        setArranging(false);
+        setBusy(false);
+      }
+    }
+  };
   const download = () => {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(model, null, 2)], { type: "application/json" }),
@@ -264,11 +306,12 @@ function App() {
             </div>
             {model ? (
               <VisualModelView
-                model={model}
+                key={proposal?.layout ? "layout-preview" : "saved-model"}
+                model={proposal?.layout ? proposal.preview.model : model}
                 projection={projection}
                 selected={selected}
                 onSelect={setSelected}
-                onEdit={edit}
+                onEdit={proposal?.layout ? undefined : edit}
                 height={430}
                 onReady={(identity) => setReady(identity.projection)}
               />
@@ -371,9 +414,30 @@ function App() {
                 Try a stale edit
               </button>
             </div>
+            <div className="layout-actions" role="group" aria-label="Diagram layout">
+              <label htmlFor="layout-direction">Arrange the diagram</label>
+              <select
+                id="layout-direction"
+                value={layoutDirection}
+                disabled={busy}
+                onChange={(event) => setLayoutDirection(event.target.value as "RIGHT" | "DOWN")}
+              >
+                <option value="RIGHT">Left to right</option>
+                <option value="DOWN">Top to bottom</option>
+              </select>
+              <button disabled={!model || busy} onClick={() => void previewLayout()}>
+                Preview layout
+              </button>
+              {arranging && (
+                <button onClick={() => layoutRequest.current?.abort()}>Cancel layout</button>
+              )}
+              <p>Computed in a local worker. Preview first; save only after review.</p>
+            </div>
             {proposal && (
               <section className="proposal" aria-label="Proposed changes">
-                <h4>Review before committing</h4>
+                <h4>
+                  {proposal.layout ? "Proposed layout — not saved" : "Review before committing"}
+                </h4>
                 <p>
                   Based on revision {proposal.preview.base?.revision}; saved model stays at revision{" "}
                   {model?.revision}.

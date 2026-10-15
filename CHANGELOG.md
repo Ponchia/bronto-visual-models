@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — optional diagram layout
+
+- Explicit ELK layered proposals for RIGHT/DOWN diagrams, guarded by source
+  generation and revision. Preview, apply and undo use the existing operations.
+- Same-origin worker-backed demo previews with discard/cancel and bounded lifetime.
+- Implicit top/bottom ports, distributed same-side custom ports and direction-aware
+  fallback handles; graph chrome uses supplied theme tokens.
+- Optional `elkjs` peer; Dagre is a development-only comparison. No core dependency,
+  persisted-format or Spatial integration change.
+- Source-linked engine assessment, reproducible benchmark, and geometry/preview tests.
+
 ## 0.1.0-beta.2
 
 - Non-mutating, serialized previews for create/edit/undo/fork with the same

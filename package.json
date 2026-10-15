@@ -74,7 +74,8 @@
     "site:build:packed": "node scripts/build-packed-demo.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs"
+    "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs",
+    "benchmark:layout": "node scripts/benchmark-layout.mjs"
   },
   "dependencies": {
     "lib0": "0.2.119"
@@ -89,7 +90,8 @@
     "vis-data": "^8.0.5",
     "@ponchia/ui": "^0.16.3",
     "vega-tooltip": "^1.1.0",
-    "d3-sankey": "^0.12.3"
+    "d3-sankey": "^0.12.3",
+    "elkjs": "^0.12.0"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -121,6 +123,9 @@
     },
     "d3-sankey": {
       "optional": true
+    },
+    "elkjs": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -142,7 +147,9 @@
     "@types/d3-sankey": "0.12.5",
     "vega-tooltip": "1.1.0",
     "@biomejs/biome": "2.5.15",
-    "markdownlint": "0.41.1"
+    "markdownlint": "0.41.1",
+    "elkjs": "0.12.0",
+    "@dagrejs/dagre": "3.1.1"
   },
   "overrides": {
     "micromark-extension-math": {

@@ -1,4 +1,12 @@
-import { Component, lazy, Suspense, useCallback, useState, type ReactNode } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import { modelCompatibility } from "../compatibility.ts";
 import { resolveModelTarget, targetResolves } from "../targets.ts";
 import { resolveVisualProjection } from "../projections.ts";
@@ -80,11 +88,22 @@ export function VisualModelView(props: VisualModelViewProps) {
       className={`bvm-view ${props.className ?? ""}`}
       data-model-id={model.id}
       data-revision={model.revision}
-      style={{
-        height: props.height ?? 420,
-        color: options.tokens.text,
-        background: options.tokens.panel,
-      }}
+      style={
+        {
+          "--bvm-edge": options.tokens.edge,
+          "--bvm-line": options.tokens.line,
+          "--bvm-accent": options.tokens.accent,
+          "--bvm-focus": options.tokens.focus,
+          "--bvm-panel": options.tokens.panel,
+          "--bvm-panel-strong": options.tokens.panelStrong,
+          "--bvm-text": options.tokens.text,
+          "--bvm-danger": options.tokens.danger,
+          fontFamily: options.tokens.sans,
+          height: props.height ?? 420,
+          color: options.tokens.text,
+          background: options.tokens.panel,
+        } as CSSProperties
+      }
       aria-label={model.title}
     >
       {!supported ? (

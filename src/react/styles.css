@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid #70876b;
+  border: 1.5px solid var(--bvm-edge, #70876b);
   border-radius: 9px;
   background: inherit;
   padding: 12px 16px;
@@ -36,17 +36,17 @@
 .bvm-group {
   justify-content: flex-start;
   align-items: flex-start;
-  background: #eff3e655;
+  background: var(--bvm-panel-strong, #eff3e655);
 }
 .bvm-view .react-flow__node.selected .bvm-entity {
-  outline: 2px solid #5d794f;
+  outline: 2px solid var(--bvm-accent, #5d794f);
   outline-offset: 3px;
 }
 .bvm-view .react-flow__handle {
   width: 7px;
   height: 7px;
-  background: #5c7751;
-  border: 1px solid white;
+  background: var(--bvm-accent, #5c7751);
+  border: 1px solid var(--bvm-panel, white);
 }
 .bvm-view button,
 .bvm-view select {
@@ -66,8 +66,8 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  background: #fff0ed;
-  border: 1px solid #b34f42;
+  background: color-mix(in srgb, var(--bvm-danger, #b34f42) 9%, var(--bvm-panel, white));
+  border: 1px solid var(--bvm-danger, #b34f42);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -129,4 +129,10 @@
 }
 .bvm-view .vis-panel {
   border-color: #dce2d8;
+}
+
+.bvm-view button:focus-visible,
+.bvm-view select:focus-visible {
+  outline: 2px solid var(--bvm-focus, #506fbc);
+  outline-offset: 2px;
 }

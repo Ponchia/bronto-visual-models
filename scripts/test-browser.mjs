@@ -69,6 +69,7 @@ try {
     const page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [];
+    const accessibility = [];
     const requests = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("request", (request) => {
@@ -144,10 +145,12 @@ try {
           await page.getByLabel("Selected edge: persist").waitFor();
         }
         assert.equal(await page.getByTestId("revision").textContent(), "rev 4");
-        await checkAccessibility(
-          page,
-          new URL(`${device.name}-${projection.toLowerCase()}-axe.json`, output),
-          ".primary-panel .bvm-view",
+        accessibility.push(
+          await checkAccessibility(
+            page,
+            new URL(`${device.name}-${projection.toLowerCase()}-axe.json`, output),
+            ".primary-panel .bvm-view",
+          ),
         );
       }
       await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
@@ -215,20 +218,27 @@ try {
       await primary.getByRole("button", { name: "Postgres", exact: true }).focus();
       await page.keyboard.press("Enter");
       await page.getByLabel("Selected node: database", { exact: true }).waitFor();
-      await checkAccessibility(
-        page,
-        new URL(`${device.name}-data-axe.json`, output),
-        ".primary-panel .bvm-view",
+      accessibility.push(
+        await checkAccessibility(
+          page,
+          new URL(`${device.name}-data-axe.json`, output),
+          ".primary-panel .bvm-view",
+        ),
       );
       await primary.getByRole("button", { name: "Visual", exact: true }).click();
       const gantt = page.locator(".gantt-panel");
-      await gantt.getByRole("button", { name: /Implement controls/ }).focus();
+      await gantt.locator(".bvm-task-label").filter({ hasText: "Implement controls" }).focus();
       await page.keyboard.press("Enter");
       await gantt.getByLabel("Progress for Implement controls (%)", { exact: true }).fill("60");
       await gantt.getByRole("button", { name: "Save progress", exact: true }).click();
       await page.getByTestId("gantt-revision").filter({ hasText: "rev 2" }).waitFor();
-      await gantt.getByRole("button", { name: /Implement controls.*60%/ }).waitFor();
-      await checkAccessibility(page, new URL(`${device.name}-page-axe.json`, output));
+      await gantt
+        .locator(".bvm-task-label")
+        .filter({ hasText: /Implement controls.*60%/ })
+        .waitFor();
+      accessibility.push(
+        await checkAccessibility(page, new URL(`${device.name}-page-axe.json`, output)),
+      );
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
         scroll: document.documentElement.scrollWidth,
@@ -236,6 +246,11 @@ try {
       assert(
         dimensions.scroll <= dimensions.width + 1,
         `Horizontal overflow: ${JSON.stringify(dimensions)}`,
+      );
+      assert.deepEqual(
+        accessibility.filter((result) => result.violations.length),
+        [],
+        "Automatically detectable accessibility violations",
       );
       assert.deepEqual(errors, [], "Uncaught browser errors");
       assert.deepEqual(requests, [], "The local demo made an external data request");

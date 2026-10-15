@@ -153,7 +153,10 @@ export async function testReactContract(
       return value && value !== before && !value.includes("NaN");
     }, previousPath);
     await page.getByRole("button", { name: "Open schedule", exact: true }).click();
-    await page.getByRole("button", { name: /Implement controls/ }).focus();
+    await page
+      .locator(".bvm-task-label")
+      .filter({ hasText: /Implement controls/ })
+      .focus();
     await page.keyboard.press("Enter");
     await page.getByLabel("Progress for Implement controls (%)", { exact: true }).fill("50");
     await page.getByRole("button", { name: "Save progress", exact: true }).click();
@@ -162,7 +165,10 @@ export async function testReactContract(
     await page.getByLabel("Commit mode").selectOption("accept");
     await page.getByRole("button", { name: "Save progress", exact: true }).click();
     await page.getByTestId("revision").filter({ hasText: "2" }).waitFor();
-    await page.getByRole("button", { name: /Implement controls.*50%/ }).waitFor();
+    await page
+      .locator(".bvm-task-label")
+      .filter({ hasText: /Implement controls.*50%/ })
+      .waitFor();
     await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
     assert.equal(await page.getByRole("button", { name: "Save progress", exact: true }).count(), 0);
     await page.getByRole("button", { name: "Open large model", exact: true }).click();
@@ -176,10 +182,16 @@ export async function testReactContract(
     assert.equal(await page.getByRole("rowheader").count(), 1);
     await page.goto("http://127.0.0.1:4174/native/", { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "Native Gantt consumer", exact: true }).waitFor();
-    await page.getByRole("button", { name: /Implement controls/ }).click();
+    await page
+      .locator(".bvm-task-label")
+      .filter({ hasText: /Implement controls/ })
+      .click();
     await page.getByLabel("Progress for Implement controls (%)").fill("80");
     await page.getByRole("button", { name: "Save progress", exact: true }).click();
-    await page.getByRole("button", { name: /Implement controls.*80%/ }).waitFor();
+    await page
+      .locator(".bvm-task-label")
+      .filter({ hasText: /Implement controls.*80%/ })
+      .waitFor();
     assert.deepEqual(errors, [], "Unhandled React or callback error");
     await page.screenshot({ path: resolve(output, "react-contract.png"), fullPage: true });
     return {

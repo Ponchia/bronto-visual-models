@@ -101,6 +101,7 @@ export function matrixSpec(tokens: RendererTokens): Spec {
     marks: [
       {
         type: "rule",
+        aria: false, // grid guides are decorative; cells and labels carry the meaning
         from: { data: "nodes" },
         encode: {
           update: {
@@ -113,6 +114,7 @@ export function matrixSpec(tokens: RendererTokens): Spec {
       },
       {
         type: "rule",
+        aria: false, // grid guides are decorative; cells and labels carry the meaning
         from: { data: "nodes" },
         encode: {
           update: {

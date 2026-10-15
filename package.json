@@ -141,7 +141,7 @@
     "@biomejs/biome": "2.5.15",
     "@ponchia/ui": "0.16.3",
     "@types/d3-sankey": "0.12.5",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@xyflow/react": "12.12.0",

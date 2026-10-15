@@ -271,14 +271,10 @@ try {
       );
       assert.deepEqual(errors, [], "Uncaught browser errors");
       if (device.name === "mobile") {
-        const order = await page
-          .locator(".primary-panel, .gantt-panel")
-          .evaluateAll((panels) =>
-            panels.map((panel) => ({
-              name: panel.className,
-              top: panel.getBoundingClientRect().top,
-            })),
-          );
+        const panels = page.locator(".primary-panel, .gantt-panel");
+        const order = await panels.evaluateAll((items) =>
+          items.map((panel) => ({ name: panel.className, top: panel.getBoundingClientRect().top })),
+        );
         assert.ok(
           order.find((panel) => panel.name.includes("primary-panel")).top <
             order.find((panel) => panel.name.includes("gantt-panel")).top,

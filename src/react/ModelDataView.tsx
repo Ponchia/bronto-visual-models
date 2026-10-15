@@ -1,6 +1,28 @@
 import { useId, useMemo, useState } from "react";
 import { modelTargets, resolveModelTarget, targetResolves } from "../targets.ts";
 import type { AdapterProps } from "./types.ts";
+import type { VisualTarget } from "../model.ts";
+
+function RecordFields({ props, target }: { props: AdapterProps; target: VisualTarget }) {
+  const [open, setOpen] = useState(false);
+  const text = useMemo(() => {
+    if (!open) return "";
+    const resolution = resolveModelTarget(props.model, target, undefined, props.registry);
+    return targetResolves(resolution)
+      ? JSON.stringify(resolution.record, null, 2)
+      : resolution.reason;
+  }, [open, props.model, props.registry, target]);
+  return (
+    <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary>Inspect fields for {target.elementId}</summary>
+      {open && (
+        <pre tabIndex={0} aria-label={`Stored fields for ${target.elementId}`}>
+          {text}
+        </pre>
+      )}
+    </details>
+  );
+}
 
 const PAGE_SIZE = 50;
 /** Paginated semantic alternative: data is read only, and selections keep canonical identity. */
@@ -60,7 +82,6 @@ export default function ModelDataView(props: AdapterProps) {
         </thead>
         <tbody>
           {visible.map((target) => {
-            const resolution = resolveModelTarget(props.model, target, undefined, props.registry);
             return (
               <tr key={`${target.collection}:${target.elementId}`}>
                 <th scope="row">
@@ -82,14 +103,7 @@ export default function ModelDataView(props: AdapterProps) {
                   <code>{target.elementId}</code>
                 </td>
                 <td>
-                  <details>
-                    <summary>Inspect fields for {target.elementId}</summary>
-                    <pre>
-                      {targetResolves(resolution)
-                        ? JSON.stringify(resolution.record, null, 2)
-                        : resolution.reason}
-                    </pre>
-                  </details>
+                  <RecordFields props={props} target={target} />
                 </td>
               </tr>
             );

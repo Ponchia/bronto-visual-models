@@ -373,7 +373,7 @@ function App() {
             {schedule && (
               <VisualModelView
                 model={schedule}
-                height={450}
+                height={560}
                 selected={selectedTask}
                 onSelect={setSelectedTask}
                 onEdit={(patch) =>

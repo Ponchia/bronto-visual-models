@@ -33,7 +33,10 @@ The browser suite runs `@axe-core/playwright` scans tagged for WCAG 2 A/AA,
 2.1 AA and 2.2 AA. It scans diagram, network, matrix and data-reader states,
 then the complete demo with timeline and Gantt content. Detected violations fail
 the job; the full reports retain both failures and checks needing human review.
-No rule is globally disabled to make an engine pass.
+No rule is globally disabled to make an engine pass. Decorative matrix grid
+rules are excluded from the accessibility tree at the source; identified cells
+and labels keep their descriptions. Demo text uses a higher-contrast muted
+palette rather than suppressing contrast findings.
 
 Keyboard checks exercise native buttons, model-data filtering/selection and Gantt
 progress edits. The data reader supplies a semantic table as an alternative to

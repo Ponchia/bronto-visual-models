@@ -61,7 +61,9 @@ with realistic data and a recorded hardware/browser profile.
 `list()` removes content and element-incarnation maps before cloning summaries,
 so opening a library list no longer clones every model body. Nested host metadata
 in summaries remains owned by the caller. The semantic data reader paginates
-identified records rather than mounting a full collection at once.
+identified records rather than mounting a full collection at once. Stored-field
+JSON is resolved and formatted only when its disclosure is opened, not for every
+closed row on the current page.
 
 Complete created, edited, forked and undone models are checked against the JSON
 budget after generated metadata is added. This validation cost is deliberate:

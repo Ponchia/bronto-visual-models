@@ -7,12 +7,14 @@ import {
   MarkerType,
   Position,
   applyNodeChanges,
+  useUpdateNodeInternals,
   type Node,
   type NodeProps,
   type Edge,
 } from "@xyflow/react";
 import type { GraphContent, GraphNode } from "../semantic.ts";
 import { modelTargets } from "../targets.ts";
+import { graphEdgeHandles, graphPorts } from "../render/graph-ports.ts";
 import { networkData, canonicalElementId } from "../render/network-model.ts";
 import type { AdapterProps } from "./types.ts";
 
@@ -24,18 +26,32 @@ const position = {
   bottom: Position.Bottom,
   left: Position.Left,
 };
-function Entity({ data }: NodeProps<GraphFlowNode>) {
-  const ports = data.ports ?? [
-    { id: "left", side: "left" as const },
-    { id: "right", side: "right" as const },
-  ];
+function Entity({ id, data }: NodeProps<GraphFlowNode>) {
+  const ports = graphPorts(data);
+  const updateNodeInternals = useUpdateNodeInternals();
+  const portGeometry = JSON.stringify(ports.map(({ id, side, offset }) => ({ id, side, offset })));
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, portGeometry, updateNodeInternals]);
   return (
     <div className={`bvm-entity ${data.group ? "bvm-group" : ""}`}>
       <span className="bvm-entity-label">{data.label}</span>
       {ports.map((port) => (
         <span key={port.id}>
-          <Handle id={port.id} type="target" position={position[port.side]} />
-          <Handle id={port.id} type="source" position={position[port.side]} />
+          {(["target", "source"] as const).map((type) => (
+            <Handle
+              key={type}
+              id={port.id}
+              type={type}
+              position={position[port.side]}
+              title={port.label ?? port.id}
+              style={
+                port.side === "left" || port.side === "right"
+                  ? { top: `${port.offset * 100}%` }
+                  : { left: `${port.offset * 100}%` }
+              }
+            />
+          ))}
         </span>
       ))}
     </div>
@@ -123,27 +139,37 @@ export default function GraphView(props: AdapterProps) {
   }, [model.revision, projection, props.ready]);
   const edges = useMemo(
     (): Edge[] =>
-      content.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label,
-        sourceHandle: edge.sourcePort ?? "right",
-        targetHandle: edge.targetPort ?? "left",
-        type: "smoothstep",
-        markerEnd: { type: MarkerType.ArrowClosed, color: tokens.edge },
-        style: {
-          stroke:
-            selected?.collection === "edges" && selected.elementId === edge.id
-              ? tokens.accent
-              : tokens.edge,
-          strokeWidth: 1.8,
-        },
-        labelStyle: { fill: tokens.text },
-        labelBgStyle: { fill: tokens.panel },
-        ariaLabel: edge.label,
-      })),
-    [content.edges, selected?.collection, selected?.elementId, tokens],
+      content.edges.map((edge) => {
+        const handles = graphEdgeHandles(content, edge);
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          label: edge.label,
+          sourceHandle: handles.source,
+          targetHandle: handles.target,
+          type: "smoothstep",
+          markerEnd: { type: MarkerType.ArrowClosed, color: tokens.edge },
+          style: {
+            stroke:
+              selected?.collection === "edges" && selected.elementId === edge.id
+                ? tokens.accent
+                : tokens.edge,
+            strokeWidth: 1.8,
+          },
+          labelStyle: { fill: tokens.text },
+          labelBgStyle: { fill: tokens.panel },
+          ariaLabel: edge.label,
+        };
+      }),
+    [
+      content.edges,
+      content.nodes,
+      content.direction,
+      selected?.collection,
+      selected?.elementId,
+      tokens,
+    ],
   );
   const select = useCallback(
     (collection: string, id: string) =>

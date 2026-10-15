@@ -1,0 +1,120 @@
+{
+  "observedAt": "2026-10-15T12:34:16.122Z",
+  "node": "v24.17.0",
+  "architecture": "arm64",
+  "versions": {
+    "elkjs": "0.12.0",
+    "dagre": "3.1.1"
+  },
+  "method": "Synthetic flat layered DAGs, variable rectangle sizes, one warmup and three runs. ELK timing includes the public validation/proposal boundary; Dagre is a raw layout baseline. Timings are local diagnostics, not an unbiased engine speed ranking. No browser, memory, crossing-optimality or worker startup performance claim.",
+  "results": [
+    {
+      "algorithm": "dagre",
+      "nodes": 12,
+      "edges": 3,
+      "medianMs": 6.1,
+      "overlapPairs": 0,
+      "width": 535,
+      "height": 1256
+    },
+    {
+      "algorithm": "elk-brandes-koepf",
+      "nodes": 12,
+      "edges": 3,
+      "medianMs": 61.6,
+      "overlapPairs": 0,
+      "width": 512,
+      "height": 1256
+    },
+    {
+      "algorithm": "elk-layered",
+      "nodes": 12,
+      "edges": 3,
+      "medianMs": 30.9,
+      "overlapPairs": 0,
+      "width": 512,
+      "height": 1256
+    },
+    {
+      "algorithm": "dagre",
+      "nodes": 60,
+      "edges": 99,
+      "medianMs": 81.1,
+      "overlapPairs": 0,
+      "width": 1875,
+      "height": 2065
+    },
+    {
+      "algorithm": "elk-brandes-koepf",
+      "nodes": 60,
+      "edges": 99,
+      "medianMs": 160,
+      "overlapPairs": 0,
+      "width": 1664,
+      "height": 3104
+    },
+    {
+      "algorithm": "elk-layered",
+      "nodes": 60,
+      "edges": 99,
+      "medianMs": 121.4,
+      "overlapPairs": 0,
+      "width": 1664,
+      "height": 1302
+    },
+    {
+      "algorithm": "dagre",
+      "nodes": 180,
+      "edges": 339,
+      "medianMs": 332.5,
+      "overlapPairs": 0,
+      "width": 5895,
+      "height": 3677
+    },
+    {
+      "algorithm": "elk-brandes-koepf",
+      "nodes": 180,
+      "edges": 339,
+      "medianMs": 229.1,
+      "overlapPairs": 0,
+      "width": 5120,
+      "height": 7544
+    },
+    {
+      "algorithm": "elk-layered",
+      "nodes": 180,
+      "edges": 339,
+      "medianMs": 328.2,
+      "overlapPairs": 0,
+      "width": 5120,
+      "height": 1407
+    },
+    {
+      "algorithm": "dagre",
+      "nodes": 300,
+      "edges": 579,
+      "medianMs": 565.8,
+      "overlapPairs": 0,
+      "width": 9915,
+      "height": 4033
+    },
+    {
+      "algorithm": "elk-brandes-koepf",
+      "nodes": 300,
+      "edges": 579,
+      "medianMs": 397.1,
+      "overlapPairs": 0,
+      "width": 8576,
+      "height": 12044
+    },
+    {
+      "algorithm": "elk-layered",
+      "nodes": 300,
+      "edges": 579,
+      "medianMs": 702.1,
+      "overlapPairs": 0,
+      "width": 8576,
+      "height": 1407
+    }
+  ]
+}

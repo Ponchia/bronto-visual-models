@@ -152,6 +152,43 @@ try {
       await page.getByTestId("operation-status").filter({ hasText: "Refused:" }).waitFor();
       assert.equal(await page.getByTestId("revision").textContent(), "rev 8");
       await page.getByRole("button", { name: "Discard preview", exact: true }).click();
+      const authored = await page
+        .locator(".primary-panel .react-flow__node")
+        .evaluateAll((nodes) =>
+          nodes.map((node) => [node.getAttribute("data-id"), node.style.transform]),
+        );
+      await page.getByLabel("Arrange the diagram").selectOption("DOWN");
+      await page.getByRole("button", { name: "Preview layout", exact: true }).click();
+      await page.getByRole("heading", { name: "Proposed layout — not saved" }).waitFor();
+      assert.equal(await page.getByTestId("revision").textContent(), "rev 8");
+      await page.locator('.primary-panel .bvm-view[data-revision="9"]').waitFor();
+      await page.screenshot({
+        path: new URL(`${device.name}-layout.png`, output).pathname,
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Discard preview", exact: true }).click();
+      await page.locator('.primary-panel .bvm-view[data-revision="8"]').waitFor();
+      assert.deepEqual(
+        await page
+          .locator(".primary-panel .react-flow__node")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => [node.getAttribute("data-id"), node.style.transform]),
+          ),
+        authored,
+        "Discarded layout changed authored coordinates",
+      );
+      await page.getByRole("button", { name: "Preview layout", exact: true }).click();
+      await page.getByRole("heading", { name: "Proposed layout — not saved" }).waitFor();
+      await page.getByRole("button", { name: "Apply preview", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 9" }).waitFor();
+      assert.equal(
+        await page
+          .locator('.primary-panel .react-flow__handle[data-handleid="bottom"].source')
+          .count(),
+        4,
+      );
+      await page.getByRole("button", { name: "Undo last edit", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 10" }).waitFor();
       await page.locator(".vis-item").filter({ hasText: "Contract review" }).waitFor();
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
@@ -184,6 +221,8 @@ try {
           "all projections",
           "timeline",
           "initial graph fully visible on both viewport sizes",
+          "worker layout preview/discard/apply/undo",
+          "all four default port sides",
           "no overflow",
           "no external requests",
         ],

@@ -485,3 +485,46 @@ footer {
     height: 350px !important;
   }
 }
+
+.proposal {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px solid #b9c9a9;
+  border-radius: 8px;
+  background: #fafcf6;
+}
+.proposal h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.proposal p,
+.proposal li,
+.proposal summary {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.proposal ul {
+  padding-left: 18px;
+}
+.proposal details {
+  margin-bottom: 12px;
+}
+.proposal pre {
+  font-size: 10px;
+  overflow: auto;
+  max-width: 100%;
+  max-height: 210px;
+}
+.label-editor select {
+  min-width: 0;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #c8d3bb;
+  border-radius: 6px;
+  background: white;
+}
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #7a94cf;
+  outline-offset: 3px;
+}

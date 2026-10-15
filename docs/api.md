@@ -28,6 +28,11 @@ command needs a stable key. The fingerprint includes the actor; a key reused for
 different request or actor is a conflict. A replay reports its original revision,
 not necessarily the document's latest revision, and does not repeat change lists.
 
+`MemoryModelStore.preview(command, context)` returns a non-mutating `CommandPreview`:
+`effect`, `base`, `model`, `replayed`, `changes` and `changesOmitted`. It shares
+validation and serialization with execution. `getReceipt(key)` reads an owned
+historical receipt. See [preview semantics and examples](previews.md).
+
 Edits to identified collections use `items: [{ field, set, remove, order, replace }]`.
 `set` patches name an ID and may supply `expect` values. `null` in an expectation
 means absent. The whole edit is refused if any expectation fails. Removing a
@@ -76,6 +81,21 @@ resolution; an unrelated registry is not assumed to know a custom family.
 `projection`, `selected`, `onSelect`, `onEdit`, `tokens`, `height` and `onReady`.
 The host must pass a newly committed model after `onEdit` succeeds. `onReady`
 identifies the model generation and revision the adapter acknowledged.
+
+`useVisualModel(source, id)` bridges a `VisualModelSource` (`get`, `subscribe`) to
+React with `useSyncExternalStore`. Sources notify after commits and advance the
+revision or generation whenever content changes. Returned snapshots are deeply
+frozen and cached by ID/generation/revision; use the store's normal getter for a
+mutable draft. SSR hosts must initialize the browser source from the same
+serialized snapshot used on the server. The hook itself needs React, not the
+renderer engines or styles, and is also available at
+`@ponchia/visual-models/react/useVisualModel`.
+
+A selection from a replaced element or different model no longer highlights the
+new element by accident. Drag refusals, including synchronously thrown host
+errors, restore the latest host-supplied state rather than an old closure. Renderer
+errors are scoped to model, generation, revision and projection; a newer model can
+recover without resetting a healthy renderer's camera on every edit.
 
 The diagram reference adapter uses React Flow, preserving authored coordinates.
 Its network view uses an exploratory circular placement, not persisted layout or

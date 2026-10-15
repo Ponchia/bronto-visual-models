@@ -9,7 +9,7 @@ import {
   type ModelCommand,
   type CommandContext,
 } from "../memory.ts";
-import { VisualModelError } from "../model.ts";
+import { assertVisualJson, VisualModelError } from "../model.ts";
 
 export type FileStoreOptions = Omit<MemoryStoreOptions, "initial">;
 export class FileCommitError extends VisualModelError {
@@ -78,7 +78,22 @@ export async function readFileStore(
     throw error;
   }
   const initial = await readSnapshot(target, options.maxBytes ?? 16 * 1024 * 1024);
-  return new MemoryModelStore({ ...options, ...(initial ? { initial } : {}) });
+  return new MemoryModelStore({ ...options, ...(initial !== undefined ? { initial } : {}) });
+}
+
+/** Read-only preview: no parent directories, lock, temp file or receipt are created. */
+export async function previewFileCommand(
+  file: string,
+  input: ModelCommand,
+  context: CommandContext = {},
+  options: FileStoreOptions = {},
+) {
+  assertVisualJson(input);
+  const command = structuredClone(input);
+  const held = { ...context };
+  held.signal?.throwIfAborted();
+  const store = await readFileStore(file, options);
+  return store.preview(command, held);
 }
 
 /**
@@ -88,10 +103,15 @@ export async function readFileStore(
  */
 export async function executeFileCommand(
   file: string,
-  command: ModelCommand,
+  input: ModelCommand,
   context: CommandContext = {},
   options: FileStoreOptions = {},
 ) {
+  assertVisualJson(input);
+  const command = structuredClone(input);
+  // Capture caller-owned input and policy before the first filesystem await.
+  const held = { ...context };
+  held.signal?.throwIfAborted();
   const target = await canonical(file, true);
   const lockPath = `${target}.lock`;
   let lock;
@@ -115,7 +135,7 @@ export async function executeFileCommand(
     );
     await lock.sync();
     const store = await readFileStore(target, options);
-    const result = await store.execute(command, context);
+    const result = await store.execute(command, held);
     // A read-only replay does not rewrite the file or its timestamp.
     if (result.replayed) return result;
     const handle = await open(temporary, "wx", 0o600);
@@ -126,6 +146,7 @@ export async function executeFileCommand(
     } finally {
       await handle.close();
     }
+    held.signal?.throwIfAborted();
     await rename(temporary, target);
     replaced = true;
     const directory = await open(dirname(target), "r");

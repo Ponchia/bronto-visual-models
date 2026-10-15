@@ -5,6 +5,8 @@ from the installed archive and emits JSON; it does not need a Spatial server.
 
 | Command | Input and result |
 | --- | --- |
+| `list --store state.json` | Saved model summaries, without content or element bookkeeping. |
+| `receipt operation-key --store state.json` | Original committed receipt; missing keys return exit 3. |
 | `catalog` | Installed family metadata, schemas and starting templates. |
 | `validate --file input.json` | `{renderer, modelType?, content}`; normalized content or structured refusal. No store write. |
 | `create --file model.json --store state.json --key key` | Create input from the README; derived ID when omitted. |
@@ -15,6 +17,12 @@ from the installed archive and emits JSON; it does not need a Spatial server.
 | `fork id --as new-id --if-rev revision --store state.json --key key` | Independent identity and source provenance. |
 | `export id --store state.json` | Authored model, with `dependenciesIncluded: false`. |
 
+Add `--dry-run` to create, edit, undo or fork to obtain
+`{ok: true, dryRun: true, effect: "none", base, model, replayed, changes, changesOmitted}`.
+The operation key is required for collision/replay checks but is not consumed.
+No store, parent directory or lock is created. Use the same original command after
+review, omitting `--dry-run`; its guards will be reevaluated. [Preview guide](previews.md).
+
 `--actor` applies to writes and defaults to `local-cli`. A new operation gets a new
 key; a retry of the same operation retains its key, payload and actor. Unknown,
 repeated and inapplicable flags are refused. JSON input files are bounded to 2 MB.
@@ -22,7 +30,7 @@ repeated and inapplicable flags are refused. JSON input files are bounded to 2 M
 ## Outcomes
 
 Success goes to stdout as `{ok: true, ...}`. Refusals go to stderr as
-`{ok: false, error: {code, message, detail?}, effect}`.
+`{ok: false, error: {code, message, detail?, report?}, effect}`.
 
 | Exit | Meaning |
 | --- | --- |
@@ -32,6 +40,9 @@ Success goes to stdout as `{ok: true, ...}`. Refusals go to stderr as
 | 4 | Revision, field expectation, lifetime or idempotency-key conflict. |
 | 5 | Operation forbidden. |
 | 6 | Unavailable storage/lock or an uncertain file commit. |
+
+When content validation provides a bounded issue report, `error.report` retains
+its field-level issues so agents do not have to parse a prose error message.
 
 An uncertain commit reports `effect: "unknown"`. A successful receipt is not an
 assertion that the model still has that revision later. `show` reads its current

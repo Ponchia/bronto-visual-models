@@ -48,6 +48,21 @@ try {
     ],
     { cwd: directory, stdio: "inherit" },
   );
+  // A separate test-only consumer is never uploaded as part of the public Pages site.
+  await cp("test/browser", join(directory, "react-contract"), { recursive: true });
+  execFileSync(
+    process.execPath,
+    [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      "react-contract",
+      "--base=/",
+      "--outDir",
+      resolve(".tmp/react-contract"),
+      "--emptyOutDir",
+    ],
+    { cwd: directory, stdio: "inherit" },
+  );
   await writeFile(
     ".tmp/packed-ui-evidence.json",
     JSON.stringify(

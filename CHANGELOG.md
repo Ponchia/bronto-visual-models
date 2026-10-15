@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.0-beta.2
+
+- Non-mutating, serialized previews for create/edit/undo/fork with the same
+  validation, authority checks and capacity constraints as execution.
+- File previews and CLI `--dry-run`, model listing, receipt lookup and structured
+  validation issue reports. Previews do not create files, locks or directories.
+- A cached `useVisualModel` React subscription hook, including server rendering
+  and controlled model/store changes. No new runtime dependency.
+- Reference demo preview/discard/apply, guarded redo and keyboard element selection.
+- Refuse malformed snapshot JSON (including `null`) instead of overwriting it;
+  inspect untrusted snapshot descriptors before reading or serializing values.
+- Preserve aggregate snapshot capacity while retaining per-model validation limits.
+- Capture file-command input before asynchronous I/O, honor cancellation before
+  commit and protect subscriber iteration against reentrant subscription changes.
+- Restore current host state after delayed drag refusal, handle synchronous host
+  errors, detach stale selections and recover renderer errors on newer revisions.
+- Expanded headless, packed React and desktop/mobile browser verification.
+- Remove the vulnerable documentation globbing dependency chain; use direct
+  Markdown linting with the existing rules.
+
+Stored model format remains version 2. Spatial's separately pinned beta.1 is not
+changed by publishing this release.
+
 ## 0.1.0-beta.1
 
 Initial extraction of Spatial's visual-model domain into the Bronto family.

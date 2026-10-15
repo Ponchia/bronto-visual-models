@@ -28,7 +28,7 @@ The package name is `@ponchia/visual-models`. Beta archives are distributed thro
 GitHub Releases; npm registry publication is not required to install them.
 
 ```sh
-npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.1/ponchia-visual-models-0.1.0-beta.1.tgz
+npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.2/ponchia-visual-models-0.1.0-beta.2.tgz
 ```
 
 Core requires Node 22.18+ or a modern browser. UI engines are optional peers;
@@ -78,13 +78,26 @@ not durable unless its complete snapshot is persisted. Production integrations
 must commit the model, receipt and inverse atomically. See
 [storage and authority](docs/storage.md).
 
+## Review changes before committing
+
+`store.preview(command)` evaluates the same guards, authority callback and capacity
+checks as `execute`, without writing or consuming an operation key. It returns an
+owned candidate and identified change summaries, including cascaded removals.
+Execution rechecks everything; the candidate is not a reservation or a receipt.
+
+The CLI supports `--dry-run` on create, edit, undo and fork, plus `list` and
+`receipt` for read-only discovery and recovery. [Preview guide](docs/previews.md).
+
 ## Embed a view
 
 ```tsx
-import { VisualModelView } from '@ponchia/visual-models/react';
+import { VisualModelView, useVisualModel } from '@ponchia/visual-models/react';
 import '@ponchia/visual-models/styles.css';
 
-<VisualModelView
+// Inside your component; store is a stable MemoryModelStore or compatible host adapter.
+const model = useVisualModel(store, 'architecture');
+
+model && <VisualModelView
   model={model}
   projection="diagram"
   onSelect={(target) => selectElement(target)}
@@ -93,7 +106,8 @@ import '@ponchia/visual-models/styles.css';
 ```
 
 The view is controlled: the host passes the updated model after committing an
-edit. Omitting `onEdit` makes the reference view read-only; providing it is not
+edit. `useVisualModel` subscribes to committed changes and supplies a cached,
+immutable snapshot; it also handles a changed store or model ID. Omitting `onEdit` makes the reference view read-only; providing it is not
 an authorization grant. Cameras, hover and exploratory layout stay local.
 
 ## Scope of this beta
@@ -147,7 +161,8 @@ npm run test:browser
 CI checks Node 22 and 24, a genuinely separate packed headless consumer, and a
 React demo built from the archive installed into another independent directory.
 The browser tests exercise manual and agent edits, conflicts, replay, undo,
-projection changes and desktop/mobile layout. A green build is not a claim that
+projection changes and desktop/mobile layout. Separate packed React fixtures cover
+StrictMode subscriptions, replaced selections and delayed or synchronous edit refusals. A green build is not a claim that
 an untested browser, database adapter or collaboration mode works.
 
 [Architecture and boundaries](docs/architecture.md) ·

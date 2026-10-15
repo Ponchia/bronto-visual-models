@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, useCallback, useState, type ReactNode } from "react";
 import { modelCompatibility } from "../compatibility.ts";
+import { resolveModelTarget, targetResolves } from "../targets.ts";
 import { resolveVisualProjection } from "../projections.ts";
 import { lightTheme } from "./theme.ts";
 import type { VisualModelViewProps, AdapterProps } from "./types.ts";
@@ -8,7 +9,7 @@ const Matrix = lazy(() => import("./MatrixView.tsx"));
 const Timeline = lazy(() => import("./TimelineView.tsx"));
 
 class RendererBoundary extends Component<
-  { children: ReactNode; onError(message: string): void },
+  { children: ReactNode; resetKey: string; onError(message: string): void },
   { error: string | null }
 > {
   state = { error: null as string | null };
@@ -17,6 +18,10 @@ class RendererBoundary extends Component<
   }
   componentDidCatch(error: Error) {
     this.props.onError(error.message);
+  }
+  componentDidUpdate(previous: { resetKey: string }) {
+    if (previous.resetKey !== this.props.resetKey && this.state.error)
+      this.setState({ error: null });
   }
   render() {
     return this.state.error ? (
@@ -32,13 +37,15 @@ export function VisualModelView(props: VisualModelViewProps) {
   const { model, registry } = props;
   const compatibility = modelCompatibility(model, registry);
   const projection = resolveVisualProjection(model, props.projection, registry);
-  const [error, setError] = useState<string | null>(null);
+  const identity = `${model.id}:${model.generation}:${model.revision}:${projection}`;
+  const [failure, setFailure] = useState<{ identity: string; message: string } | null>(null);
+  const error = failure?.identity === identity ? failure.message : null;
   const report = useCallback(
     (message: string) => {
-      setError(message);
+      setFailure({ identity, message });
       props.onError?.(message);
     },
-    [props.onError],
+    [props.onError, identity],
   );
   const ready = useCallback(
     () =>
@@ -50,8 +57,12 @@ export function VisualModelView(props: VisualModelViewProps) {
       }),
     [props.onReady, model.id, model.generation, model.revision, projection, model.renderer],
   );
+  const selected = props.selected
+    ? resolveModelTarget(model, props.selected, undefined, registry)
+    : null;
   const options: AdapterProps = {
     ...props,
+    selected: selected && targetResolves(selected) ? selected.current : null,
     tokens: props.tokens ?? lightTheme,
     projection: projection ?? model.renderer,
     report,
@@ -83,7 +94,11 @@ export function VisualModelView(props: VisualModelViewProps) {
             : `This model cannot be interpreted: ${compatibility.reason}. Its source is preserved.`}
         </div>
       ) : (
-        <RendererBoundary key={`${model.id}:${model.generation}:${projection}`} onError={report}>
+        <RendererBoundary
+          key={`${model.id}:${model.generation}:${projection}`}
+          resetKey={identity}
+          onError={report}
+        >
           <Suspense
             fallback={
               <div className="bvm-notice" role="status">
@@ -98,7 +113,7 @@ export function VisualModelView(props: VisualModelViewProps) {
       {error && (
         <div className="bvm-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Dismiss visual error">
+          <button type="button" onClick={() => setFailure(null)} aria-label="Dismiss visual error">
             ×
           </button>
         </div>

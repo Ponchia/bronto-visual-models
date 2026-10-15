@@ -127,7 +127,11 @@ schemas, identified collections, validation and projections without mutating a
 global registry. The reference React surface does not automatically invent a UI
 for a new family. [Extension contract](docs/api.md#families-and-registries).
 
-## Optional diagram layouts
+## Optional diagram layouts — current source
+
+This feature is on the current source branch and verified demo, **not in the
+published beta.2 archive above**. The next versioned archive will include it.
+Build and pack the current source to use it before that release.
 
 The ELK adapter proposes a layout; it does not change the saved diagram.
 Install `elkjs` and import `layoutDiagram` from

@@ -1,5 +1,9 @@
 # Diagram layout proposals
 
+**Distribution:** this documents current source, not the immutable beta.2 archive.
+Use a built current-source package; the demo follows successfully verified main.
+No previously published archive is replaced to add this feature.
+
 The optional ELK adapter arranges a validated diagram without changing saved state.
 It does not replace React Flow or turn ELK's graph objects into the document format.
 

@@ -82,6 +82,18 @@ export interface CommandContext extends AuthorContext {
   signal?: AbortSignal;
 }
 
+// The snapshot envelope and array separators have fixed JSON sizes. Measure the
+// encoded entries individually so an edit does not re-serialize unrelated models,
+// receipts and inverses just to enforce the store's exact UTF-8 budget.
+const encoder = new TextEncoder();
+const jsonBytes = (value: unknown): number => encoder.encode(JSON.stringify(value)).byteLength;
+const EMPTY_SNAPSHOT_BYTES = jsonBytes({
+  version: 1,
+  models: [],
+  receipts: [],
+  inverses: [],
+});
+
 /**
  * A bounded, single-process reference store. Not a CRDT, database or authorization server.
  * Its snapshot includes receipts and inverses; persist these together, never the models alone.
@@ -92,8 +104,10 @@ export class MemoryModelStore {
   readonly #maxReceipts: number;
   readonly #maxBytes: number;
   #models = new Map<string, VisualModel>();
+  #modelBytes = new Map<string, number>();
   #receipts = new Map<string, VisualCommitReceipt>();
   #inverses = new Map<string, VisualUndoRecord>();
+  #snapshotBytes = EMPTY_SNAPSHOT_BYTES;
   #tail: Promise<void> = Promise.resolve();
   #listeners = new Set<(result: CommandResult) => void>();
   constructor(options: MemoryStoreOptions = {}) {
@@ -298,25 +312,33 @@ export class MemoryModelStore {
         action: command.type,
         ...visualReceiptSummary(changes),
       };
-      const models = new Map(this.#models).set(next.id, next);
-      if (models.size > this.#maxModels)
+      const replacing = this.#modelBytes.get(next.id);
+      if (replacing === undefined && this.#models.size >= this.#maxModels)
         throw new VisualModelError("unavailable", "Model capacity reached");
-      const receipts = new Map(this.#receipts).set(command.key, receipt);
-      const inverses = new Map(this.#inverses);
-      if (inverse) inverses.set(command.key, inverse);
-      this.#checkBytes({
-        version: 1,
-        models: [...models.values()],
-        receipts: [...receipts.values()],
-        inverses: [...inverses.values()],
-      });
+      const nextModelBytes = jsonBytes(next);
+      const projectedBytes =
+        this.#snapshotBytes +
+        nextModelBytes -
+        (replacing ?? 0) +
+        (replacing === undefined && this.#models.size > 0 ? 1 : 0) +
+        jsonBytes(receipt) +
+        (this.#receipts.size > 0 ? 1 : 0) +
+        (inverse ? jsonBytes(inverse) + (this.#inverses.size > 0 ? 1 : 0) : 0);
+      if (projectedBytes > this.#maxBytes)
+        throw new VisualModelError(
+          "unavailable",
+          "Store byte capacity reached; nothing was committed",
+        );
       heldContext.signal?.throwIfAborted();
       const result = { receipt: structuredClone(receipt), replayed: false };
       if (commit) {
         // One synchronous commit point. No user callback or await can observe a half-commit.
-        this.#models = models;
-        this.#receipts = receipts;
-        this.#inverses = inverses;
+        // These private maps have no external observers; only committed results are published.
+        this.#models.set(next.id, next);
+        this.#modelBytes.set(next.id, nextModelBytes);
+        this.#receipts.set(command.key, receipt);
+        if (inverse) this.#inverses.set(command.key, inverse);
+        this.#snapshotBytes = projectedBytes;
         // An observer may unsubscribe/resubscribe; never iterate the mutable Set itself.
         for (const listener of [...this.#listeners]) {
           try {
@@ -335,7 +357,7 @@ export class MemoryModelStore {
     return work;
   }
   #checkBytes(snapshot: ModelStoreSnapshot) {
-    if (new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > this.#maxBytes)
+    if (jsonBytes(snapshot) > this.#maxBytes)
       throw new VisualModelError(
         "unavailable",
         "Store byte capacity reached; nothing was committed",
@@ -367,7 +389,11 @@ export class MemoryModelStore {
       assertVisualModel(model, this.#registry);
       if (this.#models.has(model.id))
         throw new VisualModelError("invalid", "Duplicate model in snapshot");
-      this.#models.set(model.id, structuredClone(model));
+      const owned = structuredClone(model);
+      const bytes = jsonBytes(owned);
+      this.#snapshotBytes += bytes + (this.#models.size > 0 ? 1 : 0);
+      this.#modelBytes.set(model.id, bytes);
+      this.#models.set(model.id, owned);
     }
     for (const receipt of initial.receipts) {
       assertVisualJson(receipt);
@@ -385,7 +411,9 @@ export class MemoryModelStore {
         this.#receipts.has(receipt.key)
       )
         throw new VisualModelError("invalid", "Invalid receipt in snapshot");
-      this.#receipts.set(receipt.key, structuredClone(receipt));
+      const owned = structuredClone(receipt);
+      this.#snapshotBytes += jsonBytes(owned) + (this.#receipts.size > 0 ? 1 : 0);
+      this.#receipts.set(receipt.key, owned);
     }
     for (const record of initial.inverses) {
       assertVisualJson(record);
@@ -404,7 +432,9 @@ export class MemoryModelStore {
         this.#inverses.has(record.key)
       )
         throw new VisualModelError("invalid", "Invalid undo record in snapshot");
-      this.#inverses.set(record.key, structuredClone(record));
+      const owned = structuredClone(record);
+      this.#snapshotBytes += jsonBytes(owned) + (this.#inverses.size > 0 ? 1 : 0);
+      this.#inverses.set(record.key, owned);
     }
   }
 }

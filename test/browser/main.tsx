@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   MemoryModelStore,
+  createModel,
+  editModel,
   modelTargets,
   type ModelEdit,
   type VisualTarget,
@@ -9,10 +11,47 @@ import {
 import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
 import "@ponchia/visual-models/styles.css";
 
+/** A commit between render and subscribe has no listener to notify yet. */
+function SubscriptionRaceProbe() {
+  const [source] = useState(() => {
+    let current = createModel({
+      id: "racing-subscription",
+      title: "Before subscribe",
+      renderer: "diagram",
+      content: { nodes: [], edges: [] },
+    });
+    let advanced = false;
+    return {
+      get: () => current,
+      subscribe: () => {
+        if (!advanced) {
+          advanced = true;
+          current = editModel(current, { title: "Caught up after subscribe" }).model;
+        }
+        return () => {};
+      },
+    };
+  });
+  const model = useVisualModel(source, "racing-subscription");
+  return <output data-testid="subscription-catchup">{model?.title}</output>;
+}
+
 function Harness() {
   const [store] = useState(() => new MemoryModelStore());
+  const reads = useRef(0);
+  const source = useMemo(
+    () => ({
+      get(id: string) {
+        reads.current++;
+        return store.get(id);
+      },
+      subscribe: (listener: Parameters<MemoryModelStore["subscribe"]>[0]) =>
+        store.subscribe(listener),
+    }),
+    [store],
+  );
   const [id, setId] = useState("graph");
-  const model = useVisualModel(store, id);
+  const model = useVisualModel(source, id);
   const [mode, setMode] = useState("accept");
   const [selected, setSelected] = useState<VisualTarget | null>(null);
   const [pending, setPending] = useState(false);
@@ -59,6 +98,7 @@ function Harness() {
   };
   return (
     <main style={{ width: 900, margin: 20 }}>
+      <SubscriptionRaceProbe />
       <label>
         Commit mode{" "}
         <select
@@ -116,6 +156,7 @@ function Harness() {
         Unrelated update
       </button>
       <output data-testid="snapshot-changes">{changed.current}</output>
+      <output data-testid="snapshot-reads">{reads.current}</output>
       <output data-testid="pending">{String(pending)}</output>
       <output data-testid="saved">{model ? JSON.stringify(model.content.nodes) : "loading"}</output>
       <output data-testid="revision">{model?.revision}</output>

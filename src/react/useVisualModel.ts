@@ -22,7 +22,12 @@ function freeze<T>(value: T): T {
 export function useVisualModel(source: VisualModelSource, id: string): VisualModel | undefined {
   const adapter = useMemo(() => {
     let snapshot: VisualModel | undefined;
+    // React may call getSnapshot several times for a single render, and parent
+    // state can re-render the view without a model commit. A host getter may
+    // clone megabytes; only read it initially or after a matching notification.
+    let dirty = true;
     const getSnapshot = () => {
+      if (!dirty) return snapshot;
       const next = source.get(id);
       if (
         next?.id !== snapshot?.id ||
@@ -30,14 +35,23 @@ export function useVisualModel(source: VisualModelSource, id: string): VisualMod
         next?.revision !== snapshot?.revision
       )
         snapshot = next ? freeze(structuredClone(next)) : undefined;
+      dirty = false;
       return snapshot;
     };
     return {
       getSnapshot,
-      subscribe: (notify: () => void) =>
-        source.subscribe((result) => {
-          if (result.receipt.id === id) notify();
-        }),
+      subscribe: (notify: () => void) => {
+        const stop = source.subscribe((result) => {
+          if (result.receipt.id === id) {
+            dirty = true;
+            notify();
+          }
+        });
+        // Close the gap between render-time getSnapshot and effect-time
+        // subscribe, even if a host committed without another notification.
+        dirty = true;
+        return stop;
+      },
     };
   }, [source, id]);
   // SSR hosts must initialize the client source with the same serialized snapshot.

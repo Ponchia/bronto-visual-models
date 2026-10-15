@@ -54,14 +54,26 @@ export default function GraphView(props: AdapterProps) {
       layout?.nodes.map((node) => [canonicalElementId(node.id)?.id, node.style]),
     );
     const byId = new Map(content.nodes.map((node) => [node.id, node]));
-    const depth = (node: GraphNode) => {
-      let level = 0,
-        parent = node.parentId;
-      while (parent && level <= content.nodes.length) {
-        level++;
-        parent = byId.get(parent)?.parentId;
+    const depthCache = new Map<string, number>();
+    const depth = (node: GraphNode): number => {
+      const cached = depthCache.get(node.id);
+      if (cached !== undefined) return cached;
+      // Resolve a chain only once. Deeply nested diagrams previously walked
+      // the entire ancestor chain again for every sort comparison.
+      const path = [node];
+      let parent = node.parentId;
+      while (parent && !depthCache.has(parent) && path.length <= content.nodes.length) {
+        const next = byId.get(parent);
+        if (!next) break;
+        path.push(next);
+        parent = next.parentId;
       }
-      return level;
+      let level = parent ? (depthCache.get(parent) ?? 0) + 1 : 0;
+      while (path.length) {
+        depthCache.set(path.pop()!.id, level);
+        level++;
+      }
+      return depthCache.get(node.id)!;
     };
     return [...content.nodes]
       .sort((a, b) => depth(a) - depth(b))
@@ -109,26 +121,30 @@ export default function GraphView(props: AdapterProps) {
     const frame = requestAnimationFrame(() => props.ready());
     return () => cancelAnimationFrame(frame);
   }, [model.revision, projection, props.ready]);
-  const edges: Edge[] = content.edges.map((edge) => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    label: edge.label,
-    sourceHandle: edge.sourcePort ?? "right",
-    targetHandle: edge.targetPort ?? "left",
-    type: "smoothstep",
-    markerEnd: { type: MarkerType.ArrowClosed, color: tokens.edge },
-    style: {
-      stroke:
-        selected?.collection === "edges" && selected.elementId === edge.id
-          ? tokens.accent
-          : tokens.edge,
-      strokeWidth: 1.8,
-    },
-    labelStyle: { fill: tokens.text },
-    labelBgStyle: { fill: tokens.panel },
-    ariaLabel: edge.label,
-  }));
+  const edges = useMemo(
+    (): Edge[] =>
+      content.edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        sourceHandle: edge.sourcePort ?? "right",
+        targetHandle: edge.targetPort ?? "left",
+        type: "smoothstep",
+        markerEnd: { type: MarkerType.ArrowClosed, color: tokens.edge },
+        style: {
+          stroke:
+            selected?.collection === "edges" && selected.elementId === edge.id
+              ? tokens.accent
+              : tokens.edge,
+          strokeWidth: 1.8,
+        },
+        labelStyle: { fill: tokens.text },
+        labelBgStyle: { fill: tokens.panel },
+        ariaLabel: edge.label,
+      })),
+    [content.edges, selected?.collection, selected?.elementId, tokens],
+  );
   const select = useCallback(
     (collection: string, id: string) =>
       onSelect?.(

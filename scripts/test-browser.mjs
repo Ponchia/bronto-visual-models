@@ -282,7 +282,7 @@ try {
         );
       }
       // After layout exploration, use the actual Fit control before taking the overview.
-      await primary.getByRole("button", { name: "fit view", exact: true }).click();
+      await primary.getByRole("button", { name: "Fit View", exact: true }).click();
       await page.waitForFunction(() => {
         const surface = document.querySelector(".primary-panel .bvm-view").getBoundingClientRect();
         const nodes = [...document.querySelectorAll(".primary-panel .react-flow__node")];

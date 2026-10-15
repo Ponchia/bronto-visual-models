@@ -107,7 +107,16 @@ export async function testRoutingContract(browser, outputDirectory) {
         label.scroll <= label.client + 1,
         `A short label is unexpectedly truncated: ${JSON.stringify(label)}`,
       );
+    assert.equal(
+      await page.locator(".bvm-edge-reading li").count(),
+      0,
+      "Closed relationship list mounts no hidden records",
+    );
     await page.locator(".bvm-edge-reading summary").click();
+    await page
+      .locator(".bvm-edge-reading li")
+      .filter({ hasText: "remains fully available in the reading list" })
+      .waitFor();
     assert(
       (await page.locator(".bvm-edge-reading").textContent()).includes(
         "remains fully available in the reading list",

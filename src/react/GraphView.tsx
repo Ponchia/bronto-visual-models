@@ -143,7 +143,7 @@ export default function GraphView(props: AdapterProps) {
       edges={edges}
       nodeTypes={nodeTypes}
       fitView
-      fitViewOptions={{ padding: 0.22, minZoom: 0.75, maxZoom: 1 }}
+      fitViewOptions={{ padding: 0.22, minZoom: 0.1, maxZoom: 1 }}
       minZoom={0.1}
       maxZoom={2.5}
       colorMode={tokens.scheme}

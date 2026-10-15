@@ -74,6 +74,24 @@ try {
         .filter({ hasText: "diagram" })
         .waitFor({ state: "attached" });
       await page.locator('.react-flow__node[data-id="api"]').waitFor();
+      await page.waitForFunction(() => {
+        const panel = document.querySelector(".primary-panel .bvm-view")?.getBoundingClientRect();
+        const nodes = [...document.querySelectorAll(".primary-panel .react-flow__node")];
+        return (
+          panel &&
+          nodes.length === 4 &&
+          nodes.every((node) => {
+            const rect = node.getBoundingClientRect();
+            return (
+              rect.width > 0 &&
+              rect.x >= panel.x - 2 &&
+              rect.right <= panel.right + 2 &&
+              rect.y >= panel.y - 2 &&
+              rect.bottom <= panel.bottom + 2
+            );
+          })
+        );
+      });
       assert.equal(await page.getByTestId("revision").textContent(), "rev 1");
       await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
       await page.getByRole("region", { name: "Proposed changes" }).waitFor();
@@ -165,6 +183,7 @@ try {
           "manual label",
           "all projections",
           "timeline",
+          "initial graph fully visible on both viewport sizes",
           "no overflow",
           "no external requests",
         ],

@@ -9,6 +9,8 @@
 - A cached `useVisualModel` React subscription hook, including server rendering
   and controlled model/store changes. No new runtime dependency.
 - Reference demo preview/discard/apply, guarded redo and keyboard element selection.
+  Independent panel columns avoid stretched desktop blank space; initial graph fit
+  shows the whole model on narrow screens.
 - Refuse malformed snapshot JSON (including `null`) instead of overwriting it;
   inspect untrusted snapshot descriptors before reading or serializing values.
 - Preserve aggregate snapshot capacity while retaining per-model validation limits.

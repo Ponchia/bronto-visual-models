@@ -137,7 +137,15 @@ export async function testReactContract(
     assert.equal(afterKeyboard.x, beforeKeyboard.x + 10);
     assert.equal(afterKeyboard.y, beforeKeyboard.y);
     await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("draggable"),
+    );
+    await node.waitFor({ state: "visible" });
     await node.focus();
+    await page.waitForFunction(() =>
+      document.activeElement?.matches('.react-flow__node[data-id="a"]'),
+    );
     await page.keyboard.press("ArrowRight");
     await page.evaluate(
       () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
@@ -148,7 +156,16 @@ export async function testReactContract(
     );
     await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
     await page.getByLabel("Commit mode").selectOption("sync");
+    await page.waitForFunction(() =>
+      document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("draggable"),
+    );
+    // React Flow temporarily hides nodes while reconciling changed draggable state.
+    // focus() alone need not wait for visibility, so it can leave focus on the toolbar.
+    await node.waitFor({ state: "visible" });
     await node.focus();
+    await page.waitForFunction(() =>
+      document.activeElement?.matches('.react-flow__node[data-id="a"]'),
+    );
     await page.keyboard.press("ArrowDown");
     await page
       .getByText("Position edit was refused; saved coordinates are unchanged.", { exact: true })

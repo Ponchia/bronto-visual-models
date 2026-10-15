@@ -28,7 +28,7 @@ The package name is `@ponchia/visual-models`. Beta archives are distributed thro
 GitHub Releases; npm registry publication is not required to install them.
 
 ```sh
-npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.2/ponchia-visual-models-0.1.0-beta.2.tgz
+npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.3/ponchia-visual-models-0.1.0-beta.3.tgz
 ```
 
 Core requires Node 22.18+ or a modern browser. UI engines are optional peers;
@@ -39,7 +39,7 @@ supply a cryptographically secure `mint` callback.
 For the reference React views and stylesheet, also install their peers:
 
 ```sh
-npm install react react-dom @xyflow/react vega vega-tooltip vis-timeline vis-data @ponchia/ui
+npm install react react-dom @xyflow/react vega vega-lite vega-interpreter vega-tooltip vis-timeline vis-data @ponchia/ui
 ```
 
 ## Change an artifact, not the whole application
@@ -115,33 +115,47 @@ an authorization grant. Cameras, hover and exploratory layout stay local.
 The core carries validated contracts for diagram, timeline, Gantt, analysis,
 geography, infographic, Vega-Lite, 3D scene, spatial layers and source diagrams.
 
-The beta.2 archive implements **diagram, network, matrix and authored timeline**
-views. Current `main` additionally includes an **unreleased native Gantt view**,
-a paginated semantic data reader, and an engine-free Gantt entry. See
-[standalone views](docs/standalone-views.md) for the source/release distinction. Other families are core contracts and renderer
+The beta.3 standalone React surface implements **diagram, network, matrix,
+authored timeline, native Gantt and inline Vega-Lite charts**, plus a paginated
+semantic reader and an engine-free Gantt entry. See
+[standalone views](docs/standalone-views.md). Other families are core contracts and renderer
 integration utilities, not claims of ten complete standalone editors. Existing
 Spatial adapters can continue using the extracted engine hooks independently.
 Dataset-backed timelines require host source resolution and are not rendered by
 the reference component.
+
+Charts render explicit `content.values` with Vega-Lite, without automatically
+loading data, images or links. A paginated table exposes the original rows rather
+than pretending that transformed/aggregated chart marks are persistent elements.
+The chart adapter uses the optional expression interpreter; the core still needs
+no React or rendering engines. [Inline charts, data tables and boundaries](docs/charts.md).
 
 Registries are instance-local. Custom trusted family definitions can supply
 schemas, identified collections, validation and projections without mutating a
 global registry. The reference React surface does not automatically invent a UI
 for a new family. [Extension contract](docs/api.md#families-and-registries).
 
-## Optional diagram layouts — current source
-
-This feature is on the current source branch and verified demo, **not in the
-published beta.2 archive above**. The next versioned archive will include it.
-Build and pack the current source to use it before that release.
+## Optional diagram layouts
 
 The ELK adapter proposes a layout; it does not change the saved diagram.
 Install `elkjs` and import `layoutDiagram` from
 `@ponchia/visual-models/layout/elk`. Review its guarded patch with the normal
 preview API, then commit explicitly. Nested groups, port sides and variable
 node sizes are retained. The demo runs this operation in a local worker.
+`layoutDiagram` also returns an optional route cache. Pass it as `diagramRouting`
+to display the computed connector paths and font-measured labels; stale geometry
+is discarded rather than stretched onto newer content.
+[Routing and label contract](docs/routing.md) ·
 [Layout contract and limitations](docs/layouts.md) ·
 [Engine research and selection](docs/research/visualization-engines-20261015.md).
+
+## Truthful chart encodings
+
+`chartEncodingGuidance(content)` flags common semantic pitfalls without changing
+valid specifications. The inline view and CLI expose those advisory notes. The demo
+separates unordered service comparisons from ordered time observations instead of
+offering a line chart over arbitrary categories.
+[Guidance and limits](docs/chart-guidance.md).
 
 ## CLI
 

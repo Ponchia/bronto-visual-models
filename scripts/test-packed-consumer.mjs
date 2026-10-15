@@ -44,12 +44,14 @@ try {
     `
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { MemoryModelStore, createVisualRegistry, modelTargets } from '@ponchia/visual-models';
+import { MemoryModelStore, createVisualRegistry, modelTargets, chartEncodingGuidance } from '@ponchia/visual-models';
 import { readFileStore, executeFileCommand, previewFileCommand } from '@ponchia/visual-models/node';
 const require = createRequire(import.meta.url);
-for (const engine of ['react', '@xyflow/react', 'vega', 'vis-timeline', '@ponchia/ui', 'elkjs', '@dagrejs/dagre']) {
+for (const engine of ['react', '@xyflow/react', 'vega', 'vega-lite', 'vega-interpreter', 'vis-timeline', '@ponchia/ui', 'elkjs', '@dagrejs/dagre']) {
   assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
 }
+const advice = chartEncodingGuidance({ spec: {mark:'line', encoding: {x: {field:'label',type:'nominal'},y:{field:'value',type:'quantitative'}}},values:[{label:'Unordered',value:2}] });
+assert.equal(advice.notes[0].code, 'nominal-path');
 const store = new MemoryModelStore({ registry: createVisualRegistry() });
 const command = { type: 'create', key: 'consumer-create', model: { id: 'graph', title: 'Independent consumer', renderer: 'diagram', content: { nodes: [{ id: 'a', label: 'App', x: 0, y: 0 }], edges: [] } } };
 await store.execute(command);

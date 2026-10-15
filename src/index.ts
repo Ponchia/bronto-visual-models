@@ -33,3 +33,5 @@ export {
 export { createDiagramFamily } from "./families/diagram.ts";
 export * from "./operations.ts";
 export * from "./memory.ts";
+
+export * from "./chart-guidance.ts";

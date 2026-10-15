@@ -3,6 +3,7 @@ import { resolveVisualProjection } from "../projections.ts";
 import { ModelViewFrame } from "./ModelViewFrame.tsx";
 import type { VisualModelViewProps } from "./types.ts";
 
+const Chart = lazy(() => import("./ChartView.tsx"));
 const Graph = lazy(() => import("./GraphView.tsx"));
 const Matrix = lazy(() => import("./MatrixView.tsx"));
 const Gantt = lazy(() => import("./GanttView.tsx"));
@@ -24,6 +25,8 @@ export function VisualModelView(props: VisualModelViewProps) {
         ? Timeline
         : props.model.renderer === "gantt" && projection === "gantt"
           ? Gantt
-          : null;
+          : props.model.renderer === "vega-lite" && projection === "vega-lite"
+            ? Chart
+            : null;
   return <ModelViewFrame {...props} adapter={adapter} />;
 }

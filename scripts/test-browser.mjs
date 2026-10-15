@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { mkdir, writeFile } from "node:fs/promises";
+import { testRoutingContract } from "./test-routing-contract.mjs";
 import { testReactContract } from "./test-react-contract.mjs";
+import { testChartContract } from "./test-chart-contract.mjs";
 import { chromium, firefox, webkit } from "playwright";
 import { checkAccessibility } from "./accessibility.mjs";
 const browserName = process.env.BVM_BROWSER ?? "chromium";
@@ -189,6 +191,29 @@ try {
       await page.getByRole("heading", { name: "Proposed layout — not saved" }).waitFor();
       assert.equal(await page.getByTestId("revision").textContent(), "rev 8");
       await page.locator('.primary-panel .bvm-view[data-revision="9"]').waitFor();
+      await page.waitForFunction(
+        () => document.querySelectorAll('.primary-panel [data-bvm-route="elk"]').length === 3,
+      );
+      await page.waitForFunction(
+        () => document.querySelectorAll(".primary-panel [data-edge-label]").length > 0,
+      );
+      const routedLabelRects = await page
+        .locator(".primary-panel [data-edge-label]")
+        .evaluateAll((labels) =>
+          labels.map((label) => {
+            const r = label.getBoundingClientRect();
+            return { x: r.x, y: r.y, w: r.width, h: r.height };
+          }),
+        );
+      for (let i = 0; i < routedLabelRects.length; i++)
+        for (let j = i + 1; j < routedLabelRects.length; j++) {
+          const a = routedLabelRects[i],
+            b = routedLabelRects[j];
+          assert(
+            a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y,
+            "Routed labels overlap",
+          );
+        }
       await page.screenshot({
         path: new URL(`${device.name}-layout.png`, output).pathname,
         fullPage: true,
@@ -216,7 +241,43 @@ try {
       );
       await page.getByRole("button", { name: "Undo last edit", exact: true }).click();
       await page.getByTestId("revision").filter({ hasText: "rev 10" }).waitFor();
+      assert.equal(
+        await page.locator('.primary-panel [data-bvm-route="elk"]').count(),
+        0,
+        "Undo retained stale geometry",
+      );
       await page.locator(".vis-item").filter({ hasText: "Contract review" }).waitFor();
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="chart-ready"]')?.textContent === "1",
+      );
+      await page.locator(".chart-panel canvas").waitFor();
+      assert.deepEqual(
+        await page
+          .getByLabel("Chart type", { exact: true })
+          .locator("option")
+          .evaluateAll((options) => options.map((o) => o.value)),
+        ["bar", "point"],
+      );
+      await page.getByLabel("Example data", { exact: true }).selectOption("time");
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="chart-ready"]')?.textContent === "2",
+      );
+      await page.getByRole("button", { name: "Update chart values", exact: true }).click();
+      await page.waitForFunction(
+        () => document.querySelector('[data-testid="chart-ready"]')?.textContent === "3",
+      );
+      await page.getByRole("button", { name: "Data table", exact: true }).click();
+      await page.locator(".chart-panel").getByRole("table").waitFor();
+      assert.equal(await page.locator(".chart-panel tbody tr").count(), 4);
+      assert.ok(
+        (await page.locator(".chart-panel").getByRole("table").textContent()).includes(
+          "2026-10-15T10:00:00Z",
+        ),
+      );
+      assert.ok(
+        (await page.locator(".chart-panel").getByRole("table").textContent()).includes("100"),
+      );
+      await page.getByRole("button", { name: "Chart", exact: true }).click();
       const primary = page.locator(".primary-panel");
       await primary.getByRole("button", { name: "Read data", exact: true }).click();
       const filter = primary.getByLabel("Filter model elements");
@@ -264,6 +325,22 @@ try {
         dimensions.scroll <= dimensions.width + 1,
         `Horizontal overflow: ${JSON.stringify(dimensions)}`,
       );
+      if (device.name === "mobile") {
+        const tops = await page.evaluate(() =>
+          [
+            ".primary-panel",
+            ".inspector",
+            ".timeline-panel",
+            ".chart-panel",
+            ".gantt-panel",
+            ".receipt-panel",
+          ].map((selector) => document.querySelector(selector).getBoundingClientRect().top),
+        );
+        assert.ok(
+          tops.every((top, index) => index === 0 || top > tops[index - 1]),
+          "Mobile panel order lost the main diagram-and-edit workflow",
+        );
+      }
       assert.deepEqual(
         accessibility.filter((result) => result.violations.length),
         [],
@@ -320,11 +397,14 @@ try {
           "manual label",
           "all projections",
           "timeline",
+          "inline chart types, row updates and raw data table",
           "Gantt keyboard selection and guarded progress edit",
           "semantic data filter and keyboard selection",
           "WCAG-tagged automated accessibility checks",
           "initial graph fully visible on both viewport sizes",
           "worker layout preview/discard/apply/undo",
+          "ELK polylines, measured non-overlapping labels and undo invalidation",
+          "semantic chart choices: categories versus temporal trends",
           "all four default port sides",
           "primary example ordering on narrow screens and final Fit overview",
           "no overflow",
@@ -347,6 +427,8 @@ try {
     }
   }
   results.push(await testReactContract(browser, output));
+  results.push(await testRoutingContract(browser, output));
+  results.push(await testChartContract(browser, output));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

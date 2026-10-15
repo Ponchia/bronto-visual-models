@@ -1,3 +1,4 @@
+import type { DiagramRouting } from "../render/diagram-routing.ts";
 import type { RendererTokens } from "@ponchia/ui/renderer";
 import type { VisualFamilyResolver } from "../family-resolver.ts";
 import type { VisualModel, VisualTarget } from "../model.ts";
@@ -5,6 +6,8 @@ import type { ModelEdit } from "../operations.ts";
 export interface VisualModelViewProps {
   model: VisualModel;
   projection?: string;
+  /** Optional derived routes returned by layoutDiagram; stale content/lifetimes are ignored. */
+  diagramRouting?: DiagramRouting;
   registry?: VisualFamilyResolver;
   selected?: VisualTarget | null;
   onSelect?(target: VisualTarget | null): void;

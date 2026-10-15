@@ -47,3 +47,7 @@ its field-level issues so agents do not have to parse a prose error message.
 An uncertain commit reports `effect: "unknown"`. A successful receipt is not an
 assertion that the model still has that revision later. `show` reads its current
 state. Export does not bundle external assets, datasets or rendering dependencies.
+
+Vega-Lite `validate` output also includes `guidance` with bounded encoding notes.
+These are advisory: a valid but unusual scale/order still exits successfully.
+The command does not rewrite rows or consume a store operation key.

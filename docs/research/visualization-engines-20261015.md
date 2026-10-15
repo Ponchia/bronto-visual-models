@@ -43,7 +43,7 @@ CPU on hidden canvases or silently change authored coordinates. D3 hierarchy is 
 better semantic match for a rooted tree than a graph containing cycles or multiple
 parents. These distinctions are supported by the same React Flow comparison.
 
-The node-placement adapter does not yet use ELK's routed edge sections. Rendering
+Historical baseline at PR #4: the node-placement adapter did not use ELK's routed edge sections. Rendering
 still uses React Flow smooth-step paths. Its spacing uses bounded approximate
 edge-label measurements; real typography, route overlaps and complex group ports
 need dedicated visual assessment. This limitation must remain explicit.
@@ -84,8 +84,9 @@ These are design acceptance rules, not claims that all such validation has shipp
 **Do not hide losses:** unsupported annotations, missing rows or failed asset
 loads must not be shown as a complete rendering. Keep raw values accessible even
 when the visual aggregates them. A row index is not an invented persistent ID.
-The unpublished inline-chart work is a separate candidate and is not included in
-this layout change.
+The inline-chart work was a separate unpublished candidate during the PR #4
+assessment. Beta.3 integrates it with bounded encoding advice; see
+[guidance](../chart-guidance.md) and [routing](../routing.md) for the new contracts.
 
 **Theme and access are part of correctness:** selected states, connector ports,
 focus rings and error surfaces should use supplied host tokens, not fixed green
@@ -101,6 +102,11 @@ termination, row limits, no-network loaders and source-redacted errors are separ
 concerns. See [Vega interpreter][vega-interpreter] and [elkjs workers][elkjs].
 
 ## Measurements and remaining work
+
+Update for beta.3: root-space connector caches and host-measured label placement
+are now implemented, with explicit invalidation and fallback rather than saved
+engine routes. The measurements below describe the original PR #4 placement
+baseline, not a benchmark of the new connector renderer.
 
 Run `npm run build && npm run benchmark:layout`. The script writes
 `.tmp/layout-benchmark.json` for 12, 60, 180 and 300 nodes with variable rectangle

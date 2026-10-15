@@ -1,3 +1,5 @@
+import { elkDiagramRouting } from "./elk-routing.ts";
+import type { DiagramRouting } from "../render/diagram-routing.ts";
 import type { ElkNode, ElkPort } from "elkjs";
 import type { VisualFamilyResolver } from "../family-resolver.ts";
 import {
@@ -35,6 +37,8 @@ export interface DiagramLayoutProposal {
   edgeCount: number;
   /** Envelope of the computed layout, not a stored viewport. */
   bounds: { width: number; height: number };
+  /** Derived routing cache for the proposed content; never persisted by the patch. */
+  routing: DiagramRouting;
 }
 const SIDES = { top: "NORTH", right: "EAST", bottom: "SOUTH", left: "WEST" } as const;
 const fail = () =>
@@ -51,8 +55,8 @@ const number = (value: unknown, min: number, max: number): number => {
 /**
  * Explicit, asynchronous layout proposal. No saved source, receipt, viewport or edge route is changed.
  * The eventual commit rechecks the complete source revision because topology affects all positions.
- * This entry requires a host-owned engine and imports no bundled ELK fallback.
- * Cancellation discards late results; terminating a host worker remains its owner's responsibility.
+ * This entry imports no ELK runtime and requires a host-owned engine.
+ * Cancellation discards a late result; worker lifecycle belongs to the host.
  */
 export async function layoutDiagram(
   model: VisualModel,
@@ -124,6 +128,13 @@ export async function layoutDiagram(
       },
     });
   }
+  const endpointKey = (edge: GraphContent["edges"][number]) => {
+    const ends = graphEdgeHandles(content, edge, direction);
+    return JSON.stringify([edge.source, ends.source, edge.target, ends.target]);
+  };
+  const parallel = new Map<string, number>();
+  for (const edge of content.edges)
+    parallel.set(endpointKey(edge), (parallel.get(endpointKey(edge)) ?? 0) + 1);
   const root: ElkNode = {
     id: "root",
     layoutOptions: {
@@ -131,6 +142,8 @@ export async function layoutDiagram(
       "elk.direction": direction,
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.edgeRouting": "ORTHOGONAL",
+      "elk.json.edgeCoords": "ROOT",
+      "elk.json.shapeCoords": "PARENT",
       "elk.spacing.nodeNode": String(spacing),
       "elk.layered.spacing.nodeNodeBetweenLayers": String(layerSpacing),
       // Network simplex made the measured flat DAGs far more compact, but
@@ -153,8 +166,22 @@ export async function layoutDiagram(
           id: `e${index}`,
           sources: [ports.get(edge.source)!.get(ends.source)!],
           targets: [ports.get(edge.target)!.get(ends.target)!],
-          // Bounded measurement hint; labels themselves remain exclusively in the host.
-          labels: [{ text: "", width: Math.min(160, edge.label.length * 7 + 12), height: 18 }],
+          // Shared endpoints otherwise give coincident orthogonal routes, even with
+          // mergeEdges=false. Reserve a small central lane only for parallel edges.
+          // This can add a layer for that group; ordinary edges remain compact.
+          // Actual text is still measured/placed by the host, never sent to ELK.
+          ...((parallel.get(endpointKey(edge)) ?? 0) > 1
+            ? {
+                labels: [
+                  {
+                    text: "lane",
+                    width: 1,
+                    height: 12,
+                    layoutOptions: { "elk.edgeLabels.placement": "CENTER" },
+                  },
+                ],
+              }
+            : {}),
         };
       }),
   };
@@ -163,7 +190,10 @@ export async function layoutDiagram(
     (parent.children ??= []).push(nodes.get(node.id)!);
   }
   if (!supplied)
-    throw new VisualModelError("invalid", "This layout entry requires a host-owned engine");
+    throw new VisualModelError(
+      "unavailable",
+      "Provide a host-owned layout engine or use the optional /layout/elk entry",
+    );
   let arranged: ElkNode;
   try {
     arranged = await supplied.layout(root);
@@ -175,6 +205,13 @@ export async function layoutDiagram(
     );
   }
   signal?.throwIfAborted();
+  // Validate before traversing runner-owned objects so getters/non-JSON output
+  // cannot execute while translating a proposed layout.
+  try {
+    assertVisualJson(arranged);
+  } catch {
+    throw fail();
+  }
   const seen = new Set<string>();
   const updates = new Map<string, VisualItemPatch>();
   const collect = (children: ElkNode[], parentId?: string) => {
@@ -211,11 +248,20 @@ export async function layoutDiagram(
     items: [{ field: "nodes", set: content.nodes.map((node) => updates.get(node.id)!) }],
   };
   // Validate the translation through the actual mutation contract, including the host's narrower registry.
-  editModel(source, patch, {}, registry);
+  const candidate = editModel(source, patch, {}, registry).model;
+  const routing = elkDiagramRouting(
+    candidate,
+    arranged,
+    new Map([...owners].map(([id, node]) => [id, node.id])),
+    [...content.edges]
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .map((edge) => edge.id),
+  );
   signal?.throwIfAborted();
   const summary = modelSummary(source);
   return {
     algorithm: "elk-layered",
+    routing,
     base: {
       id: summary.id,
       renderer: source.renderer,

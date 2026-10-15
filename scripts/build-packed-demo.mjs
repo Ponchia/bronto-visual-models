@@ -16,6 +16,8 @@ const nativeDirectory = await mkdtemp(join(tmpdir(), "bvm-native-consumer-"));
 try {
   const dependencies = { "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}` };
   for (const name of [
+    "vega-lite",
+    "vega-interpreter",
     "elkjs",
     "react",
     "react-dom",
@@ -122,6 +124,25 @@ try {
     ],
     { cwd: nativeDirectory, stdio: "inherit" },
   );
+  for (const [source, name] of [
+    ["test/chart-browser", "chart-contract"],
+    ["test/routing-browser", "routing-contract"],
+  ]) {
+    await cp(source, join(directory, name), { recursive: true });
+    execFileSync(
+      process.execPath,
+      [
+        "node_modules/vite/bin/vite.js",
+        "build",
+        name,
+        "--base=/",
+        "--outDir",
+        resolve(".tmp", name),
+        "--emptyOutDir",
+      ],
+      { cwd: directory, stdio: "inherit" },
+    );
+  }
   await writeFile(
     ".tmp/packed-ui-evidence.json",
     JSON.stringify(

@@ -1,3 +1,187 @@
 @import "@xyflow/react/dist/style.css";
 @import "vis-timeline/styles/vis-timeline-graph2d.css";
 @import "./base.css";
+
+.bvm-chart {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bvm-chart-toolbar,
+.bvm-chart-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid currentColor;
+  font-size: 12px;
+}
+.bvm-chart-toolbar span {
+  margin-left: auto;
+  opacity: 0.7;
+}
+.bvm-chart button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 5px 9px;
+}
+.bvm-chart button[aria-pressed="true"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.bvm-chart button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bvm-chart button:focus-visible,
+.bvm-chart-table-scroll:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.bvm-chart-surface,
+.bvm-chart-data {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.bvm-chart-data {
+  display: flex;
+  flex-direction: column;
+}
+.bvm-chart-table-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.bvm-chart table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.bvm-chart caption {
+  text-align: left;
+  padding: 10px;
+  font-weight: 600;
+}
+.bvm-chart th,
+.bvm-chart td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid currentColor;
+  max-width: 30ch;
+  overflow-wrap: anywhere;
+}
+.bvm-chart thead th {
+  vertical-align: top;
+}
+.bvm-chart-pagination {
+  flex-shrink: 0;
+  border-bottom: none;
+  justify-content: space-between;
+}
+.bvm-chart-table-note {
+  font-size: 11px;
+  margin: 3px 12px 7px;
+}
+
+.bvm-graph-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+.bvm-graph-canvas {
+  flex: 1;
+  min-height: 0;
+}
+.bvm-route-label {
+  position: absolute;
+  pointer-events: all;
+  box-sizing: border-box;
+  padding: 2px 7px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: var(--bvm-text);
+  background: var(--bvm-panel);
+  border: 1px solid var(--bvm-line);
+  border-radius: 4px;
+}
+.bvm-edge-reading {
+  font-size: 11px;
+  padding: 5px 8px;
+  border-top: 1px solid var(--bvm-line);
+  max-height: 125px;
+  overflow: auto;
+}
+.bvm-edge-reading summary {
+  cursor: pointer;
+}
+.bvm-edge-reading ul {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+.bvm-edge-reading button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.bvm-edge-reading span {
+  opacity: 0.85;
+}
+.bvm-route-label:focus-visible,
+.bvm-edge-reading summary:focus-visible {
+  outline: 2px solid var(--bvm-focus);
+  outline-offset: 2px;
+}
+
+.bvm-chart-advice {
+  flex: 0 0 auto;
+  max-height: 110px;
+  overflow: auto;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--bvm-line);
+}
+.bvm-chart-advice ul {
+  padding-left: 18px;
+  margin: 6px 0;
+}
+.bvm-chart-advice summary {
+  cursor: pointer;
+}
+.bvm-chart-advice p {
+  margin: 4px 0;
+}
+
+.bvm-entity-label {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bvm-group .bvm-entity-label {
+  white-space: nowrap;
+  max-width: 100%;
+  display: block;
+}
+
+/* Labels may sit inside a group, but never behind its filled body. Measured
+   placement still excludes leaf nodes and the group's heading band. */
+.bvm-graph-shell .react-flow__edgelabel-renderer {
+  z-index: 1001;
+}

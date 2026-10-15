@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ganttLayout, ganttDate } from "../src/render/gantt-layout.ts";
+import { ganttLayout, ganttDate, ganttDateLabel } from "../src/render/gantt-layout.ts";
 import { createModel, VISUAL_TEMPLATES } from "../src/index.ts";
 import type { GanttContent } from "../src/semantic.ts";
 
@@ -51,4 +51,10 @@ test("hierarchy depths are independent of task order and stay bounded for malfor
       Number.isFinite(r.depth),
     ),
   );
+});
+
+test("readable date labels retain non-midnight instants and subsecond precision", () => {
+  assert.equal(ganttDateLabel(0), "1970-01-01");
+  assert.equal(ganttDateLabel(1000), "1970-01-01 00:00:01Z");
+  assert.equal(ganttDateLabel(1001), "1970-01-01 00:00:01.001Z");
 });

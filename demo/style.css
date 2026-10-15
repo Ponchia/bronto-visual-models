@@ -430,8 +430,11 @@ footer {
   .timeline-panel {
     order: 3;
   }
-  .receipt-panel {
+  .gantt-panel {
     order: 4;
+  }
+  .receipt-panel {
+    order: 5;
   }
   .hero-note p {
     margin: 10px 0;

@@ -270,6 +270,37 @@ try {
         "Automatically detectable accessibility violations",
       );
       assert.deepEqual(errors, [], "Uncaught browser errors");
+      if (device.name === "mobile") {
+        const order = await page
+          .locator(".primary-panel, .gantt-panel")
+          .evaluateAll((panels) =>
+            panels.map((panel) => ({
+              name: panel.className,
+              top: panel.getBoundingClientRect().top,
+            })),
+          );
+        assert.ok(
+          order.find((panel) => panel.name.includes("primary-panel")).top <
+            order.find((panel) => panel.name.includes("gantt-panel")).top,
+          "A secondary example precedes the primary model on mobile",
+        );
+      }
+      // After layout exploration, use the actual Fit control before taking the overview.
+      await primary.getByRole("button", { name: "fit view", exact: true }).click();
+      await page.waitForFunction(() => {
+        const surface = document.querySelector(".primary-panel .bvm-view").getBoundingClientRect();
+        const nodes = [...document.querySelectorAll(".primary-panel .react-flow__node")];
+        return (
+          nodes.length === 4 &&
+          nodes.every((node) => {
+            const box = node.getBoundingClientRect();
+            return box.width > 0 && box.left >= surface.left - 2 && box.right <= surface.right + 2;
+          })
+        );
+      });
+      await gantt.locator(".bvm-gantt").evaluate((element) => {
+        element.scrollTop = 0;
+      });
       assert.deepEqual(requests, [], "The local demo made an external data request");
       await page.screenshot({
         path: new URL(`${device.name}.png`, output).pathname,
@@ -299,6 +330,7 @@ try {
           "initial graph fully visible on both viewport sizes",
           "worker layout preview/discard/apply/undo",
           "all four default port sides",
+          "primary example ordering on narrow screens and final Fit overview",
           "no overflow",
           "no external requests",
         ],

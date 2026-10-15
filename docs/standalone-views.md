@@ -43,8 +43,9 @@ implementation to maintain.
 ## Reading and editing a plan
 
 Workstreams group tasks in authored order. Time bars use the supplied start/end
-instants; milestones have zero duration. Dates are explicit UTC ISO timestamps,
-not localized guesses or an inferred schedule. Task hierarchy is indicated by
+instants; milestones have zero duration. Dates use explicit UTC values, not localized guesses or an inferred schedule.
+Midnight instants have compact date labels; non-midnight labels preserve their
+time and precision. Every `time` element retains its complete ISO timestamp. Task hierarchy is indicated by
 indentation. Finish-to-start dependencies are listed with their identified
 endpoints. The view does not optimize schedules, move dependent tasks or claim
 that the declared ordering is feasible.

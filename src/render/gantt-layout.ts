@@ -50,3 +50,11 @@ export function ganttLayout(content: GanttContent): {
 
 /** Explicit UTC dates keep server-rendered and browser text independent of local timezone. */
 export const ganttDate = (instant: number): string => new Date(instant).toISOString();
+
+/** Midnight-only schedules need a date, not repeated zero-valued subsecond fields. */
+export function ganttDateLabel(instant: number): string {
+  return ganttDate(instant)
+    .replace("T", " ")
+    .replace(/ 00:00:00\.000Z$/, "")
+    .replace(/\.000Z$/, "Z");
+}

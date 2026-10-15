@@ -322,3 +322,15 @@
   background: var(--bvm-panel-strong, #e9f0df);
   color: var(--bvm-text, #263821);
 }
+
+@media (max-width: 600px) {
+  .bvm-gantt-row {
+    grid-template-columns: 1fr;
+  }
+  .bvm-task-label {
+    width: 100%;
+  }
+  .bvm-gantt-track {
+    margin: 8px 8px;
+  }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GanttContent, GanttTask } from "../semantic.ts";
 import { modelTargets } from "../targets.ts";
-import { ganttDate, ganttLayout } from "../render/gantt-layout.ts";
+import { ganttDate, ganttDateLabel, ganttLayout } from "../render/gantt-layout.ts";
 import type { AdapterProps } from "./types.ts";
 
 function ProgressEditor({ task, props }: { task: GanttTask; props: AdapterProps }) {
@@ -166,11 +166,11 @@ export default function GanttView(props: AdapterProps) {
                   </span>
                 </div>
                 <span className="bvm-task-dates">
-                  <time dateTime={ganttDate(task.start)}>{ganttDate(task.start)}</time>
+                  <time dateTime={ganttDate(task.start)}>{ganttDateLabel(task.start)}</time>
                   {!task.milestone && task.end !== undefined && (
                     <>
                       {" "}
-                      — <time dateTime={ganttDate(task.end)}>{ganttDate(task.end)}</time>
+                      — <time dateTime={ganttDate(task.end)}>{ganttDateLabel(task.end)}</time>
                     </>
                   )}
                 </span>

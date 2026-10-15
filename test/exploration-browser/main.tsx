@@ -152,8 +152,10 @@ function App() {
           onClick={() =>
             setModel(
               (m) =>
-                editModel(m, { content: { values: [{ "column-00": "Only", "column-01": 1 }] } })
-                  .model,
+                editModel(m, {
+                  ifRevision: m.revision,
+                  content: { values: [{ "column-00": "Only", "column-01": 1 }] },
+                }).model,
             )
           }
         >

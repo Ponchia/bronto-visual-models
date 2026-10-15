@@ -18,6 +18,10 @@ release URL. The committed package lock records the archive's integrity.
 5. Pin that archive in consumers, run their integration gates, and only then merge
    or deploy those consumers. A package release does not deploy Spatial.
 
+The demo follows verified `main` and may include documented unreleased features.
+The README labels these explicitly; never claim they exist in a previously
+published immutable archive just because they work on the demo.
+
 CI publishes the demo only after both package and browser jobs pass. The site is
 built using the archive installed into an independent consumer, not workspace
 aliases or direct imports back into Spatial.

@@ -77,7 +77,8 @@
     "format:check": "biome format .",
     "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs",
     "bench:store": "node --experimental-strip-types scripts/benchmark-store.mjs",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "benchmark:layout": "node scripts/benchmark-layout.mjs"
   },
   "dependencies": {
     "lib0": "0.2.119"
@@ -92,7 +93,8 @@
     "vega-lite": "^6.4.3",
     "vega-tooltip": "^1.1.0",
     "vis-data": "^8.0.5",
-    "vis-timeline": "^8.5.4"
+    "vis-timeline": "^8.5.4",
+    "elkjs": "^0.12.0"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -124,6 +126,9 @@
     },
     "d3-sankey": {
       "optional": true
+    },
+    "elkjs": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -146,7 +151,9 @@
     "vega-tooltip": "1.1.0",
     "vis-data": "8.0.5",
     "vis-timeline": "8.5.4",
-    "vite": "8.3.3"
+    "vite": "8.3.3",
+    "elkjs": "0.12.0",
+    "@dagrejs/dagre": "3.1.1"
   },
   "overrides": {
     "micromark-extension-math": {

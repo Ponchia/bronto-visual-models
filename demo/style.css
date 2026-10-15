@@ -551,3 +551,31 @@ summary:focus-visible {
   background: white;
   overflow: hidden;
 }
+
+.layout-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #d4dec7;
+}
+.layout-actions label {
+  font-size: 12px;
+}
+.layout-actions p {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+  color: #526948;
+}
+.layout-actions select,
+.layout-actions button {
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+  padding: 9px;
+  background: #fbfcf8;
+  border: 1px solid #c8d3bb;
+  border-radius: 6px;
+  color: #4b6040;
+}

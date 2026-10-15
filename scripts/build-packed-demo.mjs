@@ -16,6 +16,7 @@ const nativeDirectory = await mkdtemp(join(tmpdir(), "bvm-native-consumer-"));
 try {
   const dependencies = { "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}` };
   for (const name of [
+    "elkjs",
     "react",
     "react-dom",
     "@xyflow/react",
@@ -49,6 +50,15 @@ try {
       "--emptyOutDir",
     ],
     { cwd: directory, stdio: "inherit" },
+  );
+  await mkdir(join(output, "third-party"), { recursive: true });
+  await cp(
+    join(directory, "node_modules/elkjs/LICENSE.md"),
+    join(output, "third-party/elkjs-LICENSE.md"),
+  );
+  await writeFile(
+    join(output, "third-party/elkjs-SOURCE.txt"),
+    "Unmodified elkjs 0.12.0. Source: https://github.com/kieler/elkjs\nLicense: ./elkjs-LICENSE.md\n",
   );
   // A separate test-only consumer is never uploaded as part of the public Pages site.
   await cp("test/browser", join(directory, "react-contract"), { recursive: true });

@@ -8,7 +8,7 @@ import {
   type ModelEdit,
   type VisualTarget,
 } from "@ponchia/visual-models";
-import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
+import { VisualModelView, useVisualModel, lightTheme } from "@ponchia/visual-models/react";
 import "@ponchia/visual-models/styles.css";
 
 /** A commit between render and subscribe has no listener to notify yet. */
@@ -54,6 +54,23 @@ function Harness() {
   const model = useVisualModel(source, id);
   const [mode, setMode] = useState("accept");
   const [writable, setWritable] = useState(true);
+  const [customTheme, setCustomTheme] = useState(false);
+  const tokens = useMemo(
+    () =>
+      customTheme
+        ? {
+            ...lightTheme,
+            scheme: "dark" as const,
+            panel: "#17202a",
+            text: "#f5f6fa",
+            edge: "#91b7e5",
+            accent: "#ffa047",
+            focus: "#ffdf00",
+            panelStrong: "#253649",
+          }
+        : lightTheme,
+    [customTheme],
+  );
   const [selected, setSelected] = useState<VisualTarget | null>(null);
   const [pending, setPending] = useState(false);
   const rejected = useRef<((error: Error) => void) | null>(null);
@@ -182,6 +199,64 @@ function Harness() {
       <button onClick={() => setId("schedule")}>Open schedule</button>
       <button onClick={() => setId("many")}>Open large model</button>
       <button onClick={() => setWritable((current) => !current)}>Toggle editing</button>
+      <button onClick={() => setCustomTheme(true)}>Custom theme</button>
+      <button
+        onClick={() =>
+          void write({
+            items: [
+              {
+                field: "nodes",
+                set: [
+                  {
+                    id: "a",
+                    ports: [
+                      { id: "out1", side: "right" },
+                      { id: "out2", side: "right" },
+                    ],
+                  },
+                ],
+              },
+              {
+                field: "edges",
+                set: [
+                  {
+                    id: "port-edge",
+                    label: "custom to top",
+                    source: "a",
+                    target: "b",
+                    sourcePort: "out2",
+                    targetPort: "top",
+                  },
+                ],
+              },
+            ],
+          })
+        }
+      >
+        Custom ports
+      </button>
+      <button
+        onClick={() =>
+          void write({
+            items: [
+              {
+                field: "nodes",
+                set: [
+                  {
+                    id: "a",
+                    ports: [
+                      { id: "out1", side: "bottom" },
+                      { id: "out2", side: "bottom" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          })
+        }
+      >
+        Move port sides
+      </button>
       <output data-testid="snapshot-changes">{changed.current}</output>
       <output data-testid="snapshot-reads">{reads.current}</output>
       <output data-testid="pending">{String(pending)}</output>
@@ -190,6 +265,7 @@ function Harness() {
       {model && (
         <VisualModelView
           model={model}
+          tokens={tokens}
           height={430}
           selected={selected}
           onSelect={setSelected}

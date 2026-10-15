@@ -3,6 +3,8 @@
 - [Previews](previews.md): inspect a proposed change without consuming a key or writing a store.
 - [Standalone views](standalone-views.md): Gantt, engine-free imports and semantic data reading.
 - [Verification](verification.md): browser matrix, keyboard checks and accessibility evidence.
+- [Diagram layouts](layouts.md): optional worker-backed ELK proposals with guarded apply/undo.
+- [Visualization engine research](research/visualization-engines-20261015.md): choices, model boundaries and measurement method.
 - [API](api.md): models, families, revisions, edits and controlled views.
 - [Storage and authority](storage.md): transactions, receipts, recovery and host responsibilities.
 - [CLI](cli.md): files, commands, exit codes and safe retries.

@@ -47,7 +47,7 @@ import { createRequire } from 'node:module';
 import { MemoryModelStore, createVisualRegistry, modelTargets } from '@ponchia/visual-models';
 import { readFileStore, executeFileCommand, previewFileCommand } from '@ponchia/visual-models/node';
 const require = createRequire(import.meta.url);
-for (const engine of ['react', '@xyflow/react', 'vega', 'vis-timeline', '@ponchia/ui']) {
+for (const engine of ['react', '@xyflow/react', 'vega', 'vis-timeline', '@ponchia/ui', 'elkjs', '@dagrejs/dagre']) {
   assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
 }
 const store = new MemoryModelStore({ registry: createVisualRegistry() });

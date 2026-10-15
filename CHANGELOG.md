@@ -9,6 +9,18 @@
   scenarios and compressed bundle regression gates.
 - Validate completed model envelopes before publication; add fixed-seed
   edit/undo/replacement/restart regressions and avoid cloning bodies for lists.
+### Diagram layouts
+
+- Explicit ELK layered proposals for RIGHT/DOWN diagrams, guarded by source
+  generation and revision. Preview, apply and undo use the existing operations.
+- Same-origin worker-backed demo previews with discard/cancel and bounded lifetime.
+- Implicit top/bottom ports, distributed same-side custom ports and direction-aware
+  fallback handles; graph chrome uses supplied theme tokens.
+- Optional `elkjs` peer; Dagre is a development-only comparison. No core dependency,
+  persisted-format or Spatial integration change.
+- Source-linked engine assessment, reproducible benchmark, and geometry/preview tests.
+
+### Store and view performance
 
 - Enforce in-memory store byte budgets incrementally and exactly in UTF-8,
   without re-serializing unrelated models and receipt history per edit.

@@ -28,7 +28,7 @@ The package name is `@ponchia/visual-models`. Beta archives are distributed thro
 GitHub Releases; npm registry publication is not required to install them.
 
 ```sh
-npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.3/ponchia-visual-models-0.1.0-beta.3.tgz
+npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.4/ponchia-visual-models-0.1.0-beta.4.tgz
 ```
 
 Core requires Node 22.18+ or a modern browser. UI engines are optional peers;
@@ -115,7 +115,7 @@ an authorization grant. Cameras, hover and exploratory layout stay local.
 The core carries validated contracts for diagram, timeline, Gantt, analysis,
 geography, infographic, Vega-Lite, 3D scene, spatial layers and source diagrams.
 
-The beta.3 standalone React surface implements **diagram, network, matrix,
+The beta.4 standalone React surface implements **diagram, network, matrix,
 authored timeline, native Gantt and inline Vega-Lite charts**, plus a paginated
 semantic reader and an engine-free Gantt entry. See
 [standalone views](docs/standalone-views.md). Other families are core contracts and renderer

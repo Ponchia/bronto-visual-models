@@ -45,7 +45,8 @@ Open **Explore matrix** to filter node names/IDs and choose authored, name or
 connection-count order. Rows are source nodes and columns are targets. Filtering
 shows the induced relationships between matching endpoints, and the controls
 state the visible counts against the complete graph. **Reset matrix view** restores
-the authored ordering and all nodes. The model itself is never filtered or sorted.
+the authored ordering and all nodes. The band scale uses explicit derived ranks,
+not historical insertion order from the retained engine. The model itself is never filtered or sorted.
 
 A cell can stand for parallel relationships. Clicking such a cell opens a list of
 those exact edge IDs; it does not arbitrarily choose the first relationship. The

@@ -3,7 +3,7 @@ import test from "node:test";
 import { createModel, editModel, type GraphContent } from "../src/index.ts";
 import { graphInteractionIndex, graphSelection } from "../src/render/graph-index.ts";
 import { graphEdgeHandles } from "../src/render/graph-ports.ts";
-import { graphMatrix, matrixData } from "../src/render/graph-matrix.ts";
+import { graphMatrix, matrixData, matrixSpec } from "../src/render/graph-matrix.ts";
 import {
   chartTableColumns,
   chartTablePage,
@@ -237,4 +237,41 @@ test("matrix labels reserve measured font width plus a gutter and retain bounded
   assert.equal(matrixData(matrix, 500, 1000).layout[0]!.margin, 200);
   assert.equal(matrixData(matrix, 30, 95).layout[0]!.cell, 16);
   assert.ok(Number.isFinite(matrixData(matrix, 500, NaN).layout[0]!.margin));
+});
+
+test("retained matrix scales follow changed rank, not historical domain insertion order", async () => {
+  const { View, parse, changeset } = await import("vega");
+  const { lightTheme } = await import("../src/react/theme.ts");
+  const content = graph();
+  const view = new View(parse(matrixSpec(lightTheme)), { renderer: "none" });
+  try {
+    for (const [query, order] of [
+      ["", "authored"],
+      ["", "label"],
+      ["", "degree"],
+      ["beta", "label"],
+      ["none", "label"],
+      ["", "authored"],
+    ] as const) {
+      const current = graphMatrix(content, query, order);
+      for (const [name, rows] of Object.entries(matrixData(current, 600)))
+        view.change(
+          name,
+          changeset()
+            .remove(() => true)
+            .insert(structuredClone(rows)),
+        );
+      await view.runAsync();
+      const scale = view.scale("position") as ((id: string) => number) & { domain(): string[] };
+      assert.deepEqual(
+        scale.domain(),
+        current.nodes.map((node) => node.id),
+        `${query}/${order}`,
+      );
+      if (current.nodes.length > 1)
+        assert.ok(scale(current.nodes[0]!.id) < scale(current.nodes[1]!.id));
+    }
+  } finally {
+    view.finalize();
+  }
 });

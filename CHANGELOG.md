@@ -10,6 +10,7 @@
   readonly and refused edits do not leave renderer-only moved nodes.
 - Add matrix filtering/order and parallel-relationship choices. Evaluate selection
   signal changes immediately; retain the compiled sparse matrix for filtering.
+  Explicit scale ranks prevent a reused engine from retaining its old ordering.
 - Measure matrix label gutters with the host font so short names keep their
   distinguishing suffixes; preserve full accessible labels for bounded clipping.
 - Send minimal matrix tuples instead of copying authored prose/ports/edges into Vega.

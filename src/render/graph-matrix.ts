@@ -118,7 +118,13 @@ export function matrixSpec(tokens: RendererTokens): Spec {
       {
         name: "position",
         type: "band",
-        domain: { data: "nodes", field: "id" },
+        // Vega's retained ordinal domain otherwise preserves historical insertion
+        // order when the same IDs arrive in a different row order. Rank explicitly.
+        domain: {
+          data: "nodes",
+          field: "id",
+          sort: { op: "min", field: "index", order: "ascending" },
+        },
         range: { signal: "[layout.margin, layout.margin + layout.grid]" },
       },
     ],

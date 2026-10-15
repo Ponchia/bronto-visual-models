@@ -214,7 +214,7 @@ try {
       await primary.getByRole("button", { name: "Read data", exact: true }).click();
       const filter = primary.getByLabel("Filter model elements");
       await filter.fill("Postgres");
-      await primary.getByRole("rowheader").filter({ hasText: "Postgres" }).waitFor();
+      await primary.getByRole("rowheader", { name: "Postgres", exact: true }).waitFor();
       await primary.getByRole("button", { name: "Postgres", exact: true }).focus();
       await page.keyboard.press("Enter");
       await page.getByLabel("Selected node: database", { exact: true }).waitFor();

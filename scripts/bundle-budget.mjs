@@ -24,6 +24,8 @@ export function bundleReport(manifest, sizes) {
     if (renderers.test(`${key} ${manifest[key].file}`))
       throw new Error(`Renderer was promoted into the initial bundle: ${key}`);
   }
+  if (Object.keys(sizes).some((file) => /elk\.bundled/.test(file)))
+    throw new Error("The worker-backed demo must not bundle a second in-process ELK engine");
   const js = Object.entries(sizes).filter(([file]) => file.endsWith(".js"));
   // The separately requested ELK worker is not an application entry or renderer.
   // Keep its own explicit budget rather than relaxing the existing renderer limits.

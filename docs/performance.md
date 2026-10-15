@@ -84,3 +84,8 @@ The dedicated native Gantt consumer uses `/react/gantt` and `/base.css`, with no
 React Flow, Vega or vis-timeline installation. The aggregate stylesheet remains
 available for hosts using those engines. A separate packed install proves that
 the small native view is not merely a tree-shaking assumption.
+
+The worker-backed demo imports `/layout/diagram`, whose engine is supplied by
+its host. `/layout/elk` remains the in-process convenience entry. This separation
+keeps the duplicate bundled ELK engine out of the demo instead of hiding it
+behind a larger asset limit.

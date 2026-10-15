@@ -46,3 +46,10 @@ test("an optional layout worker has a separate budget without relaxing renderer 
     /largestApplicationAsset/,
   );
 });
+
+test("worker demo cannot emit the unused bundled layout fallback", () => {
+  assert.throws(
+    () => bundleReport(manifest, { ...sizes, "assets/elk.bundled-abc.js": { raw: 10, gzip: 5 } }),
+    /second in-process ELK/,
+  );
+});

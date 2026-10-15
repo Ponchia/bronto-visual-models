@@ -98,6 +98,7 @@ export function useVisTimeline(
   const items = useRef(new DataSet<DataItem, "id">());
   const groups = useRef(new DataSet<DataGroup, "id">());
   const [engine, setEngine] = useState<Timeline | null>(null);
+  const live = useRef<Timeline | null>(null);
   /** The acknowledgement of the frame being drawn; cleared while it changes. */
   const ready = useRef<(() => void) | undefined>(undefined);
   const paint = useRef(() => {});
@@ -109,6 +110,7 @@ export function useVisTimeline(
     if (!element) return;
     const initial = latest.current;
     const opening = initial.window ?? initial.bounds;
+    let disposed = false;
     const timeline = new Timeline(element, items.current, groups.current, {
       ...initial.look,
       // Left undefined, vis-timeline hides its root until its initial draw
@@ -119,28 +121,44 @@ export function useVisTimeline(
       start: new Date(opening.start),
       end: new Date(opening.end),
       onMove(item, callback) {
+        if (disposed) return;
         const save = latest.current.onMove;
-        if (!save) {
+        if (!save || !latest.current.active) {
           callback(null);
           return;
         }
-        save(item).then(
-          () => callback(item),
-          () => callback(null),
-        );
+        // Host edits may throw synchronously as well as reject. Do not invoke
+        // a destroyed engine's completion callback after an in-flight move.
+        void Promise.resolve()
+          .then(() => save(item))
+          .then(
+            () => {
+              if (!disposed) callback(item);
+            },
+            () => {
+              if (!disposed) callback(null);
+            },
+          );
       },
     });
+    live.current = timeline;
     const release = initial.onAcquire?.() ?? (() => {});
     let frame = 0;
-    let disposed = false;
     // Native changed events can fire halfway through a group/data update.
     // Acknowledgement belongs to the settled, measurable browser frame.
     const changed = () => {
+      if (disposed || !latest.current.active) return;
       latest.current.onChanged?.();
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         frame = requestAnimationFrame(() => {
-          if (!disposed && latest.current.active && element.clientWidth && element.clientHeight)
+          if (
+            !disposed &&
+            latest.current.active &&
+            latest.current.onReady &&
+            element.clientWidth &&
+            element.clientHeight
+          )
             ready.current?.();
         });
       });
@@ -154,7 +172,7 @@ export function useVisTimeline(
     });
     size.observe(element);
     void document.fonts.ready.then(() => {
-      if (!disposed) {
+      if (!disposed && latest.current.active) {
         timeline.redraw();
         changed();
       }
@@ -165,7 +183,7 @@ export function useVisTimeline(
     // construction. Every redraw of an authored timeline lands sooner.
     const settled = () => {
       timeline.off("rangechanged", settled);
-      timeline.redraw();
+      if (!disposed && latest.current.active) timeline.redraw();
     };
     timeline.on("rangechanged", settled);
     timeline.on(
@@ -173,15 +191,19 @@ export function useVisTimeline(
       ({ start, end, byUser }: { start: Date; end: Date; byUser: boolean }) => {
         // Library initialization is not a reader's chosen window. Persisting
         // that provisional range strands asynchronously loaded data in 1970.
-        if (byUser) latest.current.onWindow({ start: start.getTime(), end: end.getTime() });
+        if (!disposed && latest.current.active && byUser)
+          latest.current.onWindow({ start: start.getTime(), end: end.getTime() });
       },
     );
-    timeline.on("select", ({ items: ids }: { items: Array<string | number> }) =>
-      latest.current.onSelect(ids.map(String)),
+    timeline.on(
+      "select",
+      ({ items: ids }: { items: Array<string | number> }) =>
+        !disposed && latest.current.active && latest.current.onSelect(ids.map(String)),
     );
     setEngine(timeline);
     return () => {
       disposed = true;
+      if (live.current === timeline) live.current = null;
       cancelAnimationFrame(frame);
       size.disconnect();
       paint.current = () => {};
@@ -232,12 +254,12 @@ export function useVisTimeline(
 
   const selectionKey = options.selection.join("\u0000");
   useEffect(() => {
-    engine?.setSelection(selectionKey ? selectionKey.split("\u0000") : []);
-  }, [engine, selectionKey]);
+    if (active) engine?.setSelection(selectionKey ? selectionKey.split("\u0000") : []);
+  }, [engine, selectionKey, active]);
 
   const navigate = useCallback(
     (action: "fit" | "in" | "out" | "today") => {
-      if (!engine) return;
+      if (!engine || live.current !== engine || !latest.current.active) return;
       const { bounds } = latest.current;
       if (action === "fit") engine.setWindow(bounds.start, bounds.end, { animation: false });
       else if (action === "today") engine.moveTo(new Date(), { animation: false });

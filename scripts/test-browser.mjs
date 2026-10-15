@@ -5,6 +5,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { testRoutingContract } from "./test-routing-contract.mjs";
 import { testReactContract } from "./test-react-contract.mjs";
 import { testChartContract } from "./test-chart-contract.mjs";
+import { testSurfaceContract } from "./test-surface-contract.mjs";
 import { chromium, firefox, webkit } from "playwright";
 import { checkAccessibility } from "./accessibility.mjs";
 const browserName = process.env.BVM_BROWSER ?? "chromium";
@@ -57,7 +58,14 @@ try {
     await delay(100);
   }
   assert(online, `Preview did not start: ${serverLog}`);
-  browser = await browserType.launch({ headless: true });
+  browser = await browserType.launch({
+    headless: true,
+    // Optional local launcher can supply rootless system libraries for the same
+    // Playwright binary. CI uses the pinned default; tests are never skipped.
+    ...(process.env.BVM_BROWSER_EXECUTABLE
+      ? { executablePath: process.env.BVM_BROWSER_EXECUTABLE }
+      : {}),
+  });
   for (const device of [
     { name: "desktop", width: 1440, height: 1100 },
     { name: "mobile", width: 390, height: 844 },
@@ -429,6 +437,7 @@ try {
   results.push(await testReactContract(browser, output));
   results.push(await testRoutingContract(browser, output));
   results.push(await testChartContract(browser, output));
+  results.push(await testSurfaceContract(browser, output));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

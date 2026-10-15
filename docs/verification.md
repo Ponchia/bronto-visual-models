@@ -79,3 +79,34 @@ row pagination, controlled updates, advice, errors with no source-data disclosur
 and expression interpretation under a script policy without unsafe-eval.
 These fixtures run on the same Chromium/Firefox/WebKit matrix as the other views;
 passing them is not a claim of arbitrary-graph optimality or a CPU sandbox.
+
+## Local browser runtime prerequisites
+
+The repository's pinned Playwright browsers also require OS shared libraries.
+CI uses Playwright's documented `install --with-deps` command; missing libraries
+are a test-environment failure, never evidence that the UI passed or failed.
+A developer using an isolated runtime may set `BVM_BROWSER_EXECUTABLE` to a local
+launcher for the same pinned browser binary. This changes only the launch path;
+all assertions, resource policies and evidence remain enabled. Record the
+browser version, launcher and library provenance with that local result.
+
+A custom launcher is a local development convenience, not a substitute for the
+hosted default-browser release gate. See [Playwright browser dependencies](https://playwright.dev/docs/browsers#install-system-dependencies).
+
+## Controlled asynchronous renderer lifecycle
+
+A separate packed consumer drives the real Vega hook through explicit promise
+barriers rather than arbitrary delays. It checks withdrawn readiness, hidden and
+unmounted in-flight updates, a hidden first frame, and a superseded failing
+request. A timeline case also checks withdrawn readiness, hidden native redraws,
+inactive navigation and a retained toolbar callback after disposal. Acquired
+engines must be finalized and released once; hidden work may
+settle internally but cannot call the inactive host's draw/error callbacks.
+Activation observes retained current rows before acknowledging them.
+
+The test fixture is not part of the public demo. It uses synthetic local rows and
+the expression interpreter, and performs no data-resource requests. The same
+scenarios run in the hosted Chromium, Firefox and WebKit release matrix.
+
+References: [Vega asynchronous rendering and finalization](https://vega.github.io/vega/docs/api/view/)
+and [React effect cleanup](https://react.dev/reference/react/useEffect).

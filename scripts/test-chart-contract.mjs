@@ -76,10 +76,72 @@ export async function testChartContract(browser, outputDirectory) {
     await page.goto("http://127.0.0.1:4175", { waitUntil: "networkidle" });
     await ready();
     await page.locator(".bvm-chart canvas").waitFor();
+    const metadataCanvas = await page.locator(".bvm-chart canvas").elementHandle();
+    await page.getByRole("button", { name: "Rename chart", exact: true }).click();
+    await ready();
+    await page.locator('.bvm-chart [aria-label="Updated accessible chart description"]').waitFor();
+    assert.ok(
+      await metadataCanvas.evaluate((c) => c.isConnected),
+      "A metadata edit recompiled the chart",
+    );
+    await page.getByRole("button", { name: "Clear chart description", exact: true }).click();
+    await ready();
+    await page.locator('.bvm-chart [aria-label="Renamed chart"]').waitFor();
+    assert.ok(await metadataCanvas.evaluate((c) => c.isConnected));
     const firstCanvas = await canvasDigest();
     await page.getByRole("button", { name: "Calculated chart", exact: true }).click();
     await ready();
     assert.notEqual(await canvasDigest(), firstCanvas, "Expression-aware chart did not redraw");
+    await page.getByRole("button", { name: "Nested chart", exact: true }).click();
+    await ready();
+    const evaluated = await canvasDigest();
+    const evaluatedCanvas = await page.locator(".bvm-chart canvas").elementHandle();
+    const evaluatedSize = await evaluatedCanvas.evaluate((c) => [c.width, c.height]);
+    await page.getByRole("button", { name: "Restore calculation rows", exact: true }).click();
+    await ready();
+    assert.ok(
+      await evaluatedCanvas.evaluate((c) => c.isConnected),
+      "A healthy rows-only revision recreated the engine",
+    );
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await page.getByRole("button", { name: "Invalid calculation rows", exact: true }).click();
+      const refusedRevision = Number(await page.getByTestId("revision").textContent());
+      await page.waitForFunction(
+        (revision) =>
+          JSON.parse(document.querySelector('[data-testid="error-history"]').textContent).includes(
+            revision,
+          ),
+        refusedRevision,
+      );
+      // Drain painted acknowledgements, not a machine-speed-dependent sleep.
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+      const history = JSON.parse(await page.getByTestId("ready-history").textContent());
+      assert.ok(
+        !history.includes(refusedRevision),
+        `Failed data revision ${refusedRevision} was acknowledged as drawn`,
+      );
+      assert.notEqual(await page.getByTestId("ready").textContent(), String(refusedRevision));
+      await page.getByRole("alert").waitFor();
+    }
+    await page.getByRole("button", { name: "Restore calculation rows", exact: true }).click();
+    await ready();
+    assert.equal(await page.getByRole("alert").count(), 0);
+    assert.equal(
+      await evaluatedCanvas.evaluate((c) => c.isConnected),
+      false,
+      "The partly failed dataflow was reused",
+    );
+    assert.deepEqual(
+      await page.locator(".bvm-chart canvas").evaluate((c) => [c.width, c.height]),
+      evaluatedSize,
+    );
+    assert.equal(
+      await canvasDigest(),
+      evaluated,
+      "Recovery with the same grammar did not restore the valid frame",
+    );
     await page.getByRole("button", { name: "Data table", exact: true }).click();
     await page.getByRole("table").waitFor();
     assert.equal(await page.locator("table tbody tr").count(), 25);
@@ -120,6 +182,20 @@ export async function testChartContract(browser, outputDirectory) {
         await page.getByText(/Connected marks imply an ordered path/).waitFor();
       }
     }
+    await page.getByRole("button", { name: "Toggle changing error handler", exact: true }).click();
+    await page.getByRole("button", { name: "External data", exact: true }).click();
+    await page.getByRole("alert").waitFor();
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+    assert.equal(
+      await page.getByTestId("notification-count").textContent(),
+      "1",
+      "Changing callback identities caused repeated error reports",
+    );
+    await page.getByRole("button", { name: "Recover chart", exact: true }).click();
+    await ready();
+    await page.getByRole("button", { name: "Toggle changing error handler", exact: true }).click();
     for (const action of [
       "Invalid grammar",
       "External data",
@@ -174,7 +250,12 @@ export async function testChartContract(browser, outputDirectory) {
       "malicious cell text remains text",
       "no resource requests",
       "compiler error recovery without source-data disclosure",
+      "failed data updates and repeated invalid rows never acknowledge undrawn revisions",
+      "same-grammar recovery rebuilds failed dataflow and restores the exact valid pixels",
+      "healthy row updates retain the existing canvas",
       "small-screen fit",
+      "metadata-only accessible descriptions update without rebuilding the chart",
+      "inline host error handlers cannot cause report feedback loops",
     );
     return { device: "chart-contract", passed: true, assertions: results };
   } catch (error) {

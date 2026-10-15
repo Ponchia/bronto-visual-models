@@ -1,5 +1,5 @@
 import type { ElkNode } from "elkjs";
-import type { VisualModel } from "../model.ts";
+import { visualRecord, type VisualModel } from "../model.ts";
 import type { GraphContent } from "../semantic.ts";
 import {
   diagramRoutingFingerprint,
@@ -45,7 +45,7 @@ export function elkDiagramRouting(
       const declared = graphPorts(authored);
       for (let i = 0; i < declared.length; i++) {
         const port = declared[i]!,
-          computed = node.ports.find((p) => p.id === `${node.id}p${i}`);
+          computed = node.ports.find((p) => visualRecord(p) && p.id === `${node.id}p${i}`);
         if (!computed || !point(computed) || !node.width || !node.height) continue;
         const offset =
           port.side === "left" || port.side === "right"
@@ -54,7 +54,8 @@ export function elkDiagramRouting(
         if (offset >= 0 && offset <= 1) result.ports.push({ nodeId: id!, portId: port.id, offset });
       }
     }
-    for (const edge of node.edges ?? []) {
+    for (const edge of Array.isArray(node.edges) ? node.edges : []) {
+      if (!visualRecord(edge)) continue;
       const index = /^e(\d+)$/.exec(edge.id)?.[1],
         id = index === undefined ? undefined : edgeIds[Number(index)];
       if (!id || seen.has(id)) continue;
@@ -84,8 +85,15 @@ export function elkDiagramRouting(
         result.omitted.push(id);
         continue;
       }
-      const section = sections[0]!,
-        points = [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
+      const section = sections[0];
+      if (
+        !visualRecord(section) ||
+        (section.bendPoints !== undefined && !Array.isArray(section.bendPoints))
+      ) {
+        result.omitted.push(id);
+        continue;
+      }
+      const points = [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
       if (
         points.length > 128 ||
         !points.every(point) ||
@@ -99,7 +107,7 @@ export function elkDiagramRouting(
         result.omitted.push(id);
         continue;
       }
-      const label = edge.labels?.[0];
+      const label = Array.isArray(edge.labels) ? edge.labels[0] : undefined;
       result.edges.push({
         id,
         points: points.map(norm),
@@ -110,7 +118,8 @@ export function elkDiagramRouting(
           : {}),
       });
     }
-    for (const child of node.children ?? []) visit(child);
+    for (const child of Array.isArray(node.children) ? node.children : [])
+      if (visualRecord(child)) visit(child);
   };
   visit(root);
   for (const edge of graph.edges) if (!seen.has(edge.id)) result.omitted.push(edge.id);

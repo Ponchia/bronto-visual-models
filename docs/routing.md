@@ -46,7 +46,9 @@ edge versus ELK's node-boundary anchor. Perpendicular or larger disagreements do
 not stretch an old route to fit a changed model.
 
 Source and target points, bend points and optional label boxes are finite and
-bounded. Node membership, hierarchy and JSON descriptors are validated before
+bounded. Null/malformed optional edge sections or label records are omitted rather
+than causing an unstructured exception. Invalid child-collection shapes are
+structured geometry refusals; neither path changes the saved source. Node membership, hierarchy and JSON descriptors are validated before
 translating a runner response. A forged fingerprint is not an authorization
 mechanism: hosts still own the input model, the trusted runner and mutation policy.
 

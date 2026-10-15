@@ -17,6 +17,9 @@ export interface EngineLifecycle {
    * that drawing is on screen, and again when the acknowledgement changes, after
    * applying the data, so a new frame is attested showing its own data. Omit it
    * while the frame cannot be current, for example while its source is pending.
+   * Withdrawal suppresses pending callbacks and explicit re-attestation until
+   * the host supplies readiness again. Hidden or disposed surfaces do not call
+   * host draw/error instrumentation; a retained frame is observed on activation.
    */
   onReady?(): void;
   /** Called before the hook changes what the engine shows. */

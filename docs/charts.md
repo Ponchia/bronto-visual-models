@@ -117,3 +117,26 @@ The shared **Inspect model** control inspects the authored model and identified
 annotations. **Data table** inside the chart presents raw inline rows before
 transforms. These labels distinguish metadata inspection from source values;
 neither action fetches a connected dataset or changes the saved document.
+
+## Failed data updates and render acknowledgements
+
+A calculation can compile successfully but fail later for an individual input
+row. The engine marks its current frame invalid before a data/size update, and
+publishes a data identity only after evaluation and layout settling succeed.
+Failed data updates never acknowledge the new model revision or clear the error
+surface as if it rendered. This does not roll back or rewrite the saved model.
+
+A failed dataflow may have partially consumed rows and corrupted its internal
+pulse state, so cached identities are discarded and that engine is not reused.
+The next explicit data/grammar request finalizes it and creates a clean engine;
+there is no automatic retry loop on the same failed request. Repeating invalid
+rows fails again instead of being accepted as an unchanged frame. Repaired rows
+with the same chart grammar recover through a fresh engine. Healthy rows-only
+updates still retain their existing compiled view. Pending acknowledgements are scoped to the current
+engine and frame; invalidation or unmount withdraws them. Source-row values remain
+excluded from public error messages.
+
+Accessible chart descriptions follow metadata-only revisions without rebuilding
+the compiled chart; an empty description falls back to the current model title.
+An input-policy refusal is reported once per offending frame, so an inline host
+error callback which updates React state cannot create a reporting loop.

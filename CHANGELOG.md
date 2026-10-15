@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.0-beta.4
+
+- Never acknowledge failed same-grammar chart data updates. Invalidate queued frame
+  acknowledgements and stale row caches; preserve structured errors and recovery.
+- Recreate partially failed dataflows on the next explicit request rather than
+  reusing corrupted pulse state; healthy data updates still reuse their engine.
+- Revoke withdrawn readiness callbacks, suppress late draw/error callbacks after
+  hiding or disposal, and observe retained frames on reactivation. Add controlled
+  promise-barrier browser regressions for callback ownership and supersession.
+- Keep timeline redraw/navigation callbacks inactive after hide or disposal;
+  preserve metadata-only chart descriptions without recompilation and prevent
+  error-report loops caused by changing host callback identities.
+- Cover repeated invalid calculation rows and repair without changing the grammar
+  in the independently packed real-browser fixture.
+- Handle malformed optional routing/port/label responses without TypeErrors;
+  refuse invalid child collections with the public geometry error contract.
+- Preserve the beta.3 features, existing stored formats and core/optional dependency
+  boundaries. No Spatial package update or deployment is included.
+
 ## 0.1.0-beta.3
 
 - Render ELK root-space connector paths from derived, fingerprinted caches without

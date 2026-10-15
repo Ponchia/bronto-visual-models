@@ -127,6 +127,7 @@ try {
   for (const [source, name] of [
     ["test/chart-browser", "chart-contract"],
     ["test/routing-browser", "routing-contract"],
+    ["test/surface-browser", "surface-contract"],
   ]) {
     await cp(source, join(directory, name), { recursive: true });
     execFileSync(

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createModel, editModel, type ModelEdit } from "@ponchia/visual-models";
 import { VisualModelView } from "@ponchia/visual-models/react";
@@ -26,8 +26,23 @@ function App() {
     }),
   );
   const [active, setActive] = useState(true);
+  const [changingHandler, setChangingHandler] = useState(false);
+  const [notifications, setNotifications] = useState(0);
   const [ready, setReady] = useState(0);
+  const [readyHistory, setReadyHistory] = useState<number[]>([]);
+  const acknowledge = useCallback((identity: { revision: number }) => {
+    setReady(identity.revision);
+    setReadyHistory((old) => (old.includes(identity.revision) ? old : [...old, identity.revision]));
+  }, []);
   const [failures, setFailures] = useState<string[]>([]);
+  const [errorHistory, setErrorHistory] = useState<number[]>([]);
+  const report = useCallback(
+    (message: string) => {
+      setFailures((old) => (old.at(-1) === message ? old : [...old, message]));
+      setErrorHistory((old) => (old.includes(model.revision) ? old : [...old, model.revision]));
+    },
+    [model.revision],
+  );
   const change = (content: ModelEdit["content"]) =>
     setModel((current) => editModel(current, { ifRevision: current.revision, content }).model);
   return (
@@ -67,6 +82,30 @@ function App() {
           }
         >
           Composed chart
+        </button>
+        <button
+          onClick={() =>
+            change({
+              spec: {
+                ...bar,
+                transform: [{ calculate: "datum.nested.value", as: "computed" }],
+                encoding: { ...bar.encoding, y: { field: "computed", type: "quantitative" } },
+              },
+              values: rows.map((row) => ({ ...row, nested: { value: row.value } })),
+            })
+          }
+        >
+          Nested chart
+        </button>
+        <button onClick={() => change({ values: rows.map((row) => ({ ...row, nested: null })) })}>
+          Invalid calculation rows
+        </button>
+        <button
+          onClick={() =>
+            change({ values: rows.map((row) => ({ ...row, nested: { value: row.value } })) })
+          }
+        >
+          Restore calculation rows
         </button>
         <button onClick={() => change({ spec: { missingMark: true } })}>Invalid grammar</button>
         <button
@@ -113,20 +152,50 @@ function App() {
         </button>
         <button onClick={() => change({ spec: bar, values: rows })}>Recover chart</button>
         <button onClick={() => setActive((a) => !a)}>Toggle active</button>
+        <button
+          onClick={() =>
+            setModel(
+              (m) =>
+                editModel(m, {
+                  title: "Renamed chart",
+                  description: "Updated accessible chart description",
+                }).model,
+            )
+          }
+        >
+          Rename chart
+        </button>
+        <button onClick={() => setModel((m) => editModel(m, { description: "" }).model)}>
+          Clear chart description
+        </button>
+        <button onClick={() => setChangingHandler((v) => !v)}>Toggle changing error handler</button>
       </div>
       <label>
         Host input <input id="host-input" defaultValue="untouched" />
       </label>
       <output data-testid="revision">{model.revision}</output>
       <output data-testid="ready">{ready}</output>
+      <output data-testid="notification-count">{notifications}</output>
+      <output data-testid="ready-history" style={{ display: "block", overflowWrap: "anywhere" }}>
+        {JSON.stringify(readyHistory)}
+      </output>
+      <output data-testid="error-history" style={{ display: "block", overflowWrap: "anywhere" }}>
+        {JSON.stringify(errorHistory)}
+      </output>
       <output data-testid="active">{String(active)}</output>
       <VisualModelView
         model={model}
         height={460}
         active={active}
-        onReady={(identity) => setReady(identity.revision)}
-        onError={(message) =>
-          setFailures((old) => (old.at(-1) === message ? old : [...old, message]))
+        onReady={acknowledge}
+        onError={
+          changingHandler
+            ? (message) => {
+                report(message);
+                // Bound a buggy callback feedback loop so the negative test is safe.
+                setNotifications((n) => Math.min(8, n + 1));
+              }
+            : report
         }
       />
       <output data-testid="failures" style={{ overflowWrap: "anywhere" }}>

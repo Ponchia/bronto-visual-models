@@ -92,7 +92,10 @@ function Harness() {
       <button onClick={() => setSelected(modelTargets(model!)[0])}>Select A</button>
       <button
         onClick={() =>
-          void write({ ifRevision: model!.revision, items: [{ field: "nodes", replace: ["a"] }] })
+          void write({
+            ifRevision: model!.revision,
+            items: [{ field: "nodes", replace: ["a"], set: [{ id: "a", label: "Original A" }] }],
+          })
         }
       >
         Replace A

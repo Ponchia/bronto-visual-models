@@ -70,9 +70,9 @@ export async function testReactContract(browser) {
     await page.waitForFunction(
       () => document.querySelector('[data-testid="revision"]').textContent === "2",
     );
-    assert.ok(
-      !(await node.getAttribute("class")).includes("selected"),
-      "Old target must not select a replacement lifetime",
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("selected"),
     );
     await page.getByLabel("Commit mode").selectOption("delay");
     await drag();

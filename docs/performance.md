@@ -91,3 +91,18 @@ The worker-backed demo imports `/layout/diagram`, whose engine is supplied by
 its host. `/layout/elk` remains the in-process convenience entry. This separation
 keeps the duplicate bundled ELK engine out of the demo instead of hiding it
 behind a larger asset limit.
+
+## Optional chart transfer budget
+
+Beta.3 introduces an independently bounded **110 KiB gzip** allowance for the
+lazy `ChartView` compiler/interpreter chunk. The initial JavaScript ceiling
+(128 KiB), pre-existing application ceiling (600 KiB), total JavaScript ceiling
+(1,250 KiB), maximum application asset, CSS and native-renderer ceilings are not
+raised. Shared Vega engine code remains counted against the pre-existing
+application budget; only the new ChartView chunk is accounted separately.
+A check refuses eager loading of ChartView or the shared Vega surface.
+
+The first combined production bundle measured 90,090 gzip bytes for that chunk,
+104,042 for its entry, 547,324 for pre-existing application assets and 1,071,955
+total including the optional ELK worker. These are one build's transfer sizes,
+not memory or frame-time claims; every qualifying build records its own report.

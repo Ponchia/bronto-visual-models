@@ -173,3 +173,29 @@ test("impossible label placement is explicit instead of overlapping an obstacle"
   assert.equal(plan.labels.size, 0);
   assert.deepEqual(plan.unplaced, ["blocked"]);
 });
+
+test("a runner's getter-bearing output is refused without evaluating the getter", async () => {
+  let read = 0;
+  await assert.rejects(
+    layoutDiagram(
+      model(),
+      {},
+      {
+        engine: {
+          layout: async (root) => {
+            const output = { ...root, width: 1000, height: 500 };
+            Object.defineProperty(output, "untrusted", {
+              enumerable: true,
+              get() {
+                read++;
+                return "secret";
+              },
+            });
+            return output;
+          },
+        },
+      },
+    ),
+  );
+  assert.equal(read, 0);
+});

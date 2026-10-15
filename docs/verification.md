@@ -68,3 +68,14 @@ metadata is added. A write that cannot be read back is refused before commit.
 References: [Playwright browsers](https://playwright.dev/docs/browsers),
 [accessibility testing](https://playwright.dev/docs/accessibility-testing) and
 [React external-store subscriptions](https://react.dev/reference/react/useSyncExternalStore).
+
+## Beta.3 routed charts
+
+The full catalog additionally builds independent routed-diagram and inline-chart
+consumers from the archive. The routing fixture checks group coordinate systems,
+parallel edges/self-loops, measured label boxes, full text access and invalidation
+on obstacle moves, active drags and replacements. The chart fixture checks raw
+row pagination, controlled updates, advice, errors with no source-data disclosure,
+and expression interpretation under a script policy without unsafe-eval.
+These fixtures run on the same Chromium/Firefox/WebKit matrix as the other views;
+passing them is not a claim of arbitrary-graph optimality or a CPU sandbox.

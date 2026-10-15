@@ -1,8 +1,8 @@
 # Standalone views
 
 This page describes the current source tree. Gantt, the data reader and the
-engine-free Gantt entry are unreleased additions after the immutable beta.2
-archive. Building from source includes them; installing beta.2 does not.
+engine-free Gantt entry are included in beta.3. The immutable beta.2 archive
+remains unchanged and does not include these additions.
 
 ## Scope
 

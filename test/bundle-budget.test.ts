@@ -53,3 +53,28 @@ test("worker demo cannot emit the unused bundled layout fallback", () => {
     /second in-process ELK/,
   );
 });
+
+test("the chart compiler has a bounded optional allowance and cannot become an eager dependency", () => {
+  const charts = { ...sizes, "assets/ChartView-abc.js": { raw: 300000, gzip: 95000 } };
+  const report = bundleReport(manifest, charts);
+  assert.equal(report.measurements.applicationJavaScript, 220);
+  assert.equal(report.measurements.optionalChartAdapter, 95000);
+  assert.equal(report.measurements.totalJavaScript, 95220);
+  assert.throws(
+    () =>
+      bundleReport(manifest, {
+        ...charts,
+        "assets/ChartView-abc.js": { raw: 500000, gzip: BUNDLE_LIMITS.optionalChartAdapter + 1 },
+      }),
+    /optionalChartAdapter/,
+  );
+  const eager = {
+    ...manifest,
+    "index.html": {
+      ...manifest["index.html"],
+      imports: [...manifest["index.html"].imports, "chart"],
+    },
+    chart: { file: "assets/ChartView-abc.js" },
+  };
+  assert.throws(() => bundleReport(eager, charts), /promoted into the initial/);
+});

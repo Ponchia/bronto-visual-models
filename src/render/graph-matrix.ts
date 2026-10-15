@@ -59,8 +59,18 @@ function matrixLayout(data: ReturnType<typeof graphMatrix>, availableWidth: numb
 /** The datasets one matrix draws at one available width. */
 export function matrixData(data: ReturnType<typeof graphMatrix>, availableWidth: number) {
   return {
-    nodes: data.nodes,
-    cells: data.cells,
+    // Keep authored source/notes/port arrays out of the layout dataflow. The
+    // semantic graph still retains them; these are renderer-owned tuples only.
+    nodes: data.nodes.map(({ id, label, index, collection }) => ({ id, label, index, collection })),
+    cells: data.cells.map(({ key, source, target, count, ids, label, tooltip }) => ({
+      key,
+      source,
+      target,
+      count,
+      ids,
+      label,
+      tooltip,
+    })),
     layout: [matrixLayout(data, availableWidth)],
   };
 }

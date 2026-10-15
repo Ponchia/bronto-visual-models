@@ -28,7 +28,7 @@ The package name is `@ponchia/visual-models`. Beta archives are distributed thro
 GitHub Releases; npm registry publication is not required to install them.
 
 ```sh
-npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.4/ponchia-visual-models-0.1.0-beta.4.tgz
+npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.5/ponchia-visual-models-0.1.0-beta.5.tgz
 ```
 
 Core requires Node 22.18+ or a modern browser. UI engines are optional peers;
@@ -115,7 +115,7 @@ an authorization grant. Cameras, hover and exploratory layout stay local.
 The core carries validated contracts for diagram, timeline, Gantt, analysis,
 geography, infographic, Vega-Lite, 3D scene, spatial layers and source diagrams.
 
-The beta.4 standalone React surface implements **diagram, network, matrix,
+The beta.5 standalone React surface implements **diagram, network, matrix,
 authored timeline, native Gantt and inline Vega-Lite charts**, plus a paginated
 semantic reader and an engine-free Gantt entry. See
 [standalone views](docs/standalone-views.md). Other families are core contracts and renderer
@@ -148,6 +148,22 @@ is discarded rather than stretched onto newer content.
 [Routing and label contract](docs/routing.md) ·
 [Layout contract and limitations](docs/layouts.md) ·
 [Engine research and selection](docs/research/visualization-engines-20261015.md).
+
+## Explore without rewriting the artifact
+
+The diagram and network views include **Find & focus**: type a name or identifier,
+choose an exact node or relationship, then Reveal. Typing does not hide nodes,
+rearrange the diagram or take over the camera. Diagram keyboard position edits
+cross the same guarded host boundary as mouse edits.
+
+**Explore matrix** filters nodes and orders the current matrix by authored order,
+name or connection count without changing the model. A cell containing parallel
+relationships opens an explicit chooser instead of selecting an arbitrary edge.
+
+Chart data remains paginated, but every column is now reachable and long cells
+can be expanded to read their complete original value. These are local reading
+controls, not new persistent identities or unrequested downloads.
+[Exploration guide](docs/exploration.md).
 
 ## Truthful chart encodings
 

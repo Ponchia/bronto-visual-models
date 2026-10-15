@@ -1,5 +1,7 @@
 # Documentation
 
+- [Exploration](exploration.md): find/reveal, guarded keyboard moves, filtered matrices and complete chart data.
+
 - [Previews](previews.md): inspect a proposed change without consuming a key or writing a store.
 - [Connector routing](routing.md): derived root-space paths, measured labels and invalidation.
 - [Chart guidance](chart-guidance.md): bounded semantic advice without rewriting data.

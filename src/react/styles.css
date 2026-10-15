@@ -185,3 +185,133 @@
 .bvm-graph-shell .react-flow__edgelabel-renderer {
   z-index: 1001;
 }
+
+.bvm-explore {
+  flex: 0 0 auto;
+  max-height: 175px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--bvm-line);
+  font-size: 12px;
+}
+.bvm-explore summary {
+  cursor: pointer;
+  padding: 3px 0;
+}
+.bvm-explore form,
+.bvm-explore-form {
+  display: grid;
+  grid-template-columns: auto minmax(100px, 1fr) auto;
+  align-items: center;
+  gap: 6px 8px;
+  padding-top: 8px;
+}
+.bvm-explore input,
+.bvm-explore select,
+.bvm-explore button {
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--bvm-edge);
+  border-radius: 4px;
+  background: var(--bvm-panel);
+  color: var(--bvm-text);
+}
+.bvm-explore label {
+  grid-column: 1;
+}
+.bvm-explore input,
+.bvm-explore select {
+  grid-column: 2;
+}
+.bvm-explore button {
+  grid-column: 3;
+  grid-row: 1 / 3;
+}
+.bvm-explore [role="status"] {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.bvm-matrix {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.bvm-matrix-grid {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.bvm-matrix-empty {
+  position: absolute;
+  margin: 20px;
+  font-size: 12px;
+}
+.bvm-matrix-choices {
+  flex: 0 0 auto;
+  max-height: 140px;
+  overflow: auto;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-block: 1px solid var(--bvm-line);
+}
+.bvm-matrix-choices p {
+  margin: 3px 0;
+}
+.bvm-matrix-choices ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.bvm-matrix-choices button {
+  padding: 4px;
+  background: var(--bvm-panel);
+  color: var(--bvm-text);
+  border: 1px solid var(--bvm-edge);
+  border-radius: 4px;
+}
+.bvm-matrix-choices button[aria-pressed="true"] {
+  font-weight: bold;
+  outline: 2px solid var(--bvm-focus);
+}
+.bvm-matrix-choice {
+  flex: 0 0 auto;
+}
+.bvm-matrix-choice select {
+  background: var(--bvm-panel);
+  color: var(--bvm-text);
+  border: 1px solid var(--bvm-edge);
+}
+.bvm-cell-detail {
+  min-width: 16ch;
+  max-width: 35ch;
+}
+.bvm-cell-detail summary {
+  cursor: pointer;
+  white-space: pre-wrap;
+}
+.bvm-cell-detail pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow: auto;
+  font: inherit;
+}
+@media (max-width: 600px) {
+  .bvm-explore form,
+  .bvm-explore-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bvm-explore :is(label, input, select, button) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.bvm-keyboard-status {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  margin: 0;
+  font-size: 11px;
+  border-top: 1px solid var(--bvm-line);
+}

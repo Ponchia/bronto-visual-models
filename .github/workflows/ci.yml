@@ -33,6 +33,17 @@ jobs:
       - name: Record reproducible store benchmark
         if: matrix.node == '24'
         run: node --experimental-strip-types scripts/benchmark-store.mjs > .tmp/benchmark-store.json
+      - name: Record graph preparation and data-transfer benchmark
+        if: matrix.node == '24'
+        run: npm run bench:exploration
+      - name: Retain exploration benchmark
+        if: matrix.node == '24'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exploration-benchmark
+          path: .tmp/benchmark-exploration.json
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Retain benchmark evidence
         if: matrix.node == '24'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

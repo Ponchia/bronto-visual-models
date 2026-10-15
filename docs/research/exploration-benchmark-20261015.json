@@ -1,0 +1,41 @@
+{
+  "observedAt": "2026-10-15T16:14:09.633Z",
+  "node": "v24.17.0",
+  "architecture": "arm64",
+  "method": "Same synthetic valid-bounds graphs; equal route/port/handle results. Ten warmups and three rounds of 40 full preparations. Baseline reproduces prior per-node port filtering and per-edge scans; indexed path includes index construction. Selection counts compare successive selections. Byte figures compare exact renderer data tuple serialization. Not a browser frame-rate, memory or whole-application benchmark.",
+  "results": [
+    {
+      "nodes": 30,
+      "edges": 60,
+      "routePorts": 480,
+      "scanMilliseconds": 1.081,
+      "indexedMilliseconds": 0.243,
+      "selectionChangedObjects": 2,
+      "retainedSelectionObjects": 28,
+      "matrixPayloadBytesBefore": 63466,
+      "matrixPayloadBytesAfter": 6867
+    },
+    {
+      "nodes": 150,
+      "edges": 300,
+      "routePorts": 2400,
+      "scanMilliseconds": 5.563,
+      "indexedMilliseconds": 0.675,
+      "selectionChangedObjects": 2,
+      "retainedSelectionObjects": 148,
+      "matrixPayloadBytesBefore": 319523,
+      "matrixPayloadBytesAfter": 35538
+    },
+    {
+      "nodes": 300,
+      "edges": 600,
+      "routePorts": 4800,
+      "scanMilliseconds": 18.81,
+      "indexedMilliseconds": 1.45,
+      "selectionChangedObjects": 2,
+      "retainedSelectionObjects": 298,
+      "matrixPayloadBytesBefore": 641168,
+      "matrixPayloadBytesAfter": 72438
+    }
+  ]
+}

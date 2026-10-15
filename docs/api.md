@@ -151,3 +151,18 @@ Beta.3 adds native Gantt and a paginated semantic data reader to
 `VisualModelView`. `GanttModelView` at `/react/gantt`, paired with `/base.css`,
 omits all third-party rendering engines. See [standalone views](standalone-views.md)
 for the installation and guarded progress-edit contract. These additions are included with beta.3. Neither the model nor store snapshot format changes.
+
+## Local exploration and chart data windows
+
+Diagram/network Find & focus controls resolve current canonical targets and move
+only the local viewport. Matrix filtering and ordering never commit a model edit.
+Parallel cells require an explicit identified relationship choice. See
+[exploration](exploration.md) for keyboard controls and limitations.
+
+`chartTablePage(rows, rowPage, columnPage)` at `/render/chart-table` preserves the
+existing two-argument call and adds optional column paging. A host scanning the
+same rows repeatedly can call `chartTableColumns(rows)` once and reuse that schema
+with `chartTableWindow(rows, columns, rowPage, columnPage)`. These helpers accept
+already validated rows; regenerate their schema when the row collection changes.
+They return owned array windows while row records remain read-only references to
+the supplied source. `chartCellFullText` gives plain text; it does not create HTML.

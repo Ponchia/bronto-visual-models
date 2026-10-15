@@ -110,3 +110,20 @@ scenarios run in the hosted Chromium, Firefox and WebKit release matrix.
 
 References: [Vega asynchronous rendering and finalization](https://vega.github.io/vega/docs/api/view/)
 and [React effect cleanup](https://react.dev/reference/react/useEffect).
+
+## Exploration regression consumer
+
+The beta.5 packed fixture verifies search without layout/camera changes, explicit
+node/relationship reveal, immediate matrix selection emphasis, parallel-cell
+choices, filtering/sorting without replacing the SVG engine, column pagination
+and full-value keyboard disclosure. It checks three additional accessibility
+states, a narrow screen and no data-resource requests. Another graph fixture
+verifies keyboard position writes, readonly behavior and refusal without local
+coordinate drift.
+
+To test the selection optimization without flaky timing limits, a synthetic
+controlled graph counts source geometry/port reads. After mounting and warming
+target resolution, successive selection updates must read no source geometry.
+Unit tests also require the references of unaffected renderer items to remain
+identical. This proves those specific avoided operations, not a universal frame
+rate or a no-allocation claim for the whole browser.

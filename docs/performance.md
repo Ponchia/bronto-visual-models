@@ -106,3 +106,40 @@ The first combined production bundle measured 90,090 gzip bytes for that chunk,
 104,042 for its entry, 547,324 for pre-existing application assets and 1,071,955
 total including the optional ELK worker. These are one build's transfer sizes,
 not memory or frame-time claims; every qualifying build records its own report.
+
+## Graph interaction preparation (beta.5)
+
+A caller-scoped graph index replaces repeated endpoint, route and port-array scans
+with maps. It caches parent ordering and the handle choices for this snapshot.
+Graph selection is a separate overlay: choosing another node changes at most two
+renderer node objects, while positions, styles, node data and route geometry stay
+referentially stable. The node body is memoized. Search is a child-local control;
+its keystrokes neither regenerate the graph nor remove nonmatching nodes.
+
+The index has no global lifetime and is rebuilt when content or valid routing
+changes. It does not weaken route fingerprints, model generations, target
+incarnations or the explicit layout-commit boundary. Hosts still supply immutable
+snapshots and notify after commits.
+
+`npm run bench:exploration` records `.tmp/benchmark-exploration.json`. It compares
+reproductions of the prior scans against the indexed path, including index
+construction, for synthetic 30/150/300-node graphs with 16 ports each. Both paths
+must produce equivalent handle/route/port results. It uses ten warmups and three
+rounds of 40 preparations; no absolute time is a CI pass/fail gate.
+
+In the retained [ARM64 Node 24 measurement](research/exploration-benchmark-20261015.json),
+300 nodes / 600 relationships / 4,800 ports took **18.810 ms** with repeated scans
+and **1.450 ms** with the full indexed preparation. Selecting a different node
+retained 298 of 300 node objects. This is a measured helper-workload improvement,
+not a 13x whole-application speed claim, browser frame-rate guarantee or measured
+heap reduction. Small graphs, actual labels, device speed and contention differ.
+
+The same fixture reduced serialized matrix renderer data from **641,168** to
+**72,438 bytes** by omitting raw node descriptions/ports and nested edge records
+which the grammar never reads. The original model and explicit cell edge IDs
+remain intact. The grid still draws sparse O(nodes + relationships) marks, not
+all empty cell combinations. Raw column names are discovered once per chart-row
+collection, independent of its current row/column page.
+
+References: [React Flow performance](https://reactflow.dev/learn/advanced-use/performance)
+and [Vega signal/dataflow evaluation](https://vega.github.io/vega/docs/api/view/).

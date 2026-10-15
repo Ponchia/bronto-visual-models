@@ -56,12 +56,21 @@ headers and a caption. It shows raw `content.values`, before any filters,
 aggregations or calculated fields from the chart. This distinction stays in its
 caption; a chart's aggregated bar is not necessarily one source row.
 
-The table displays 25 rows per page, discovers columns across the whole input,
-and clamps its page after rows are removed. Empty values are supported. It shows
-at most 40 columns, explicitly reports omitted columns, and abbreviates cells
-after 240 characters. These are presentation limits, not data deletion. The
-existing 2,000-row family limit still applies. Missing values display an em dash;
-JSON `null`, false and zero remain distinct.
+The table displays 25 rows and at most 40 columns per page. Separate row and column
+controls make every sparse column reachable; both page indices clamp after input
+shrinks. Column discovery runs once per immutable row collection, not again for
+every page click. There is no automatic sort or mutation of source rows.
+
+Cells longer than 240 characters have a native disclosure. Activate it with the
+keyboard to read the complete original value in a bounded, scrollable text area.
+The complete text region mounts only when its disclosure is opened. The short
+form is a presentation preview, not inaccessible data loss. On narrow screens,
+the table scrolls horizontally instead of compressing ordinary headers into
+single-letter columns. An expanded cell uses a short disclosure label rather
+than repeating its long preview above the full value. The existing
+2,000-row family limit still applies. Missing values display an em dash;
+JSON `null`, false and zero remain distinct. Full cell text, including HTML-looking
+strings, is still rendered as text and creates no image, link or other resource.
 
 Row numbers are positional labels, not element targets. The adapter does not
 invent `VisualTarget` IDs or route chart clicks to unrelated annotations. Text

@@ -6,7 +6,12 @@ import { seededSpec, useVegaSurface } from "../engines/vega-surface.ts";
 import { chartEncodingGuidance } from "../chart-guidance.ts";
 import { canonicalVisualJson } from "../model.ts";
 import { chartFrame } from "../render/chart-fill.ts";
-import { chartCellText, chartTablePage } from "../render/chart-table.ts";
+import {
+  chartCellText,
+  chartCellFullText,
+  chartTableColumns,
+  chartTableWindow,
+} from "../render/chart-table.ts";
 import {
   inlineChartLoader,
   prepareInlineChart,
@@ -78,13 +83,33 @@ function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: 
   );
 }
 
+function DataCell({ value, row, column }: { value: unknown; row: number; column: string }) {
+  const [open, setOpen] = useState(false);
+  const full = chartCellFullText(value);
+  if (full.length <= 240) return <>{full}</>;
+  return (
+    <details className="bvm-cell-detail" onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary aria-label={`Full value, row ${row}, column ${column}`}>
+        {open ? "Hide complete value" : chartCellText(value)}
+      </summary>
+      {open && (
+        <pre tabIndex={0} aria-label={`Complete value, row ${row}, column ${column}`}>
+          {full}
+        </pre>
+      )}
+    </details>
+  );
+}
+
 function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
   const [table, setTable] = useState(false);
   const advice = useMemo(() => chartEncodingGuidance(props.model.content), [props.model.content]);
   const [requestedPage, setPage] = useState(0);
+  const [requestedColumnPage, setColumnPage] = useState(0);
+  const columns = useMemo(() => chartTableColumns(props.input.values), [props.input.values]);
   const page = useMemo(
-    () => chartTablePage(props.input.values, requestedPage),
-    [props.input.values, requestedPage],
+    () => chartTableWindow(props.input.values, columns, requestedPage, requestedColumnPage),
+    [props.input.values, columns, requestedPage, requestedColumnPage],
   );
   return (
     <div className="bvm-chart">
@@ -139,7 +164,14 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
                   <tr key={page.start + index}>
                     <th scope="row">{page.start + index + 1}</th>
                     {page.columns.map((column) => (
-                      <td key={column}>{chartCellText(row[column])}</td>
+                      <td key={column}>
+                        <DataCell
+                          key={`${props.model.revision}:${page.start + index}:${column}`}
+                          value={row[column]}
+                          row={page.start + index + 1}
+                          column={column}
+                        />
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -164,14 +196,30 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
               Next rows
             </button>
           </div>
-          {page.omittedColumns > 0 && (
-            <p className="bvm-chart-table-note">
-              Showing the first {page.columns.length} columns; {page.omittedColumns} more remain in
-              the model.
-            </p>
+          {page.columnPageCount > 1 && (
+            <div className="bvm-chart-pagination" role="group" aria-label="Chart column pages">
+              <button
+                type="button"
+                disabled={page.columnPage === 0}
+                onClick={() => setColumnPage(page.columnPage - 1)}
+              >
+                Previous columns
+              </button>
+              <span role="status">
+                Columns {page.columnStart + 1}–{page.columnStart + page.columns.length} of{" "}
+                {page.totalColumns}
+              </span>
+              <button
+                type="button"
+                disabled={page.columnPage + 1 >= page.columnPageCount}
+                onClick={() => setColumnPage(page.columnPage + 1)}
+              >
+                Next columns
+              </button>
+            </div>
           )}
           <p className="bvm-chart-table-note">
-            Text cells are abbreviated after 240 characters. Row numbers are positions, not
+            Long cells can be expanded to read the complete value. Row numbers are positions, not
             persistent element identities.
           </p>
         </div>

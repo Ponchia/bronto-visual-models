@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.0-beta.5
+
+- Index graph endpoints, routes and port offsets once per content snapshot; selection
+  retains unchanged node/edge objects instead of rebuilding visual geometry.
+- Add explicit Find & focus for diagrams/networks, including namespaced relationship
+  selection, no camera changes on typing, and bounded native search controls.
+- Commit keyboard position edits through generation/revision/coordinate guards;
+  readonly and refused edits do not leave renderer-only moved nodes.
+- Add matrix filtering/order and parallel-relationship choices. Evaluate selection
+  signal changes immediately; retain the compiled sparse matrix for filtering.
+  Explicit scale ranks prevent a reused engine from retaining its old ordering.
+- Measure matrix label gutters with the host font so short names keep their
+  distinguishing suffixes; preserve full accessible labels for bounded clipping.
+- Send minimal matrix tuples instead of copying authored prose/ports/edges into Vega.
+- Add chart column pagination and expandable full cell values. Reuse discovered
+  sparse columns across page changes, retaining source rows and their order.
+- Add measured preparation benchmarks and independently packed browser exploration
+  coverage. No new dependencies, saved formats or Spatial consumer changes.
+
 ## 0.1.0-beta.4
 
 - Never acknowledge failed same-grammar chart data updates. Invalidate queued frame

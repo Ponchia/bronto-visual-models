@@ -79,6 +79,9 @@ export async function testReactContract(
       reads,
       "Unrelated transactions and React renders must not re-clone the model",
     );
+    await page.waitForFunction(() =>
+      document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("selected"),
+    );
     assert.ok((await node.getAttribute("class")).includes("selected"));
     await page.getByRole("button", { name: "Replace A", exact: true }).click();
     await page.waitForFunction(
@@ -114,6 +117,63 @@ export async function testReactContract(
     await page.getByRole("alert").filter({ hasText: "Synchronous edit refused" }).waitFor();
     await node.waitFor({ state: "visible" });
     assert.equal(await node.evaluate((element) => element.style.transform), latestPosition);
+    // Keyboard edits must cross the host transaction boundary, never just move the local node.
+    await page.getByLabel("Commit mode").selectOption("accept");
+    await node.focus();
+    await page.keyboard.press("Enter");
+    const beforeKeyboard = JSON.parse(await page.getByTestId("saved").textContent()).find(
+      (n) => n.id === "a",
+    );
+    const beforeRevision = Number(await page.getByTestId("revision").textContent());
+    await page.keyboard.press("ArrowRight");
+    await page.waitForFunction(
+      (revision) =>
+        Number(document.querySelector('[data-testid="revision"]').textContent) > revision,
+      beforeRevision,
+    );
+    const afterKeyboard = JSON.parse(await page.getByTestId("saved").textContent()).find(
+      (n) => n.id === "a",
+    );
+    assert.equal(afterKeyboard.x, beforeKeyboard.x + 10);
+    assert.equal(afterKeyboard.y, beforeKeyboard.y);
+    await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("draggable"),
+    );
+    await node.waitFor({ state: "visible" });
+    await node.focus();
+    await page.waitForFunction(() =>
+      document.activeElement?.matches('.react-flow__node[data-id="a"]'),
+    );
+    await page.keyboard.press("ArrowRight");
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+    assert.deepEqual(
+      JSON.parse(await page.getByTestId("saved").textContent()).find((n) => n.id === "a"),
+      afterKeyboard,
+    );
+    await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
+    await page.getByLabel("Commit mode").selectOption("sync");
+    await page.waitForFunction(() =>
+      document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("draggable"),
+    );
+    // React Flow temporarily hides nodes while reconciling changed draggable state.
+    // focus() alone need not wait for visibility, so it can leave focus on the toolbar.
+    await node.waitFor({ state: "visible" });
+    await node.focus();
+    await page.waitForFunction(() =>
+      document.activeElement?.matches('.react-flow__node[data-id="a"]'),
+    );
+    await page.keyboard.press("ArrowDown");
+    await page
+      .getByText("Position edit was refused; saved coordinates are unchanged.", { exact: true })
+      .waitFor();
+    assert.deepEqual(
+      JSON.parse(await page.getByTestId("saved").textContent()).find((n) => n.id === "a"),
+      afterKeyboard,
+    );
     await page.getByRole("button", { name: "Switch model", exact: true }).click();
     await page.locator('.bvm-view[data-model-id="other"]').waitFor();
     assert.equal(await page.getByRole("alert").count(), 0, "Errors leaked between models");
@@ -198,6 +258,7 @@ export async function testReactContract(
       device: "react-contract",
       passed: true,
       assertions: [
+        "guarded keyboard position edits, readonly behavior and refusal without phantom movement",
         "StrictMode subscriptions",
         "render-to-subscribe catch-up",
         "stable snapshot",

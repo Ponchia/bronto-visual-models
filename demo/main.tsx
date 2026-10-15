@@ -415,7 +415,7 @@ function App() {
                 onEdit={(patch) =>
                   execute({ type: "edit", id: "delivery", key: key("time"), patch })
                 }
-                height={255}
+                height={330}
               />
             )}
           </div>

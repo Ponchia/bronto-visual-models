@@ -112,3 +112,8 @@ and [Vega-Lite compilation API](https://vega.github.io/vega-lite/usage/compile.h
 The reference view now exposes advisory encoding notes, and the demo limits mark
 choices according to whether the data is categorical or ordered. See
 [chart encoding guidance](chart-guidance.md). Valid data is not rewritten by advice.
+
+The shared **Inspect model** control inspects the authored model and identified
+annotations. **Data table** inside the chart presents raw inline rows before
+transforms. These labels distinguish metadata inspection from source values;
+neither action fetches a connected dataset or changes the saved document.

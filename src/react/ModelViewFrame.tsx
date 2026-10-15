@@ -111,7 +111,7 @@ export function ModelViewFrame(
             Visual
           </button>
           <button type="button" aria-pressed={reading} onClick={() => setReading(true)}>
-            Read data
+            {model.renderer === "vega-lite" ? "Inspect model" : "Read data"}
           </button>
         </div>
       )}

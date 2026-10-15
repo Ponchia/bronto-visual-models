@@ -1,6 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { createModel, editModel } from "../dist/index.js";
 import { layoutDiagram } from "../dist/layout/elk.js";
+import ELK from "elkjs/lib/elk.bundled.js";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -59,14 +60,32 @@ for (const count of [12, 60, 180, 300]) {
     renderer: "diagram",
     content,
   });
-  for (const algorithm of ["dagre", "elk-layered"]) {
+  for (const algorithm of ["dagre", "elk-brandes-koepf", "elk-layered"]) {
     const durations = [];
     let nodes;
     // One warmup, then 3 measurements. No performance threshold is a release gate.
     for (let run = 0; run < 4; run++) {
       const start = performance.now();
-      if (algorithm === "elk-layered") {
-        const proposal = await layoutDiagram(model, { spacing: 48, layerSpacing: 88 });
+      if (algorithm !== "dagre") {
+        const engine = algorithm === "elk-brandes-koepf" ? new ELK() : undefined;
+        const proposal = await layoutDiagram(
+          model,
+          { spacing: 48, layerSpacing: 88 },
+          engine
+            ? {
+                engine: {
+                  layout: (root) =>
+                    engine.layout({
+                      ...root,
+                      layoutOptions: {
+                        ...root.layoutOptions,
+                        "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+                      },
+                    }),
+                },
+              }
+            : {},
+        );
         nodes = editModel(model, proposal.patch).model.content.nodes;
       } else {
         const g = new dagre.graphlib.Graph({ multigraph: true })

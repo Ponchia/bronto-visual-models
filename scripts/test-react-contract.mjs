@@ -113,6 +113,41 @@ export async function testReactContract(browser) {
     await page.getByRole("button", { name: "Switch model", exact: true }).click();
     await page.locator('.bvm-view[data-model-id="other"]').waitFor();
     assert.equal(await page.getByRole("alert").count(), 0, "Errors leaked between models");
+    await page.getByRole("button", { name: "Custom theme", exact: true }).click();
+    assert.equal(
+      await node
+        .locator(".bvm-entity")
+        .evaluate((element) => getComputedStyle(element).borderTopColor),
+      "rgb(145, 183, 229)",
+    );
+    assert.equal(
+      await page
+        .locator(".bvm-view")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+      "rgb(23, 32, 42)",
+    );
+    await page.getByRole("button", { name: "Custom ports", exact: true }).click();
+    const firstPort = node.locator('.source[data-handleid="out1"]');
+    const secondPort = node.locator('.source[data-handleid="out2"]');
+    await secondPort.waitFor();
+    const a = await firstPort.boundingBox(),
+      b = await secondPort.boundingBox();
+    assert.ok(a && b && b.y - a.y > 10, "Custom ports overlapped");
+    const path = page.locator('.react-flow__edge[data-id="port-edge"] .react-flow__edge-path');
+    await path.waitFor({ state: "attached" });
+    const previousPath = await path.getAttribute("d");
+    assert.ok(
+      previousPath && !previousPath.includes("NaN"),
+      "Explicit top/custom connection has no geometry",
+    );
+    await page.getByRole("button", { name: "Move port sides", exact: true }).click();
+    await node.locator('.source.react-flow__handle-bottom[data-handleid="out2"]').waitFor();
+    await page.waitForFunction((before) => {
+      const value = document
+        .querySelector('.react-flow__edge[data-id="port-edge"] .react-flow__edge-path')
+        ?.getAttribute("d");
+      return value && value !== before && !value.includes("NaN");
+    }, previousPath);
     assert.deepEqual(errors, [], "Unhandled React or callback error");
     await page.screenshot({ path: resolve(output, "react-contract.png"), fullPage: true });
     return {
@@ -128,6 +163,9 @@ export async function testReactContract(browser) {
         "late refusal restores latest host",
         "synchronous refusal",
         "model-switch error reset",
+        "host-token graph colors",
+        "separated custom ports and explicit top endpoint",
+        "dynamic port measurement updates edge geometry",
       ],
     };
   } catch (error) {

@@ -11,12 +11,7 @@ import {
   visualRecord,
 } from "../model.ts";
 import { assertVisualModel, editModel, type ModelEdit } from "../operations.ts";
-import {
-  GRAPH_ENTITY_SIZE,
-  GRAPH_GROUP_PADDING,
-  type GraphContent,
-  type GraphNode,
-} from "../semantic.ts";
+import { GRAPH_ENTITY_SIZE, GRAPH_GROUP_PADDING, type GraphContent } from "../semantic.ts";
 import { graphEdgeHandles, graphPorts } from "../render/graph-ports.ts";
 
 export interface DiagramLayoutOptions {

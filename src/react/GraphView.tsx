@@ -7,6 +7,7 @@ import {
   MarkerType,
   Position,
   applyNodeChanges,
+  useUpdateNodeInternals,
   type Node,
   type NodeProps,
   type Edge,
@@ -25,8 +26,13 @@ const position = {
   bottom: Position.Bottom,
   left: Position.Left,
 };
-function Entity({ data }: NodeProps<GraphFlowNode>) {
+function Entity({ id, data }: NodeProps<GraphFlowNode>) {
   const ports = graphPorts(data);
+  const updateNodeInternals = useUpdateNodeInternals();
+  const portGeometry = JSON.stringify(ports.map(({ id, side, offset }) => ({ id, side, offset })));
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, portGeometry, updateNodeInternals]);
   return (
     <div className={`bvm-entity ${data.group ? "bvm-group" : ""}`}>
       <span className="bvm-entity-label">{data.label}</span>

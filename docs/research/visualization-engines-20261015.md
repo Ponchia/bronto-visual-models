@@ -111,6 +111,34 @@ as an unbiased library-speed ranking, a browser benchmark or proof of optimal
 edge routes. Import/worker cold starts, text/edge overlaps and memory retention are
 not measured by that script.
 
+### Measured placement tuning
+
+The retained [local measurement](layout-benchmark-20261015.json) uses Node 24.17.0
+on ARM64, elkjs 0.12.0 and Dagre 3.1.1. All reported cases had zero overlapping
+node rectangles. This says nothing about edge crossings or label overlaps.
+
+| Synthetic graph | ELK Brandes–Köpf bounds | Tuned ELK bounds | Tuned median | Raw Dagre median |
+| --- | --- | --- | --- | --- |
+| 60 nodes / 99 edges | 1,664 × 3,104 | 1,664 × 1,302 | 121.4 ms | 81.1 ms |
+| 180 nodes / 339 edges | 5,120 × 7,544 | 5,120 × 1,407 | 328.2 ms | 332.5 ms |
+| 300 nodes / 579 edges | 8,576 × 12,044 | 8,576 × 1,407 | 702.1 ms | 565.8 ms |
+
+Network-simplex placement dramatically reduced whitespace in these **flat**
+fixtures, but it was not uniformly faster: at 300 nodes, the original ELK strategy
+took 397.1 ms versus 702.1 ms for the tuned one. We chose compactness and keep the
+expensive computation in an optional worker, not on every renderer update.
+
+The same strategy failed a cross-hierarchy fixture with a TypeError inside ELK
+0.12.0. Compound models therefore retain the tested Brandes–Köpf strategy. There is
+no catch-and-retry that silently flattens groups. The adapter's group fixture
+verifies containment, header padding, parent-relative coordinates and unchanged
+relationships. Keep both cases in regression tests when upgrading ELK.
+
+These results are local evidence for a bounded policy, not a general ELK-versus-
+Dagre ranking. The benchmark includes adapter validation for ELK and the raw Dagre
+call for the baseline. Timing varies with runtime and concurrent machine load;
+worker startup, font metrics, memory and route quality need separate measurement.
+
 The next decision gate for a different network engine is a representative, measured
 read-only network workload and a mapped capability contract, not another demo-only
 integration. The next chart-quality gate is truthful encoding choices, accessible

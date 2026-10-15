@@ -111,3 +111,11 @@ Optional lower-level subpaths expose the extracted Vega and vis-timeline engine
 hooks plus geometry helpers. Hooks accept host instrumentation (`onAcquire`) and
 explicit resolved theme tokens. A host's observers and appearance events stay
 outside the package. Import the relevant engine stylesheet in that host.
+
+## Unreleased standalone additions
+
+Current source adds native Gantt and a paginated semantic data reader to
+`VisualModelView`. `GanttModelView` at `/react/gantt`, paired with `/base.css`,
+omits all third-party rendering engines. See [standalone views](standalone-views.md)
+for the installation and guarded progress-edit contract. The beta.2 archive does
+not include these additions. Neither the model nor store snapshot format changes.

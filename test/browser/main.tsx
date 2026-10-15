@@ -53,6 +53,7 @@ function Harness() {
   const [id, setId] = useState("graph");
   const model = useVisualModel(source, id);
   const [mode, setMode] = useState("accept");
+  const [writable, setWritable] = useState(true);
   const [customTheme, setCustomTheme] = useState(false);
   const tokens = useMemo(
     () =>
@@ -99,6 +100,29 @@ function Harness() {
             },
           },
         });
+      await store.execute({
+        type: "create",
+        key: "create-schedule",
+        model: { id: "schedule", title: "Schedule fixture", template: "gantt" },
+      });
+      await store.execute({
+        type: "create",
+        key: "create-many",
+        model: {
+          id: "many",
+          title: "Large data fixture",
+          renderer: "diagram",
+          content: {
+            nodes: Array.from({ length: 120 }, (_, index) => ({
+              id: `row-${index}`,
+              label: `Record ${index}`,
+              x: index * 10,
+              y: 0,
+            })),
+            edges: [],
+          },
+        },
+      });
     })();
   }, [store]);
   const write = async (patch: ModelEdit) => {
@@ -172,6 +196,9 @@ function Harness() {
       >
         Unrelated update
       </button>
+      <button onClick={() => setId("schedule")}>Open schedule</button>
+      <button onClick={() => setId("many")}>Open large model</button>
+      <button onClick={() => setWritable((current) => !current)}>Toggle editing</button>
       <button onClick={() => setCustomTheme(true)}>Custom theme</button>
       <button
         onClick={() =>
@@ -242,7 +269,7 @@ function Harness() {
           height={430}
           selected={selected}
           onSelect={setSelected}
-          onEdit={onEdit}
+          onEdit={writable ? onEdit : undefined}
         />
       )}
     </main>

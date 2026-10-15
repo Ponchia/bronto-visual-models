@@ -30,6 +30,17 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:pack
+      - name: Record reproducible store benchmark
+        if: matrix.node == '24'
+        run: node --experimental-strip-types scripts/benchmark-store.mjs > .tmp/benchmark-store.json
+      - name: Retain benchmark evidence
+        if: matrix.node == '24'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: store-benchmark
+          path: .tmp/benchmark-store.json
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Retain installable beta package
         if: matrix.node == '24'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -39,9 +50,15 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
   browser:
-    name: Packed UI / Chromium
+    name: Packed UI / ${{ matrix.browser }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      BVM_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -52,19 +69,22 @@ jobs:
       - run: npm run format:check
       - run: npm run lint:docs
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run site:build:packed
+      - run: npm run check:bundle
       - run: npm run test:browser
       - name: Retain browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: browser-evidence
-          path: .tmp/browser/
+          name: browser-evidence-${{ matrix.browser }}
+          path: |
+            .tmp/browser/
+            .tmp/bundle-report.json
           include-hidden-files: true
           if-no-files-found: warn
       - name: Prepare Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: matrix.browser == 'chromium' && github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: site-dist

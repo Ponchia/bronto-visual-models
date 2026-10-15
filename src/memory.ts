@@ -125,7 +125,7 @@ export class MemoryModelStore {
     return model ? structuredClone(model) : undefined;
   }
   list() {
-    return [...this.#models.values()].map((model) => modelSummary(structuredClone(model)));
+    return [...this.#models.values()].map((model) => structuredClone(modelSummary(model)));
   }
   snapshot(): ModelStoreSnapshot {
     return structuredClone({

@@ -81,7 +81,7 @@ export default function MatrixView(props: AdapterProps) {
   }, [surface.run, props.selected]);
   return (
     <div className="bvm-matrix">
-      <div className="bvm-engine" ref={container} />
+      <div className="bvm-engine" ref={container} tabIndex={0} />
       <label className="bvm-matrix-choice">
         Relationship{" "}
         <select

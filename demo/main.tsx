@@ -66,6 +66,8 @@ function App() {
   const sequence = useRef(0);
   const model = useVisualModel(store, "architecture");
   const timeline = useVisualModel(store, "delivery");
+  const schedule = useVisualModel(store, "schedule");
+  const [selectedTask, setSelectedTask] = useState<VisualTarget | null>(null);
   const [proposal, setProposal] = useState<{
     command: ModelCommand;
     preview: CommandPreview;
@@ -96,6 +98,18 @@ function App() {
       );
       await store.execute(
         { type: "create", key: "initial-delivery", model: milestone },
+        { actor: "demo" },
+      );
+      await store.execute(
+        {
+          type: "create",
+          key: "initial-schedule",
+          model: {
+            id: "schedule",
+            title: "Release plan",
+            template: "gantt",
+          },
+        },
         { actor: "demo" },
       );
       if (!disposed) {
@@ -343,6 +357,28 @@ function App() {
                   execute({ type: "edit", id: "delivery", key: key("time"), patch })
                 }
                 height={255}
+              />
+            )}
+          </div>
+          <div className="gantt-panel">
+            <div className="panel-header">
+              <div>
+                <span className="small-label">Standalone schedule</span>
+                <h3>Release plan</h3>
+              </div>
+              <span className="subtle" data-testid="gantt-revision">
+                rev {schedule?.revision ?? "—"}
+              </span>
+            </div>
+            {schedule && (
+              <VisualModelView
+                model={schedule}
+                height={720}
+                selected={selectedTask}
+                onSelect={setSelectedTask}
+                onEdit={(patch) =>
+                  execute({ type: "edit", id: "schedule", key: key("gantt"), patch })
+                }
               />
             )}
           </div>

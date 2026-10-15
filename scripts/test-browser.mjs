@@ -5,7 +5,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { testRoutingContract } from "./test-routing-contract.mjs";
 import { testReactContract } from "./test-react-contract.mjs";
 import { testChartContract } from "./test-chart-contract.mjs";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
+import { checkAccessibility } from "./accessibility.mjs";
+const browserName = process.env.BVM_BROWSER ?? "chromium";
+const browserType = { chromium, firefox, webkit }[browserName];
+assert.ok(browserType, `Unknown BVM_BROWSER: ${browserName}`);
 const root = new URL("../", import.meta.url);
 const server = spawn(
   process.execPath,
@@ -27,19 +31,24 @@ const server = spawn(
 let serverLog = "";
 for (const stream of [server.stdout, server.stderr])
   stream.on("data", (chunk) => {
-    serverLog += chunk;
+    serverLog = (serverLog + chunk).slice(-32000);
   });
+let serverFailure;
+server.on("error", (error) => {
+  serverFailure = error;
+});
 let browser;
-const output = new URL("../.tmp/browser/", import.meta.url);
+const output = new URL(`../.tmp/browser/${browserName}/`, import.meta.url);
 await mkdir(output, { recursive: true });
 const results = [];
 try {
   const url = "http://127.0.0.1:4173/bronto-visual-models/";
   let online = false;
   for (let attempt = 0; attempt < 100; attempt++) {
+    if (serverFailure) throw serverFailure;
     if (server.exitCode !== null) throw new Error(`Preview exited: ${serverLog}`);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(1000) });
       online = response.ok;
     } catch {
       /* startup only */
@@ -48,17 +57,21 @@ try {
     await delay(100);
   }
   assert(online, `Preview did not start: ${serverLog}`);
-  browser = await chromium.launch({ headless: true });
+  browser = await browserType.launch({ headless: true });
   for (const device of [
     { name: "desktop", width: 1440, height: 1100 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
     const context = await browser.newContext({
       viewport: { width: device.width, height: device.height },
-      ...(device.name === "mobile" ? { isMobile: true, hasTouch: true } : {}),
+      ...(device.name === "mobile" && browserName !== "firefox"
+        ? { isMobile: true, hasTouch: true }
+        : {}),
     });
     const page = await context.newPage();
+    page.setDefaultTimeout(15000);
     const errors = [];
+    const accessibility = [];
     const requests = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("request", (request) => {
@@ -130,10 +143,24 @@ try {
           .waitFor({ state: "attached" });
         if (projection === "Matrix") {
           await page.locator(".bvm-matrix svg").waitFor();
+          // Vega supplies this region's graphics-document role and semantic description.
+          const matrixRegion = page.locator(".bvm-matrix .bvm-engine");
+          await matrixRegion.focus();
+          assert.ok(
+            await matrixRegion.evaluate((element) => document.activeElement === element),
+            "Matrix scrolling is not keyboard reachable",
+          );
           await page.getByLabel("Matrix relationship").selectOption("persist");
           await page.getByLabel("Selected edge: persist").waitFor();
         }
         assert.equal(await page.getByTestId("revision").textContent(), "rev 4");
+        accessibility.push(
+          await checkAccessibility(
+            page,
+            new URL(`${device.name}-${projection.toLowerCase()}-axe.json`, output),
+            ".primary-panel .bvm-view",
+          ),
+        );
       }
       await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
       await page.getByRole("region", { name: "Proposed changes" }).waitFor();
@@ -240,11 +267,56 @@ try {
         () => document.querySelector('[data-testid="chart-ready"]')?.textContent === "3",
       );
       await page.getByRole("button", { name: "Data table", exact: true }).click();
-      await page.getByRole("table").waitFor();
+      await page.locator(".chart-panel").getByRole("table").waitFor();
       assert.equal(await page.locator(".chart-panel tbody tr").count(), 4);
-      assert.ok((await page.getByRole("table").textContent()).includes("2026-10-15T10:00:00Z"));
-      assert.ok((await page.getByRole("table").textContent()).includes("100"));
+      assert.ok(
+        (await page.locator(".chart-panel").getByRole("table").textContent()).includes(
+          "2026-10-15T10:00:00Z",
+        ),
+      );
+      assert.ok(
+        (await page.locator(".chart-panel").getByRole("table").textContent()).includes("100"),
+      );
       await page.getByRole("button", { name: "Chart", exact: true }).click();
+      const primary = page.locator(".primary-panel");
+      await primary.getByRole("button", { name: "Read data", exact: true }).click();
+      const filter = primary.getByLabel("Filter model elements");
+      await filter.fill("Postgres");
+      await primary.getByRole("rowheader", { name: "Postgres", exact: true }).waitFor();
+      assert.equal(
+        await primary.locator(".bvm-data pre").count(),
+        0,
+        "Closed records were eagerly formatted",
+      );
+      await primary.getByText("Inspect fields for database", { exact: true }).click();
+      await primary
+        .getByLabel("Stored fields for database")
+        .filter({ hasText: '"id": "database"' })
+        .waitFor();
+      await primary.getByRole("button", { name: "Postgres", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await page.getByLabel("Selected node: database", { exact: true }).waitFor();
+      accessibility.push(
+        await checkAccessibility(
+          page,
+          new URL(`${device.name}-data-axe.json`, output),
+          ".primary-panel .bvm-view",
+        ),
+      );
+      await primary.getByRole("button", { name: "Visual", exact: true }).click();
+      const gantt = page.locator(".gantt-panel");
+      await gantt.locator(".bvm-task-label").filter({ hasText: "Implement controls" }).focus();
+      await page.keyboard.press("Enter");
+      await gantt.getByLabel("Progress for Implement controls (%)", { exact: true }).fill("60");
+      await gantt.getByRole("button", { name: "Save progress", exact: true }).click();
+      await page.getByTestId("gantt-revision").filter({ hasText: "rev 2" }).waitFor();
+      await gantt
+        .locator(".bvm-task-label")
+        .filter({ hasText: /Implement controls.*60%/ })
+        .waitFor();
+      accessibility.push(
+        await checkAccessibility(page, new URL(`${device.name}-page-axe.json`, output)),
+      );
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
         scroll: document.documentElement.scrollWidth,
@@ -255,23 +327,62 @@ try {
       );
       if (device.name === "mobile") {
         const tops = await page.evaluate(() =>
-          [".primary-panel", ".inspector", ".timeline-panel", ".chart-panel", ".receipt-panel"].map(
-            (selector) => document.querySelector(selector).getBoundingClientRect().top,
-          ),
+          [
+            ".primary-panel",
+            ".inspector",
+            ".timeline-panel",
+            ".chart-panel",
+            ".gantt-panel",
+            ".receipt-panel",
+          ].map((selector) => document.querySelector(selector).getBoundingClientRect().top),
         );
         assert.ok(
           tops.every((top, index) => index === 0 || top > tops[index - 1]),
           "Mobile panel order lost the main diagram-and-edit workflow",
         );
       }
+      assert.deepEqual(
+        accessibility.filter((result) => result.violations.length),
+        [],
+        "Automatically detectable accessibility violations",
+      );
       assert.deepEqual(errors, [], "Uncaught browser errors");
+      if (device.name === "mobile") {
+        const panels = page.locator(".primary-panel, .gantt-panel");
+        const order = await panels.evaluateAll((items) =>
+          items.map((panel) => ({ name: panel.className, top: panel.getBoundingClientRect().top })),
+        );
+        assert.ok(
+          order.find((panel) => panel.name.includes("primary-panel")).top <
+            order.find((panel) => panel.name.includes("gantt-panel")).top,
+          "A secondary example precedes the primary model on mobile",
+        );
+      }
+      // After layout exploration, use the actual Fit control before taking the overview.
+      await primary.getByRole("button", { name: "Fit View", exact: true }).click();
+      await page.waitForFunction(() => {
+        const surface = document.querySelector(".primary-panel .bvm-view").getBoundingClientRect();
+        const nodes = [...document.querySelectorAll(".primary-panel .react-flow__node")];
+        return (
+          nodes.length === 4 &&
+          nodes.every((node) => {
+            const box = node.getBoundingClientRect();
+            return box.width > 0 && box.left >= surface.left - 2 && box.right <= surface.right + 2;
+          })
+        );
+      });
+      await gantt.locator(".bvm-gantt").evaluate((element) => {
+        element.scrollTop = 0;
+      });
       assert.deepEqual(requests, [], "The local demo made an external data request");
       await page.screenshot({
         path: new URL(`${device.name}.png`, output).pathname,
         fullPage: true,
       });
       results.push({
-        device: device.name,
+        browser: browserName,
+        device:
+          browserName === "firefox" && device.name === "mobile" ? "narrow-desktop" : device.name,
         passed: true,
         assertions: [
           "create",
@@ -287,11 +398,15 @@ try {
           "all projections",
           "timeline",
           "inline chart types, row updates and raw data table",
+          "Gantt keyboard selection and guarded progress edit",
+          "semantic data filter and keyboard selection",
+          "WCAG-tagged automated accessibility checks",
           "initial graph fully visible on both viewport sizes",
           "worker layout preview/discard/apply/undo",
           "ELK polylines, measured non-overlapping labels and undo invalidation",
           "semantic chart choices: categories versus temporal trends",
           "all four default port sides",
+          "primary example ordering on narrow screens and final Fit overview",
           "no overflow",
           "no external requests",
         ],
@@ -311,9 +426,9 @@ try {
       await context.close();
     }
   }
-  results.push(await testReactContract(browser));
-  results.push(await testRoutingContract(browser));
-  results.push(await testChartContract(browser));
+  results.push(await testReactContract(browser, output));
+  results.push(await testRoutingContract(browser, output));
+  results.push(await testChartContract(browser, output));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

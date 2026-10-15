@@ -30,6 +30,14 @@ Adds `vega-interpreter` as an optional chart peer (and a development test
 requirement), not a core dependency. The stored model format remains version 2;
 this release does not update Spatial's separately pinned version.
 
+- Native Gantt schedules with identified task/dependency selection, guarded
+  progress editing and an engine-free React entry/base stylesheet.
+- Paginated, filterable semantic model data with keyboard-operable selection.
+- Chromium, Firefox and WebKit CI; automated accessibility scans, keyboard
+  scenarios and compressed bundle regression gates.
+- Validate completed model envelopes before publication; add fixed-seed
+  edit/undo/replacement/restart regressions and avoid cloning bodies for lists.
+
 ### Diagram layouts
 
 - Explicit ELK layered proposals for RIGHT/DOWN diagrams, guarded by source

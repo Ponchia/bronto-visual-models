@@ -6,7 +6,7 @@ import {
   layoutDiagram,
   type DiagramLayoutOptions,
   type DiagramLayoutProposal,
-} from "@ponchia/visual-models/layout/elk";
+} from "@ponchia/visual-models/layout/diagram";
 
 /** Own the official ELK worker rather than nesting the in-process shim inside another worker. */
 export function computeDiagramLayout(

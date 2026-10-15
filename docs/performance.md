@@ -55,3 +55,39 @@ interaction tests in addition to any benchmark. The next Spatial integration
 review should separately measure initial mount, model-edit acknowledgement,
 selection, pan/zoom, canvas resizing, memory after unmount and large collections,
 with realistic data and a recorded hardware/browser profile.
+
+## Listing and bounded data views
+
+`list()` removes content and element-incarnation maps before cloning summaries,
+so opening a library list no longer clones every model body. Nested host metadata
+in summaries remains owned by the caller. The semantic data reader paginates
+identified records rather than mounting a full collection at once. Stored-field
+JSON is resolved and formatted only when its disclosure is opened, not for every
+closed row on the current page.
+
+Complete created, edited, forked and undone models are checked against the JSON
+budget after generated metadata is added. This validation cost is deliberate:
+a successful operation must not emit a model that fails on the next read.
+
+## Bundle regression gates
+
+Run `npm run check:bundle` after `npm run site:build:packed`. The guard traverses
+the built manifest's static imports, leaving dynamic renderers out of the
+initial-JavaScript count. It refuses accidentally eager renderer entries and
+records raw/gzip sizes. Limits are kept in `scripts/bundle-budget.mjs`: 128 KiB
+initial JavaScript, 600 KiB application JavaScript, 215 KiB per application
+JavaScript asset, 12 KiB aggregate CSS and 10 KiB for each native renderer/data
+reader asset. The optional ELK worker retained from the diagram-layout work
+has a separate 650 KiB budget; total JavaScript including that worker is bounded
+at 1,250 KiB. It is not an initial renderer dependency.
+These are gzip transfer limits, not memory budgets or frame-rate claims.
+
+The dedicated native Gantt consumer uses `/react/gantt` and `/base.css`, with no
+React Flow, Vega or vis-timeline installation. The aggregate stylesheet remains
+available for hosts using those engines. A separate packed install proves that
+the small native view is not merely a tree-shaking assumption.
+
+The worker-backed demo imports `/layout/diagram`, whose engine is supplied by
+its host. `/layout/elk` remains the in-process convenience entry. This separation
+keeps the duplicate bundled ELK engine out of the demo instead of hiding it
+behind a larger asset limit.

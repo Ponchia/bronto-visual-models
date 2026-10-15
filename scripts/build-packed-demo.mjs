@@ -12,16 +12,17 @@ const packed = JSON.parse(
 )[0];
 const directory = await mkdtemp(join(tmpdir(), "bvm-ui-consumer-"));
 const output = resolve("site-dist");
+const nativeDirectory = await mkdtemp(join(tmpdir(), "bvm-native-consumer-"));
 try {
   const dependencies = { "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}` };
   for (const name of [
+    "vega-lite",
+    "vega-interpreter",
     "elkjs",
     "react",
     "react-dom",
     "@xyflow/react",
     "vega",
-    "vega-lite",
-    "vega-interpreter",
     "vega-tooltip",
     "vis-timeline",
     "vis-data",
@@ -45,6 +46,7 @@ try {
       "build",
       "demo",
       "--base=/bronto-visual-models/",
+      "--manifest",
       "--outDir",
       output,
       "--emptyOutDir",
@@ -75,34 +77,72 @@ try {
     ],
     { cwd: directory, stdio: "inherit" },
   );
-  await cp("test/chart-browser", join(directory, "chart-contract"), { recursive: true });
+  // A second install omits every third-party rendering engine, including CSS.
+  await writeFile(
+    join(nativeDirectory, "package.json"),
+    JSON.stringify({
+      private: true,
+      type: "module",
+      dependencies: {
+        "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}`,
+        react: metadata.devDependencies.react,
+        "react-dom": metadata.devDependencies["react-dom"],
+        "@ponchia/ui": metadata.devDependencies["@ponchia/ui"],
+        vite: metadata.devDependencies.vite,
+      },
+    }),
+  );
+  await cp("test/native", join(nativeDirectory, "native"), { recursive: true });
+  execFileSync(npm, ["install", "--ignore-scripts", "--no-audit", "--no-fund"], {
+    cwd: nativeDirectory,
+    stdio: "pipe",
+  });
+  execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import { createRequire } from "node:module"; import assert from "node:assert/strict";
+    const require = createRequire(import.meta.url);
+    for (const engine of ["@xyflow/react", "vega", "vis-timeline", "vis-data", "elkjs"])
+      assert.throws(() => require.resolve(engine), undefined, engine + " leaked into native install");
+  `,
+    ],
+    { cwd: nativeDirectory, stdio: "inherit" },
+  );
   execFileSync(
     process.execPath,
     [
       "node_modules/vite/bin/vite.js",
       "build",
-      "chart-contract",
-      "--base=/",
+      "native",
+      "--base=/native/",
       "--outDir",
-      resolve(".tmp/chart-contract"),
+      resolve(".tmp/react-contract/native"),
       "--emptyOutDir",
     ],
-    { cwd: directory, stdio: "inherit" },
+    { cwd: nativeDirectory, stdio: "inherit" },
   );
-  await cp("test/routing-browser", join(directory, "routing-contract"), { recursive: true });
-  execFileSync(
-    process.execPath,
-    [
-      "node_modules/vite/bin/vite.js",
-      "build",
-      "routing-contract",
-      "--base=/",
-      "--outDir",
-      resolve(".tmp/routing-contract"),
-      "--emptyOutDir",
-    ],
-    { cwd: directory, stdio: "inherit" },
-  );
+  for (const [source, name] of [
+    ["test/chart-browser", "chart-contract"],
+    ["test/routing-browser", "routing-contract"],
+  ]) {
+    await cp(source, join(directory, name), { recursive: true });
+    execFileSync(
+      process.execPath,
+      [
+        "node_modules/vite/bin/vite.js",
+        "build",
+        name,
+        "--base=/",
+        "--outDir",
+        resolve(".tmp", name),
+        "--emptyOutDir",
+      ],
+      { cwd: directory, stdio: "inherit" },
+    );
+  }
   await writeFile(
     ".tmp/packed-ui-evidence.json",
     JSON.stringify(
@@ -112,6 +152,7 @@ try {
         isolatedConsumer: true,
         importedByPackageName: true,
         spatialDependencies: false,
+        nativeGanttWithoutRenderingEngines: true,
       },
       null,
       2,
@@ -122,4 +163,5 @@ try {
   );
 } finally {
   await rm(directory, { recursive: true, force: true });
+  await rm(nativeDirectory, { recursive: true, force: true });
 }

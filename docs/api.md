@@ -144,3 +144,10 @@ See [routing](routing.md).
 `chartEncodingGuidance` is an advisory core API. Its bounded notes do not fail an
 otherwise valid model, fetch data, or modify content. The reference inline chart
 and CLI validation display the same notes. See [chart guidance](chart-guidance.md).
+
+## Standalone additions
+
+Beta.3 adds native Gantt and a paginated semantic data reader to
+`VisualModelView`. `GanttModelView` at `/react/gantt`, paired with `/base.css`,
+omits all third-party rendering engines. See [standalone views](standalone-views.md)
+for the installation and guarded progress-edit contract. These additions are included with beta.3. Neither the model nor store snapshot format changes.

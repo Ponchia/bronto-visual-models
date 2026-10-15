@@ -115,8 +115,10 @@ an authorization grant. Cameras, hover and exploratory layout stay local.
 The core carries validated contracts for diagram, timeline, Gantt, analysis,
 geography, infographic, Vega-Lite, 3D scene, spatial layers and source diagrams.
 
-The standalone React surface currently implements **diagram, network, matrix,
-authored timeline and inline Vega-Lite chart** views. Other families are core contracts and renderer
+The beta.3 standalone React surface implements **diagram, network, matrix,
+authored timeline, native Gantt and inline Vega-Lite charts**, plus a paginated
+semantic reader and an engine-free Gantt entry. See
+[standalone views](docs/standalone-views.md). Other families are core contracts and renderer
 integration utilities, not claims of ten complete standalone editors. Existing
 Spatial adapters can continue using the extracted engine hooks independently.
 Dataset-backed timelines require host source resolution and are not rendered by
@@ -182,16 +184,21 @@ npm run build
 npm test
 npm run test:pack
 npm run site:build:packed
-npx playwright install chromium
-npm run test:browser
+npx playwright install chromium firefox webkit
+BVM_BROWSER=chromium npm run test:browser
+BVM_BROWSER=firefox npm run test:browser
+BVM_BROWSER=webkit npm run test:browser
+npm run check:bundle
 ```
 
 CI checks Node 22 and 24, a genuinely separate packed headless consumer, and a
 React demo built from the archive installed into another independent directory.
-The browser tests exercise manual and agent edits, conflicts, replay, undo,
+The Chromium, Firefox and WebKit browser tests exercise manual and agent edits, conflicts, replay, undo,
 projection changes and desktop/mobile layout. Separate packed React fixtures cover
 StrictMode subscriptions, replaced selections and delayed or synchronous edit refusals. A green build is not a claim that
 an untested browser, database adapter or collaboration mode works.
+[Browser and accessibility verification](docs/verification.md) describes the
+viewport profiles, automated scans, keyboard tests and remaining manual checks.
 
 [Architecture and boundaries](docs/architecture.md) ·
 [Performance and benchmarking](docs/performance.md) ·

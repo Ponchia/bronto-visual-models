@@ -196,9 +196,10 @@ export default function GraphView(props: AdapterProps) {
     if (!dragging.current) setMoving(false);
   }, [model.generation, model.revision]);
   useEffect(() => {
+    if (props.active === false) return;
     const frame = requestAnimationFrame(() => props.ready());
     return () => cancelAnimationFrame(frame);
-  }, [model.revision, projection, props.ready]);
+  }, [model.revision, projection, props.ready, props.active]);
   const edges = useMemo(
     (): RoutedFlowEdge[] =>
       content.edges.map((edge) => {

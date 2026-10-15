@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, copyFileSync } from "node:fs";
-if (existsSync("src/react/styles.css")) {
-  mkdirSync("dist/react", { recursive: true });
-  copyFileSync("src/react/styles.css", "dist/react/styles.css");
-}
+import { mkdirSync, copyFileSync } from "node:fs";
+mkdirSync("dist/react", { recursive: true });
+for (const file of ["styles.css", "base.css"])
+  copyFileSync(`src/react/${file}`, `dist/react/${file}`);

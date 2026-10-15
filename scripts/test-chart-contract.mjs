@@ -6,8 +6,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 /** The chart fixture is built from the archive and enforces script-src self without unsafe-eval. */
-export async function testChartContract(browser) {
-  const output = resolve(".tmp/browser");
+export async function testChartContract(browser, outputDirectory) {
+  const output = outputDirectory ? new URL(outputDirectory).pathname : resolve(".tmp/browser");
   await mkdir(output, { recursive: true });
   const server = spawn(
     process.execPath,

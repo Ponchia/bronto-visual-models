@@ -94,3 +94,13 @@ Bronto's adapter is MIT. The unmodified optional `elkjs` peer is separately lice
 under EPL-2.0 with upstream's secondary-license option; it is not relicensed by
 this repository. See [third-party notices](../THIRD_PARTY_NOTICES.md). The demo
 retains an upstream license notice with its shipped assets.
+
+## Worker-only entry
+
+Worker hosts can import `layoutDiagram` from
+`@ponchia/visual-models/layout/diagram` and supply `context.engine`. That entry
+contains the same guarded translation and validation but no optional bundled
+ELK import. The existing `/layout/elk` convenience entry retains its lazy
+in-process default. This split prevents a worker-backed application from
+emitting both the worker payload and an unused bundled engine. The demo's
+bundle gate refuses a second `elk.bundled` asset.

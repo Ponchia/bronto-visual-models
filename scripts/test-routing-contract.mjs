@@ -4,8 +4,8 @@ import { once } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-export async function testRoutingContract(browser) {
-  const out = resolve(".tmp/browser");
+export async function testRoutingContract(browser, outputDirectory) {
+  const out = outputDirectory ? new URL(outputDirectory).pathname : resolve(".tmp/browser");
   await mkdir(out, { recursive: true });
   const server = spawn(
     process.execPath,

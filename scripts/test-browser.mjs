@@ -141,6 +141,14 @@ try {
           .waitFor({ state: "attached" });
         if (projection === "Matrix") {
           await page.locator(".bvm-matrix svg").waitFor();
+          const matrixRegion = page.getByLabel("Dependency matrix for Order service", {
+            exact: true,
+          });
+          await matrixRegion.focus();
+          assert.ok(
+            await matrixRegion.evaluate((element) => document.activeElement === element),
+            "Matrix scrolling is not keyboard reachable",
+          );
           await page.getByLabel("Matrix relationship").selectOption("persist");
           await page.getByLabel("Selected edge: persist").waitFor();
         }

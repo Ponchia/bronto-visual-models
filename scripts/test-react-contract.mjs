@@ -48,6 +48,10 @@ export async function testReactContract(browser) {
     }
     assert.ok(ready, log);
     await page.goto("http://127.0.0.1:4174", { waitUntil: "networkidle" });
+    await page
+      .getByTestId("subscription-catchup")
+      .filter({ hasText: "Caught up after subscribe" })
+      .waitFor();
     const node = page.locator('.react-flow__node[data-id="a"]');
     await node.waitFor();
     const drag = async () => {
@@ -61,10 +65,16 @@ export async function testReactContract(browser) {
       await page.mouse.up();
     };
     const changes = await page.getByTestId("snapshot-changes").textContent();
+    const reads = Number(await page.getByTestId("snapshot-reads").textContent());
     await page.getByRole("button", { name: "Unrelated update", exact: true }).click();
     // The host snapshot reference must remain stable through unrelated store activity.
     await page.getByRole("button", { name: "Select A", exact: true }).click();
     assert.equal(await page.getByTestId("snapshot-changes").textContent(), changes);
+    assert.equal(
+      Number(await page.getByTestId("snapshot-reads").textContent()),
+      reads,
+      "Unrelated transactions and React renders must not re-clone the model",
+    );
     assert.ok((await node.getAttribute("class")).includes("selected"));
     await page.getByRole("button", { name: "Replace A", exact: true }).click();
     await page.waitForFunction(
@@ -73,6 +83,10 @@ export async function testReactContract(browser) {
     await page.waitForFunction(
       () =>
         !document.querySelector('.react-flow__node[data-id="a"]')?.classList.contains("selected"),
+    );
+    assert.ok(
+      Number(await page.getByTestId("snapshot-reads").textContent()) > reads,
+      "A matching commit must read the newly committed model",
     );
     await page.getByLabel("Commit mode").selectOption("delay");
     await drag();
@@ -106,7 +120,9 @@ export async function testReactContract(browser) {
       passed: true,
       assertions: [
         "StrictMode subscriptions",
+        "render-to-subscribe catch-up",
         "stable snapshot",
+        "no redundant model cloning on unrelated React renders",
         "unrelated updates",
         "replaced target",
         "late refusal restores latest host",

@@ -6,6 +6,7 @@
 - [API](api.md): models, families, revisions, edits and controlled views.
 - [Storage and authority](storage.md): transactions, receipts, recovery and host responsibilities.
 - [CLI](cli.md): files, commands, exit codes and safe retries.
+- [Performance](performance.md): store write costs, React reads and a reproducible benchmark.
 - [Architecture](architecture.md): extraction boundary and optional engines.
 - [Spatial integration](spatial-integration.md): retained policy and compatibility.
 - [Releasing](releasing.md): archive qualification and package publication.

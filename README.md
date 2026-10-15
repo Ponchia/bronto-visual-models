@@ -176,6 +176,7 @@ StrictMode subscriptions, replaced selections and delayed or synchronous edit re
 an untested browser, database adapter or collaboration mode works.
 
 [Architecture and boundaries](docs/architecture.md) ·
+[Performance and benchmarking](docs/performance.md) ·
 [Spatial integration](docs/spatial-integration.md) ·
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 

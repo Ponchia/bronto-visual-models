@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — optional diagram layout
+## Unreleased
+
+### Diagram layouts
 
 - Explicit ELK layered proposals for RIGHT/DOWN diagrams, guarded by source
   generation and revision. Preview, apply and undo use the existing operations.
@@ -10,6 +12,17 @@
 - Optional `elkjs` peer; Dagre is a development-only comparison. No core dependency,
   persisted-format or Spatial integration change.
 - Source-linked engine assessment, reproducible benchmark, and geometry/preview tests.
+
+### Store and view performance
+
+- Enforce in-memory store byte budgets incrementally and exactly in UTF-8,
+  without re-serializing unrelated models and receipt history per edit.
+- Avoid redundant controlled React reads, cache nested graph depths, and reuse
+  unchanged graph edge descriptions while retaining subscription catch-up.
+- Accept a persisted file snapshot at the exact JSON byte budget, including
+  the file adapter's trailing newline; cover restart and replay at that boundary.
+- Add byte-for-byte capacity regressions, packed React subscription checks and
+  a reproducible synthetic store performance benchmark.
 
 ## 0.1.0-beta.2
 

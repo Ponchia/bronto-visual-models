@@ -44,10 +44,13 @@ async function readSnapshot(
   try {
     handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
     const stat = await handle.stat();
-    if (!stat.isFile() || stat.size > maxBytes)
+    // The on-disk snapshot adds one LF after JSON.stringify(snapshot). The
+    // store's byte budget counts its JSON representation, not that separator.
+    const maxFileBytes = maxBytes + 1;
+    if (!stat.isFile() || stat.size > maxFileBytes)
       throw new VisualModelError("invalid", "Store file is not regular or exceeds its byte limit");
     const bytes = await handle.readFile();
-    if (bytes.byteLength > maxBytes)
+    if (bytes.byteLength > maxFileBytes)
       throw new VisualModelError("invalid", "Store file grew beyond its byte limit");
     try {
       return JSON.parse(bytes.toString("utf8")) as ModelStoreSnapshot;

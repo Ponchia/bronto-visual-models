@@ -75,7 +75,8 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs",
-    "benchmark:layout": "node scripts/benchmark-layout.mjs"
+    "benchmark:layout": "node scripts/benchmark-layout.mjs",
+    "bench:store": "node --experimental-strip-types scripts/benchmark-store.mjs"
   },
   "dependencies": {
     "lib0": "0.2.119"

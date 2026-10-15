@@ -79,19 +79,23 @@ export async function testReactContract(browser) {
     await page.getByTestId("pending").filter({ hasText: "true" }).waitFor();
     await page.getByRole("button", { name: "Host update", exact: true }).click();
     await node.filter({ hasText: "Latest host A" }).waitFor();
-    const latestPosition = await node.getAttribute("style");
+    const latestPosition = await node.evaluate((element) => element.style.transform);
     await page.getByRole("button", { name: "Reject pending", exact: true }).click();
     await page.getByRole("alert").filter({ hasText: "Delayed edit refused" }).waitFor();
+    // React Flow may hide nodes for one measurement pass after controlled state changes.
+    // Require visibility again, then assert the authored coordinates rather than incidental style flags.
+    await node.waitFor({ state: "visible" });
     assert.equal(
-      await node.getAttribute("style"),
+      await node.evaluate((element) => element.style.transform),
       latestPosition,
-      "Late rejection restored an obsolete host snapshot",
+      "Late rejection restored obsolete host coordinates",
     );
     assert.ok((await node.textContent()).includes("Latest host A"));
     await page.getByLabel("Commit mode").selectOption("sync");
     await drag();
     await page.getByRole("alert").filter({ hasText: "Synchronous edit refused" }).waitFor();
-    assert.equal(await node.getAttribute("style"), latestPosition);
+    await node.waitFor({ state: "visible" });
+    assert.equal(await node.evaluate((element) => element.style.transform), latestPosition);
     await page.getByRole("button", { name: "Switch model", exact: true }).click();
     await page.locator('.bvm-view[data-model-id="other"]').waitFor();
     assert.equal(await page.getByRole("alert").count(), 0, "Errors leaked between models");

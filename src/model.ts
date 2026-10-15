@@ -205,15 +205,23 @@ export function visualRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 /** Reject prototype-bearing names, non-JSON values and excessive payloads before copying. */
-export function assertVisualJson(value: unknown): void {
+export function assertVisualJson(
+  value: unknown,
+  limits: { maxBytes?: number; maxValues?: number; maxDepth?: number } = {},
+): void {
+  const maxBytes = limits.maxBytes ?? MAX_VISUAL_CONTENT_BYTES;
+  const maxValues = limits.maxValues ?? 100_000;
+  const maxDepth = limits.maxDepth ?? 32;
+  if (![maxBytes, maxValues, maxDepth].every((limit) => Number.isSafeInteger(limit) && limit > 0))
+    throw new VisualModelError("invalid", "JSON limits must be positive integers");
   let count = 0;
   const visit = (item: unknown, depth: number) => {
-    if (++count > 100_000 || depth > 32)
+    if (++count > maxValues || depth > maxDepth)
       throw new VisualModelError("invalid", "Visual data is too deep or large");
     if (item === null || typeof item === "string" || typeof item === "boolean") return;
     if (typeof item === "number" && Number.isFinite(item)) return;
     if (Array.isArray(item)) {
-      if (item.length > 100_000)
+      if (item.length > maxValues)
         throw new VisualModelError("invalid", "Visual data is too deep or large");
       if (Object.getPrototypeOf(item) !== Array.prototype)
         throw new VisualModelError("invalid", "Visual data requires JSON arrays");
@@ -254,8 +262,13 @@ export function assertVisualJson(value: unknown): void {
     }
   };
   visit(value, 0);
-  if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_VISUAL_CONTENT_BYTES)
-    throw new VisualModelError("invalid", "Visual content exceeds 2 MB");
+  if (new TextEncoder().encode(JSON.stringify(value)).length > maxBytes)
+    throw new VisualModelError(
+      "invalid",
+      maxBytes === MAX_VISUAL_CONTENT_BYTES
+        ? "Visual content exceeds 2 MB"
+        : "Visual data exceeds its configured byte limit",
+    );
 }
 /**
  * The identifier a record carries: its own `id`, and the `entityId` it shares

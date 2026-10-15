@@ -92,9 +92,16 @@ export default function GraphView(props: AdapterProps) {
   }, [content, network, !!onEdit, selected?.collection, selected?.elementId, tokens]);
   const [nodes, setNodes] = useState<GraphFlowNode[]>(derived);
   const dragging = useRef(false);
-  const latest = useRef(props);
-  latest.current = props;
-  const before = useRef(new Map<string, { x: number; y: number }>());
+  const latest = useRef({ props, derived });
+  latest.current = { props, derived };
+  const before = useRef<
+    | {
+        modelId: string;
+        generation: string;
+        rows: Map<string, { x: number; y: number; incarnation?: string }>;
+      }
+    | undefined
+  >(undefined);
   useEffect(() => {
     if (!dragging.current) setNodes(derived);
   }, [derived]);
@@ -136,7 +143,7 @@ export default function GraphView(props: AdapterProps) {
       edges={edges}
       nodeTypes={nodeTypes}
       fitView
-      fitViewOptions={{ padding: 0.22, minZoom: 0.75, maxZoom: 1 }}
+      fitViewOptions={{ padding: 0.22, minZoom: 0.1, maxZoom: 1 }}
       minZoom={0.1}
       maxZoom={2.5}
       colorMode={tokens.scheme}
@@ -149,24 +156,70 @@ export default function GraphView(props: AdapterProps) {
       onPaneClick={() => onSelect?.(null)}
       onNodeDragStart={() => {
         dragging.current = true;
-        before.current = new Map(content.nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
+        before.current = {
+          modelId: model.id,
+          generation: model.generation,
+          rows: new Map(
+            content.nodes.map((node) => [
+              node.id,
+              {
+                x: node.x,
+                y: node.y,
+                incarnation: model.elementIncarnations?.nodes?.[node.id],
+              },
+            ]),
+          ),
+        };
       }}
       onNodeDragStop={(_event, node) => {
         dragging.current = false;
-        const previous = before.current.get(node.id);
-        if (!onEdit || !previous) return;
-        void onEdit({
-          generation: model.generation,
+        const origin = before.current;
+        before.current = undefined;
+        const previous = origin?.rows.get(node.id);
+        if (!onEdit || !previous || !origin) return;
+        if (
+          origin.modelId !== model.id ||
+          origin.generation !== model.generation ||
+          previous.incarnation !== model.elementIncarnations?.nodes?.[node.id]
+        ) {
+          setNodes(latest.current.derived);
+          report("The dragged element was replaced; reread the model before moving it.");
+          return;
+        }
+        if (previous.x === node.position.x && previous.y === node.position.y) {
+          setNodes(latest.current.derived);
+          return;
+        }
+        // A callback may throw synchronously or reject later; both restore the newest host state.
+        const patch = {
+          generation: origin.generation,
           items: [
             {
               field: "nodes",
-              set: [{ id: node.id, x: node.position.x, y: node.position.y, expect: previous }],
+              set: [
+                {
+                  id: node.id,
+                  x: node.position.x,
+                  y: node.position.y,
+                  expect: { x: previous.x, y: previous.y },
+                },
+              ],
             },
           ],
-        }).catch((error) => {
-          setNodes(derived);
-          report(error instanceof Error ? error.message : String(error));
-        });
+        };
+        void Promise.resolve()
+          .then(() => onEdit(patch))
+          .catch((error) => {
+            // Ignore a completion belonging to a different model now occupying this surface.
+            const current = latest.current;
+            if (
+              current.props.model.id !== origin.modelId ||
+              current.props.model.generation !== origin.generation
+            )
+              return;
+            setNodes(current.derived);
+            current.props.report(error instanceof Error ? error.message : String(error));
+          });
       }}
       proOptions={{ hideAttribution: false }}
     >

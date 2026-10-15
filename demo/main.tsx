@@ -3,12 +3,13 @@ import { createRoot } from "react-dom/client";
 import {
   MemoryModelStore,
   type ModelCommand,
-  type VisualModel,
   type VisualTarget,
   type CommandResult,
   type ModelEdit,
+  type CommandPreview,
+  modelTargets,
 } from "@ponchia/visual-models";
-import { VisualModelView } from "@ponchia/visual-models/react";
+import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
 import "@ponchia/visual-models/styles.css";
 import "./style.css";
 
@@ -61,10 +62,15 @@ const milestone = {
   },
 };
 function App() {
-  const store = useRef(new MemoryModelStore());
+  const [store] = useState(() => new MemoryModelStore());
   const sequence = useRef(0);
-  const [model, setModel] = useState<VisualModel | null>(null);
-  const [timeline, setTimeline] = useState<VisualModel | null>(null);
+  const model = useVisualModel(store, "architecture");
+  const timeline = useVisualModel(store, "delivery");
+  const [proposal, setProposal] = useState<{
+    command: ModelCommand;
+    preview: CommandPreview;
+  } | null>(null);
+  const [redo, setRedo] = useState<string | null>(null);
   const [projection, setProjection] = useState("diagram");
   const [selected, setSelected] = useState<VisualTarget | null>(null);
   const [selectedTime, setSelectedTime] = useState<VisualTarget | null>(null);
@@ -76,23 +82,18 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState("");
   const key = (name: string) => `${name}-${++sequence.current}`;
-  const refresh = () => {
-    setModel(store.current.get("architecture")!);
-    setTimeline(store.current.get("delivery")!);
-  };
   useEffect(() => {
     let disposed = false;
     void (async () => {
-      await store.current.execute(
+      await store.execute(
         { type: "create", key: "initial-architecture", model: architecture },
         { actor: "demo" },
       );
-      await store.current.execute(
+      await store.execute(
         { type: "create", key: "initial-delivery", model: milestone },
         { actor: "demo" },
       );
       if (!disposed) {
-        refresh();
         setStatus("Ready. Drag a node, edit a label, or try an agent operation.");
       }
     })().catch((error) => setStatus(error.message));
@@ -109,12 +110,24 @@ function App() {
   const execute = async (command: ModelCommand) => {
     setBusy(true);
     try {
-      const result = await store.current.execute(command, { actor: "demo" });
-      refresh();
+      const result = await store.execute(command, { actor: "demo" });
       setReceipts((current) => [result, ...current].slice(0, 5));
       setLastCommand(command);
-      if (command.type === "edit" && !result.replayed && command.id === "architecture")
-        setLastEdit(command.key);
+      if (!result.replayed && command.type !== "create" && command.id === "architecture") {
+        if (command.type === "edit") {
+          setLastEdit(command.key);
+          setRedo(null);
+        }
+        if (command.type === "undo") {
+          if (command.operation === redo) {
+            setLastEdit(command.key);
+            setRedo(null);
+          } else {
+            setLastEdit(null);
+            setRedo(command.key);
+          }
+        }
+      }
       setStatus(
         result.replayed
           ? `Replayed ${command.key}. No second edit was applied.`
@@ -133,11 +146,11 @@ function App() {
   const run = (command: ModelCommand) => {
     void execute(command).catch(() => {});
   };
-  const agentEdit = () => {
-    const row = (store.current.get("architecture")!.content.nodes as any[]).find(
+  const agentCommand = (): ModelCommand => {
+    const row = (store.get("architecture")!.content.nodes as any[]).find(
       (item) => item.id === "api",
     );
-    run({
+    return {
       type: "edit",
       id: "architecture",
       key: key("agent"),
@@ -155,7 +168,20 @@ function App() {
           },
         ],
       },
-    });
+    };
+  };
+  const previewAgent = async () => {
+    setBusy(true);
+    try {
+      const command = agentCommand();
+      const preview = await store.preview(command, { actor: "demo" });
+      setProposal({ command, preview });
+      setStatus(`Preview ready at revision ${preview.base?.revision}. Nothing committed.`);
+    } catch (error) {
+      setStatus(`Preview refused: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
   };
   const download = () => {
     const url = URL.createObjectURL(
@@ -213,180 +239,271 @@ function App() {
         <span className="local-badge">● Runs locally in this tab</span>
       </div>
       <section className="workspace">
-        <div className="primary-panel">
-          <div className="panel-header">
-            <div>
-              <span className="small-label">Architecture</span>
-              <h3>Order service</h3>
+        <div className="model-column">
+          <div className="primary-panel">
+            <div className="panel-header">
+              <div>
+                <span className="small-label">Architecture</span>
+                <h3>Order service</h3>
+              </div>
+              <div className="tabs" aria-label="Model representation">
+                {["diagram", "network", "matrix"].map((view) => (
+                  <button
+                    key={view}
+                    type="button"
+                    aria-pressed={projection === view}
+                    onClick={() => {
+                      setReady("");
+                      setProjection(view);
+                    }}
+                  >
+                    {view[0].toUpperCase() + view.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="tabs" aria-label="Model representation">
-              {["diagram", "network", "matrix"].map((view) => (
-                <button
-                  key={view}
-                  type="button"
-                  aria-pressed={projection === view}
-                  onClick={() => {
-                    setReady("");
-                    setProjection(view);
-                  }}
-                >
-                  {view[0].toUpperCase() + view.slice(1)}
-                </button>
-              ))}
+            {model ? (
+              <VisualModelView
+                model={model}
+                projection={projection}
+                selected={selected}
+                onSelect={setSelected}
+                onEdit={edit}
+                height={430}
+                onReady={(identity) => setReady(identity.projection)}
+              />
+            ) : (
+              <div className="loading">Loading model…</div>
+            )}
+            <div className="model-footer">
+              <span>Pan to explore · use Fit for an overview</span>
+              <code data-testid="revision">rev {model?.revision ?? "—"}</code>
+              <span className="sr-only" data-testid="renderer-ready">
+                {ready}
+              </span>
             </div>
           </div>
-          {model ? (
-            <VisualModelView
-              model={model}
-              projection={projection}
-              selected={selected}
-              onSelect={setSelected}
-              onEdit={edit}
-              height={430}
-              onReady={(identity) => setReady(identity.projection)}
-            />
-          ) : (
-            <div className="loading">Loading model…</div>
-          )}
-          <div className="model-footer">
-            <span>Pan to explore · use Fit for an overview</span>
-            <code data-testid="revision">rev {model?.revision ?? "—"}</code>
-            <span className="sr-only" data-testid="renderer-ready">
-              {ready}
-            </span>
+          <div className="timeline-panel">
+            <div className="panel-header">
+              <div>
+                <span className="small-label">A different model family</span>
+                <h3>Delivery timeline</h3>
+              </div>
+              <span className="subtle">Drag an event to reschedule</span>
+            </div>
+            {timeline && (
+              <VisualModelView
+                model={timeline}
+                selected={selectedTime}
+                onSelect={setSelectedTime}
+                onEdit={(patch) =>
+                  execute({ type: "edit", id: "delivery", key: key("time"), patch })
+                }
+                height={255}
+              />
+            )}
           </div>
         </div>
-        <aside className="inspector">
-          <p className="small-label">Human + agent edits</p>
-          <h3>A change, not a replacement</h3>
-          <p>Move a node first. The agent’s label edit will preserve your layout.</p>
-          <div className="actions">
-            <button className="primary" disabled={!model || busy} onClick={agentEdit}>
-              Apply agent edit
-            </button>
-            <button disabled={!lastCommand || busy} onClick={() => lastCommand && run(lastCommand)}>
-              Retry last operation
-            </button>
-            <button
-              disabled={!lastEdit || busy}
-              onClick={() =>
-                lastEdit &&
-                run({ type: "undo", key: key("undo"), id: "architecture", operation: lastEdit })
-              }
-            >
-              Undo last edit
-            </button>
-            <button
-              disabled={!model || busy}
-              onClick={() =>
-                run({
-                  type: "edit",
-                  key: key("stale"),
-                  id: "architecture",
-                  patch: {
+        <div className="control-column">
+          <aside className="inspector">
+            <p className="small-label">Human + agent edits</p>
+            <h3>A change, not a replacement</h3>
+            <p>Move a node first. The agent’s label edit will preserve your layout.</p>
+            <div className="actions">
+              <button disabled={!model || busy} onClick={() => void previewAgent()}>
+                Preview agent edit
+              </button>
+              <button
+                className="primary"
+                disabled={!model || busy}
+                onClick={() => run(agentCommand())}
+              >
+                Apply agent edit
+              </button>
+              <button
+                disabled={!lastCommand || busy}
+                onClick={() => lastCommand && run(lastCommand)}
+              >
+                Retry last operation
+              </button>
+              <button
+                disabled={!lastEdit || busy}
+                onClick={() =>
+                  lastEdit &&
+                  run({ type: "undo", key: key("undo"), id: "architecture", operation: lastEdit })
+                }
+              >
+                Undo last edit
+              </button>
+              <button
+                disabled={!redo || busy}
+                onClick={() =>
+                  redo &&
+                  run({ type: "undo", key: key("redo"), id: "architecture", operation: redo })
+                }
+              >
+                Redo last edit
+              </button>
+              <button
+                disabled={!model || busy}
+                onClick={() =>
+                  run({
+                    type: "edit",
+                    key: key("stale"),
+                    id: "architecture",
+                    patch: {
+                      items: [
+                        {
+                          field: "nodes",
+                          set: [
+                            {
+                              id: "api",
+                              label: "Overwritten",
+                              expect: { label: "A value from an outdated read" },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  })
+                }
+              >
+                Try a stale edit
+              </button>
+            </div>
+            {proposal && (
+              <section className="proposal" aria-label="Proposed changes">
+                <h4>Review before committing</h4>
+                <p>
+                  Based on revision {proposal.preview.base?.revision}; saved model stays at revision{" "}
+                  {model?.revision}.
+                </p>
+                <ul>
+                  {proposal.preview.changes.map((change, index) => (
+                    <li key={index}>
+                      {change.change}: {change.collection}
+                      {change.id ? ` / ${change.id}` : ""}
+                      {change.fields?.length ? ` (${change.fields.join(", ")})` : ""}
+                    </li>
+                  ))}
+                </ul>
+                <details>
+                  <summary>Inspect command JSON</summary>
+                  <pre>{JSON.stringify(proposal.command, null, 2)}</pre>
+                </details>
+                <div className="actions">
+                  <button
+                    disabled={busy}
+                    onClick={() => {
+                      void execute(proposal.command)
+                        .then(() => setProposal(null))
+                        .catch(() => {});
+                    }}
+                  >
+                    Apply preview
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => {
+                      setProposal(null);
+                      setStatus("Preview discarded. Nothing committed.");
+                    }}
+                  >
+                    Discard preview
+                  </button>
+                </div>
+                <p>Applying rechecks the saved state. A preview is not a reserved edit.</p>
+              </section>
+            )}
+            <div className="label-editor">
+              <label htmlFor="element-choice">Choose an element</label>
+              <select
+                id="element-choice"
+                value={selected ? `${selected.collection}:${selected.elementId}` : ""}
+                disabled={!model || busy}
+                onChange={(event) =>
+                  setSelected(
+                    modelTargets(model!).find(
+                      (target) => `${target.collection}:${target.elementId}` === event.target.value,
+                    ) ?? null,
+                  )
+                }
+              >
+                <option value="">No element selected</option>
+                {model &&
+                  modelTargets(model).map((target) => (
+                    <option
+                      key={`${target.collection}:${target.elementId}`}
+                      value={`${target.collection}:${target.elementId}`}
+                    >
+                      {target.collection === "nodes" ? "Node" : "Relationship"}: {target.label}
+                    </option>
+                  ))}
+              </select>
+              <label htmlFor="label">
+                {selected
+                  ? `Selected ${selected.collection?.slice(0, -1) ?? "element"}: ${selected.elementId}`
+                  : "Select a node or relationship"}
+              </label>
+              <input
+                id="label"
+                value={label}
+                disabled={!selected || busy}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="Edit its label"
+              />
+              <button
+                disabled={!selected || !label.trim() || busy}
+                onClick={() => {
+                  const row = (model!.content[selected!.collection!] as any[]).find(
+                    (entry) => entry.id === selected!.elementId,
+                  );
+                  void edit({
+                    generation: model!.generation,
                     items: [
                       {
-                        field: "nodes",
-                        set: [
-                          {
-                            id: "api",
-                            label: "Overwritten",
-                            expect: { label: "A value from an outdated read" },
-                          },
-                        ],
+                        field: selected!.collection!,
+                        set: [{ id: row.id, label, expect: { label: row.label } }],
                       },
                     ],
-                  },
-                })
-              }
-            >
-              Try a stale edit
-            </button>
-          </div>
-          <div className="label-editor">
-            <label htmlFor="label">
-              {selected
-                ? `Selected ${selected.collection?.slice(0, -1) ?? "element"}: ${selected.elementId}`
-                : "Select a node or relationship"}
-            </label>
-            <input
-              id="label"
-              value={label}
-              disabled={!selected || busy}
-              onChange={(event) => setLabel(event.target.value)}
-              placeholder="Edit its label"
-            />
-            <button
-              disabled={!selected || !label.trim() || busy}
-              onClick={() => {
-                const row = (model!.content[selected!.collection!] as any[]).find(
-                  (entry) => entry.id === selected!.elementId,
-                );
-                void edit({
-                  generation: model!.generation,
-                  items: [
-                    {
-                      field: selected!.collection!,
-                      set: [{ id: row.id, label, expect: { label: row.label } }],
-                    },
-                  ],
-                }).catch(() => {});
-              }}
-            >
-              Save label
-            </button>
-          </div>
-          <p className="status" role="status" data-testid="operation-status">
-            {status}
-          </p>
-        </aside>
-      </section>
-      <section className="secondary-grid">
-        <div className="timeline-panel">
-          <div className="panel-header">
-            <div>
-              <span className="small-label">A different model family</span>
-              <h3>Delivery timeline</h3>
+                  }).catch(() => {});
+                }}
+              >
+                Save label
+              </button>
             </div>
-            <span className="subtle">Drag an event to reschedule</span>
-          </div>
-          {timeline && (
-            <VisualModelView
-              model={timeline}
-              selected={selectedTime}
-              onSelect={setSelectedTime}
-              onEdit={(patch) => execute({ type: "edit", id: "delivery", key: key("time"), patch })}
-              height={255}
-            />
-          )}
-        </div>
-        <div className="receipt-panel">
-          <p className="small-label">Observable outcomes</p>
-          <h3>Operation receipts</h3>
-          {!receipts.length ? (
-            <p className="empty">
-              Your first change will appear here with its operation key and resulting revision.
+            <p className="status" role="status" data-testid="operation-status">
+              {status}
             </p>
-          ) : (
-            <ol>
-              {receipts.map((result, index) => (
-                <li key={`${index}:${result.receipt.key}`}>
-                  <code>{result.receipt.key}</code>
-                  <span>
-                    {result.replayed ? "replayed" : "committed"} · rev {result.receipt.revision}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-          <button className="text-button" disabled={!model} onClick={download}>
-            Export model JSON ↓
-          </button>
-          <p className="fine-print">
-            Agent buttons run deterministic example commands, not an AI service. Exports contain
-            authored data, not external datasets, assets or renderer binaries. This demo resets on
-            reload.
-          </p>
+          </aside>
+          <div className="receipt-panel">
+            <p className="small-label">Observable outcomes</p>
+            <h3>Operation receipts</h3>
+            {!receipts.length ? (
+              <p className="empty">
+                Your first change will appear here with its operation key and resulting revision.
+              </p>
+            ) : (
+              <ol>
+                {receipts.map((result, index) => (
+                  <li key={`${index}:${result.receipt.key}`}>
+                    <code>{result.receipt.key}</code>
+                    <span>
+                      {result.replayed ? "replayed" : "committed"} · rev {result.receipt.revision}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <button className="text-button" disabled={!model} onClick={download}>
+              Export model JSON ↓
+            </button>
+            <p className="fine-print">
+              Agent buttons run deterministic example commands, not an AI service. Exports contain
+              authored data, not external datasets, assets or renderer binaries. This demo resets on
+              reload.
+            </p>
+          </div>
         </div>
       </section>
       <section className="principles">
@@ -422,4 +539,8 @@ function App() {
     </main>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

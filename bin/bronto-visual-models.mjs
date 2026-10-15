@@ -12,18 +12,27 @@ import {
   modelSummary,
   visualViewProjection,
 } from "../dist/index.js";
-import { readFileStore, executeFileCommand, FileCommitError } from "../dist/node/index.js";
+import {
+  readFileStore,
+  executeFileCommand,
+  previewFileCommand,
+  FileCommitError,
+} from "../dist/node/index.js";
 
 const HELP = `bronto-visual-models — persistent visual artifacts
 
   catalog
   validate --file content.json
+  list --store models.json
+  receipt <operation-key> --store models.json
   show|inspect|export <id> --store models.json
   create --file model.json --store models.json --key <operation>
   edit <id> --file patch.json --store models.json --key <operation>
   undo <id> --operation <original-key> --store models.json --key <new-operation>
   fork <id> --as <new-id> --if-rev <revision> --store models.json --key <operation>
 
+Add --dry-run to create/edit/undo/fork to preview without writing any file.
+Previews are hypothetical: execution rechecks authority, revisions and capacity.
 All output is JSON except this help. --actor defaults to local-cli.
 Create files contain {id?, title, renderer, content} or {title, template}.
 Validate files contain {renderer, modelType?, content}; no store is changed.
@@ -81,7 +90,11 @@ async function main() {
   ]);
   while (argv.length) {
     const value = argv.shift();
-    if (value.startsWith("--")) {
+    if (value === "--dry-run") {
+      if (Object.hasOwn(flags, value))
+        throw new VisualModelError("invalid", "Repeated flag: --dry-run");
+      flags[value] = true;
+    } else if (value.startsWith("--")) {
       if (
         !allowed.has(value) ||
         Object.hasOwn(flags, value) ||
@@ -95,19 +108,23 @@ async function main() {
   const allowedFor = {
     catalog: [],
     validate: ["--file"],
+    list: ["--store"],
+    receipt: ["--store"],
     show: ["--store"],
     inspect: ["--store"],
     export: ["--store"],
-    create: ["--file", "--store", "--key", "--actor"],
-    edit: ["--file", "--store", "--key", "--actor"],
-    undo: ["--operation", "--store", "--key", "--actor"],
-    fork: ["--as", "--if-rev", "--store", "--key", "--actor"],
+    create: ["--file", "--store", "--key", "--actor", "--dry-run"],
+    edit: ["--file", "--store", "--key", "--actor", "--dry-run"],
+    undo: ["--operation", "--store", "--key", "--actor", "--dry-run"],
+    fork: ["--as", "--if-rev", "--store", "--key", "--actor", "--dry-run"],
   }[command];
   if (!allowedFor) throw new VisualModelError("invalid", `Unknown command: ${command}`);
   for (const flag of Object.keys(flags))
     if (!allowedFor.includes(flag))
       throw new VisualModelError("invalid", `${flag} does not apply to ${command}`);
-  const needsId = ["show", "inspect", "export", "edit", "undo", "fork"].includes(command);
+  const needsId = ["show", "inspect", "export", "edit", "undo", "fork", "receipt"].includes(
+    command,
+  );
   if (positional.length !== (needsId ? 1 : 0))
     throw new VisualModelError(
       "invalid",
@@ -131,6 +148,16 @@ async function main() {
   }
   const file = required(flags, "--store");
   const id = positional[0];
+  if (command === "list") {
+    print({ models: (await readFileStore(file)).list() });
+    return;
+  }
+  if (command === "receipt") {
+    const receipt = (await readFileStore(file)).getReceipt(id);
+    if (!receipt) throw new VisualModelError("not-found", "Operation receipt not found");
+    print({ receipt });
+    return;
+  }
   if (["show", "inspect", "export"].includes(command)) {
     const model = (await readFileStore(file)).get(id);
     if (!model) throw new VisualModelError("not-found", "Model not found");
@@ -162,6 +189,13 @@ async function main() {
       fork: { id: required(flags, "--as"), ifRevision: Number(revision) },
     };
   }
+  if (flags["--dry-run"]) {
+    const preview = await previewFileCommand(file, request, {
+      actor: flags["--actor"] ?? "local-cli",
+    });
+    print({ dryRun: true, ...preview });
+    return;
+  }
   const result = await executeFileCommand(file, request, {
     actor: flags["--actor"] ?? "local-cli",
   });
@@ -171,10 +205,16 @@ main().catch((error) => {
   const code = error instanceof VisualModelError ? error.code : "unavailable";
   const effect = error instanceof FileCommitError ? error.effect : "none";
   const detail = error instanceof VisualModelError ? visualRefusalDetail(error) : undefined;
+  const report = error instanceof VisualModelError ? error.report : undefined;
   process.stderr.write(
     JSON.stringify({
       ok: false,
-      error: { code, message: error.message ?? String(error), ...(detail ? { detail } : {}) },
+      error: {
+        code,
+        message: error.message ?? String(error),
+        ...(detail ? { detail } : {}),
+        ...(report ? { report } : {}),
+      },
       effect,
     }) + "\n",
   );

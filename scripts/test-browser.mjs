@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { mkdir, writeFile } from "node:fs/promises";
+import { testReactContract } from "./test-react-contract.mjs";
 import { chromium } from "playwright";
 const root = new URL("../", import.meta.url);
 const server = spawn(
@@ -73,6 +74,33 @@ try {
         .filter({ hasText: "diagram" })
         .waitFor({ state: "attached" });
       await page.locator('.react-flow__node[data-id="api"]').waitFor();
+      await page.waitForFunction(() => {
+        const panel = document.querySelector(".primary-panel .bvm-view")?.getBoundingClientRect();
+        const nodes = [...document.querySelectorAll(".primary-panel .react-flow__node")];
+        return (
+          panel &&
+          nodes.length === 4 &&
+          nodes.every((node) => {
+            const rect = node.getBoundingClientRect();
+            return (
+              rect.width > 0 &&
+              rect.x >= panel.x - 2 &&
+              rect.right <= panel.right + 2 &&
+              rect.y >= panel.y - 2 &&
+              rect.bottom <= panel.bottom + 2
+            );
+          })
+        );
+      });
+      assert.equal(await page.getByTestId("revision").textContent(), "rev 1");
+      await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
+      await page.getByRole("region", { name: "Proposed changes" }).waitFor();
+      await page.screenshot({
+        path: new URL(`${device.name}-preview.png`, output).pathname,
+        fullPage: true,
+      });
+      assert.equal(await page.getByTestId("revision").textContent(), "rev 1");
+      await page.getByRole("button", { name: "Discard preview", exact: true }).click();
       assert.equal(await page.getByTestId("revision").textContent(), "rev 1");
       await page.getByRole("button", { name: "Apply agent edit", exact: true }).click();
       await page.getByTestId("revision").filter({ hasText: "rev 2" }).waitFor();
@@ -105,6 +133,25 @@ try {
         }
         assert.equal(await page.getByTestId("revision").textContent(), "rev 4");
       }
+      await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
+      await page.getByRole("region", { name: "Proposed changes" }).waitFor();
+      assert.equal(await page.getByTestId("revision").textContent(), "rev 4");
+      await page.getByRole("button", { name: "Apply preview", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 5" }).waitFor();
+      await page.getByRole("button", { name: "Undo last edit", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 6" }).waitFor();
+      await page.getByRole("button", { name: "Redo last edit", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 7" }).waitFor();
+      await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
+      await page.getByRole("region", { name: "Proposed changes" }).waitFor();
+      await page.getByLabel("Choose an element", { exact: true }).selectOption("nodes:api");
+      await page.getByLabel(/Selected node: api/).fill("Changed after preview");
+      await page.getByRole("button", { name: "Save label", exact: true }).click();
+      await page.getByTestId("revision").filter({ hasText: "rev 8" }).waitFor();
+      await page.getByRole("button", { name: "Apply preview", exact: true }).click();
+      await page.getByTestId("operation-status").filter({ hasText: "Refused:" }).waitFor();
+      assert.equal(await page.getByTestId("revision").textContent(), "rev 8");
+      await page.getByRole("button", { name: "Discard preview", exact: true }).click();
       await page.locator(".vis-item").filter({ hasText: "Contract review" }).waitFor();
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
@@ -125,6 +172,10 @@ try {
         passed: true,
         assertions: [
           "create",
+          "preview, discard and apply",
+          "preview becomes stale without overwriting newer edits",
+          "redo",
+          "keyboard element chooser",
           "agent edit",
           "receipt replay",
           "stale refusal",
@@ -132,6 +183,7 @@ try {
           "manual label",
           "all projections",
           "timeline",
+          "initial graph fully visible on both viewport sizes",
           "no overflow",
           "no external requests",
         ],
@@ -151,6 +203,7 @@ try {
       await context.close();
     }
   }
+  results.push(await testReactContract(browser));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

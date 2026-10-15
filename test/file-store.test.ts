@@ -122,3 +122,77 @@ test("installed CLI accepts keyed edits and exposes structured conflict exit cod
   assert.equal(JSON.parse(stale.stderr).error.code, "conflict");
   assert.equal(cli("catalog", "--key", "unrelated").status, 2);
 });
+
+test("valid JSON with an invalid snapshot is never overwritten as a fresh empty store", async (t) => {
+  const { file } = await fixture(t);
+  for (const source of ["null", "false", "0", '""', '{"version":9,"models":[]}']) {
+    await writeFile(file, source);
+    await assert.rejects(readFileStore(file), (error: any) => error.code === "invalid");
+    await assert.rejects(
+      executeFileCommand(file, create, context),
+      (error: any) => error.code === "invalid",
+    );
+    assert.equal(await readFile(file, "utf8"), source);
+    await assert.rejects(access(file + ".lock"));
+  }
+});
+test("file commands capture the caller request and actor before any filesystem await", async (t) => {
+  const { file } = await fixture(t);
+  const input = structuredClone(create);
+  const author = { ...context };
+  const pending = executeFileCommand(file, input, author);
+  if (input.type === "create") input.model.title = "Changed during filesystem wait";
+  author.actor = "intruder";
+  await pending;
+  const saved = (await readFileStore(file)).get("graph")!;
+  assert.equal(saved.title, "Test");
+  assert.equal(saved.createdBy, "test");
+});
+test("file preview preserves bytes, mtime and existing locks, and creates no parent on a missing store", async (t) => {
+  const { file, dir } = await fixture(t);
+  const { previewFileCommand } = await import("../src/node/index.ts");
+  const missing = join(dir, "missing-parent", "state.json");
+  const proposed = await previewFileCommand(missing, create, context);
+  assert.equal(proposed.effect, "none");
+  await assert.rejects(access(join(dir, "missing-parent")));
+  await executeFileCommand(file, create, context);
+  const before = await readFile(file);
+  const mtime = (await stat(file)).mtimeMs;
+  await writeFile(file + ".lock", "another writer");
+  const preview = await previewFileCommand(
+    file,
+    { type: "edit", key: "preview", id: "graph", patch: { title: "Proposed" } },
+    context,
+  );
+  assert.equal(preview.model.title, "Proposed");
+  assert.deepEqual(await readFile(file), before);
+  assert.equal((await stat(file)).mtimeMs, mtime);
+  assert.equal(await readFile(file + ".lock", "utf8"), "another writer");
+});
+test("CLI dry-runs, list and receipt lookup are read-only and validate flag placement", async (t) => {
+  const { file, dir } = await fixture(t);
+  const source = join(dir, "input.json");
+  await writeFile(source, JSON.stringify(create.type === "create" ? create.model : {}));
+  const cli = (...args: string[]) =>
+    spawnSync(process.execPath, ["bin/bronto-visual-models.mjs", ...args], { encoding: "utf8" });
+  const args = ["create", "--file", source, "--store", file, "--key", "cli-preview"];
+  const dry = cli(...args, "--dry-run");
+  assert.equal(dry.status, 0, dry.stderr);
+  assert.equal(JSON.parse(dry.stdout).effect, "none");
+  assert.equal(JSON.parse(dry.stdout).dryRun, true);
+  await assert.rejects(access(file));
+  await assert.rejects(access(file + ".lock"));
+  assert.equal(cli(...args).status, 0);
+  const bytes = await readFile(file);
+  const list = cli("list", "--store", file);
+  assert.equal(list.status, 0, list.stderr);
+  assert.equal(JSON.parse(list.stdout).models.length, 1);
+  const receipt = cli("receipt", "cli-preview", "--store", file);
+  assert.equal(receipt.status, 0, receipt.stderr);
+  assert.equal(JSON.parse(receipt.stdout).receipt.key, "cli-preview");
+  assert.equal(cli("receipt", "missing", "--store", file).status, 3);
+  assert.equal(cli("list", "--store", file, "--dry-run").status, 2);
+  assert.equal(cli(...args, "--dry-run", "--dry-run").status, 2);
+  assert.equal(JSON.parse(cli(...args, "--dry-run").stdout).replayed, true);
+  assert.deepEqual(await readFile(file), bytes);
+});

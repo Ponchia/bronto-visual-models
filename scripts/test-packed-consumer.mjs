@@ -43,7 +43,7 @@ try {
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { MemoryModelStore, createVisualRegistry, modelTargets } from '@ponchia/visual-models';
-import { readFileStore, executeFileCommand } from '@ponchia/visual-models/node';
+import { readFileStore, executeFileCommand, previewFileCommand } from '@ponchia/visual-models/node';
 const require = createRequire(import.meta.url);
 for (const engine of ['react', '@xyflow/react', 'vega', 'vis-timeline', '@ponchia/ui']) {
   assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
@@ -52,11 +52,19 @@ const store = new MemoryModelStore({ registry: createVisualRegistry() });
 const command = { type: 'create', key: 'consumer-create', model: { id: 'graph', title: 'Independent consumer', renderer: 'diagram', content: { nodes: [{ id: 'a', label: 'App', x: 0, y: 0 }], edges: [] } } };
 await store.execute(command);
 const edit = { type: 'edit', id: 'graph', key: 'consumer-edit', patch: { items: [{ field: 'nodes', set: [{ id: 'a', label: 'API', expect: { label: 'App' } }] }] } };
+const preview = await store.preview(edit);
+assert.equal(preview.effect, 'none');
+assert.equal(preview.model.revision, 2);
+assert.equal(store.get('graph').revision, 1);
+assert.equal(store.getReceipt('consumer-edit'), undefined);
 await store.execute(edit);
+assert.equal(store.getReceipt('consumer-edit').revision, 2);
 assert.equal((await store.execute(edit)).replayed, true);
 assert.equal(modelTargets(store.get('graph'))[0].label, 'API');
 await store.execute({ type: 'undo', id: 'graph', key: 'consumer-undo', operation: 'consumer-edit' });
 assert.equal(modelTargets(store.get('graph'))[0].label, 'App');
+const filePreview = await previewFileCommand('missing-parent/models.json', command);
+assert.equal(filePreview.effect, 'none');
 await executeFileCommand('models.json', command);
 assert.equal((await readFileStore('models.json')).get('graph').title, 'Independent consumer');
 console.log('Packed core, local transactions, identities and undo work without Spatial or UI peers.');

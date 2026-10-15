@@ -9,6 +9,8 @@ import {
   modelSummary,
   type VisualCommitReceipt,
   type VisualModel,
+  type VisualModelHead,
+  type VisualReceiptChange,
   VisualModelError,
   visualModelIdForKey,
   visualRecord,
@@ -44,6 +46,22 @@ export type ModelCommand =
 export interface CommandResult {
   receipt: VisualCommitReceipt;
   replayed: boolean;
+}
+/** A hypothetical outcome, not a persisted receipt or an authorization grant. */
+export interface CommandPreview {
+  effect: "none";
+  replayed: boolean;
+  /** Source model at evaluation time; null for a new model. */
+  base: VisualModelHead | null;
+  /** Owned candidate. New lifetime tokens and timestamps are not reserved. */
+  model: VisualModel;
+  changes: VisualReceiptChange[];
+  changesOmitted: number;
+}
+interface EvaluatedCommand {
+  result: CommandResult;
+  base: VisualModelHead | null;
+  model: VisualModel;
 }
 export interface ModelStoreSnapshot {
   version: 1;
@@ -86,7 +104,7 @@ export class MemoryModelStore {
     for (const limit of [this.#maxModels, this.#maxReceipts, this.#maxBytes])
       if (!Number.isSafeInteger(limit) || limit < 1)
         throw new VisualModelError("invalid", "Store limits must be positive integers");
-    if (options.initial) this.#restore(options.initial);
+    if (options.initial !== undefined) this.#restore(options.initial);
   }
   get(id: string): VisualModel | undefined {
     const model = this.#models.get(id);
@@ -109,7 +127,31 @@ export class MemoryModelStore {
       this.#listeners.delete(listener);
     };
   }
+  /** Read access is a host decision, just as for get/list/snapshot. */
+  getReceipt(key: string): VisualCommitReceipt | undefined {
+    const receipt = this.#receipts.get(key);
+    return receipt ? structuredClone(receipt) : undefined;
+  }
   async execute(input: ModelCommand, context: CommandContext = {}): Promise<CommandResult> {
+    return (await this.#evaluate(input, context, true)).result;
+  }
+  /** Same serialized validation and authority checks as execute, without a store commit. */
+  async preview(input: ModelCommand, context: CommandContext = {}): Promise<CommandPreview> {
+    const { result, model, base } = await this.#evaluate(input, context, false);
+    return {
+      effect: "none",
+      replayed: result.replayed,
+      base,
+      model,
+      changes: result.receipt.changes ?? [],
+      changesOmitted: result.receipt.changesOmitted ?? 0,
+    };
+  }
+  async #evaluate(
+    input: ModelCommand,
+    context: CommandContext,
+    commit: boolean,
+  ): Promise<EvaluatedCommand> {
     assertVisualJson(input);
     if (!visualRecord(input) || !["create", "edit", "undo", "fork"].includes(String(input.type)))
       throw new VisualModelError("invalid", "Unknown model command");
@@ -133,6 +175,14 @@ export class MemoryModelStore {
           ? (command.model.id ?? visualModelIdForKey(command.key))
           : command.id;
       const current = this.#models.get(id);
+      const base: VisualModelHead | null = current
+        ? {
+            id: current.id,
+            generation: current.generation,
+            revision: current.revision,
+            renderer: current.renderer,
+          }
+        : null;
       // Authority is checked even for a replay, before revealing whether its receipt exists.
       await heldContext.authorize?.(
         structuredClone(command),
@@ -147,7 +197,13 @@ export class MemoryModelStore {
             "Operation key was used for a different request or actor",
           );
         const { changes: _changes, changesOmitted: _omitted, ...receipt } = existing;
-        return { receipt: structuredClone(receipt), replayed: true };
+        return {
+          result: { receipt: structuredClone(receipt), replayed: true },
+          base,
+          model: commit
+            ? this.#models.get(existing.id)!
+            : structuredClone(this.#models.get(existing.id)!),
+        };
       }
       if (this.#receipts.size >= this.#maxReceipts)
         throw new VisualModelError(
@@ -254,19 +310,23 @@ export class MemoryModelStore {
         receipts: [...receipts.values()],
         inverses: [...inverses.values()],
       });
-      // One synchronous commit point. No user callback or await can observe a half-commit.
-      this.#models = models;
-      this.#receipts = receipts;
-      this.#inverses = inverses;
+      heldContext.signal?.throwIfAborted();
       const result = { receipt: structuredClone(receipt), replayed: false };
-      for (const listener of this.#listeners) {
-        try {
-          listener(structuredClone(result));
-        } catch {
-          /* An observer cannot undo a committed write. */
+      if (commit) {
+        // One synchronous commit point. No user callback or await can observe a half-commit.
+        this.#models = models;
+        this.#receipts = receipts;
+        this.#inverses = inverses;
+        // An observer may unsubscribe/resubscribe; never iterate the mutable Set itself.
+        for (const listener of [...this.#listeners]) {
+          try {
+            listener(structuredClone(result));
+          } catch {
+            /* An observer cannot undo a committed write. */
+          }
         }
       }
-      return result;
+      return { result, model: commit ? next : structuredClone(next), base };
     });
     this.#tail = work.then(
       () => {},
@@ -282,6 +342,12 @@ export class MemoryModelStore {
       );
   }
   #restore(initial: ModelStoreSnapshot) {
+    // Inspect descriptors before accessing fields or serializing untrusted state.
+    assertVisualJson(initial, {
+      maxBytes: this.#maxBytes,
+      maxValues: Math.max(100_000, this.#maxBytes),
+      maxDepth: 34, // store envelope and models array sit above the per-model 32-level limit
+    });
     if (
       !visualRecord(initial) ||
       initial.version !== 1 ||

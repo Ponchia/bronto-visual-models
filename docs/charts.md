@@ -135,3 +135,8 @@ with the same chart grammar recover through a fresh engine. Healthy rows-only
 updates still retain their existing compiled view. Pending acknowledgements are scoped to the current
 engine and frame; invalidation or unmount withdraws them. Source-row values remain
 excluded from public error messages.
+
+Accessible chart descriptions follow metadata-only revisions without rebuilding
+the compiled chart; an empty description falls back to the current model title.
+An input-policy refusal is reported once per offending frame, so an inline host
+error callback which updates React state cannot create a reporting loop.

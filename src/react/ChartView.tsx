@@ -56,6 +56,7 @@ function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: 
       view.description(props.model.description || props.model.title);
       return view;
     },
+    onDrawn: (view) => view.description(props.model.description || props.model.title),
     onReady: () => {
       setFailedFrame(null);
       props.ready();
@@ -63,7 +64,9 @@ function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: 
     onError: () => {
       setFailedFrame(frame);
       // Upstream exceptions may interpolate source data or the full specification.
-      props.report("The inline chart could not be rendered. Check its Vega-Lite grammar.");
+      props.report(
+        "The inline chart could not be rendered. Check its specification and input rows.",
+      );
     },
   });
   return (
@@ -186,9 +189,21 @@ export default function ChartView(props: AdapterProps) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
   }, [props.model.content]);
+  const identity = `${props.model.id}:${props.model.generation}:${props.model.revision}`;
+  const reported = useRef<{ identity: string; error: string } | null>(null);
   useEffect(() => {
-    if (prepared.error) props.report(prepared.error);
-  }, [prepared.error, props.report]);
+    if (!prepared.error) {
+      reported.current = null;
+      return;
+    }
+    if (props.active === false) return;
+    if (reported.current?.identity === identity && reported.current.error === prepared.error)
+      return;
+    // Reporting may rerender a host which supplies an inline error callback.
+    // Notify once per refused frame, not once per callback function identity.
+    reported.current = { identity, error: prepared.error };
+    props.report(prepared.error);
+  }, [prepared.error, props.report, props.active, identity]);
   if (!prepared.input)
     return (
       <div className="bvm-notice" role="status">

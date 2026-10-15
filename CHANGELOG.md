@@ -6,6 +6,12 @@
   acknowledgements and stale row caches; preserve structured errors and recovery.
 - Recreate partially failed dataflows on the next explicit request rather than
   reusing corrupted pulse state; healthy data updates still reuse their engine.
+- Revoke withdrawn readiness callbacks, suppress late draw/error callbacks after
+  hiding or disposal, and observe retained frames on reactivation. Add controlled
+  promise-barrier browser regressions for callback ownership and supersession.
+- Keep timeline redraw/navigation callbacks inactive after hide or disposal;
+  preserve metadata-only chart descriptions without recompilation and prevent
+  error-report loops caused by changing host callback identities.
 - Cover repeated invalid calculation rows and repair without changing the grammar
   in the independently packed real-browser fixture.
 - Handle malformed optional routing/port/label responses without TypeErrors;

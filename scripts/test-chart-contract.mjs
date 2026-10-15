@@ -76,6 +76,18 @@ export async function testChartContract(browser, outputDirectory) {
     await page.goto("http://127.0.0.1:4175", { waitUntil: "networkidle" });
     await ready();
     await page.locator(".bvm-chart canvas").waitFor();
+    const metadataCanvas = await page.locator(".bvm-chart canvas").elementHandle();
+    await page.getByRole("button", { name: "Rename chart", exact: true }).click();
+    await ready();
+    await page.locator('.bvm-chart [aria-label="Updated accessible chart description"]').waitFor();
+    assert.ok(
+      await metadataCanvas.evaluate((c) => c.isConnected),
+      "A metadata edit recompiled the chart",
+    );
+    await page.getByRole("button", { name: "Clear chart description", exact: true }).click();
+    await ready();
+    await page.locator('.bvm-chart [aria-label="Renamed chart"]').waitFor();
+    assert.ok(await metadataCanvas.evaluate((c) => c.isConnected));
     const firstCanvas = await canvasDigest();
     await page.getByRole("button", { name: "Calculated chart", exact: true }).click();
     await ready();
@@ -170,6 +182,20 @@ export async function testChartContract(browser, outputDirectory) {
         await page.getByText(/Connected marks imply an ordered path/).waitFor();
       }
     }
+    await page.getByRole("button", { name: "Toggle changing error handler", exact: true }).click();
+    await page.getByRole("button", { name: "External data", exact: true }).click();
+    await page.getByRole("alert").waitFor();
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+    assert.equal(
+      await page.getByTestId("notification-count").textContent(),
+      "1",
+      "Changing callback identities caused repeated error reports",
+    );
+    await page.getByRole("button", { name: "Recover chart", exact: true }).click();
+    await ready();
+    await page.getByRole("button", { name: "Toggle changing error handler", exact: true }).click();
     for (const action of [
       "Invalid grammar",
       "External data",
@@ -228,6 +254,8 @@ export async function testChartContract(browser, outputDirectory) {
       "same-grammar recovery rebuilds failed dataflow and restores the exact valid pixels",
       "healthy row updates retain the existing canvas",
       "small-screen fit",
+      "metadata-only accessible descriptions update without rebuilding the chart",
+      "inline host error handlers cannot cause report feedback loops",
     );
     return { device: "chart-contract", passed: true, assertions: results };
   } catch (error) {

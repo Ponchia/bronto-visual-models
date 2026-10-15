@@ -26,6 +26,8 @@ function App() {
     }),
   );
   const [active, setActive] = useState(true);
+  const [changingHandler, setChangingHandler] = useState(false);
+  const [notifications, setNotifications] = useState(0);
   const [ready, setReady] = useState(0);
   const [readyHistory, setReadyHistory] = useState<number[]>([]);
   const acknowledge = useCallback((identity: { revision: number }) => {
@@ -150,12 +152,30 @@ function App() {
         </button>
         <button onClick={() => change({ spec: bar, values: rows })}>Recover chart</button>
         <button onClick={() => setActive((a) => !a)}>Toggle active</button>
+        <button
+          onClick={() =>
+            setModel(
+              (m) =>
+                editModel(m, {
+                  title: "Renamed chart",
+                  description: "Updated accessible chart description",
+                }).model,
+            )
+          }
+        >
+          Rename chart
+        </button>
+        <button onClick={() => setModel((m) => editModel(m, { description: "" }).model)}>
+          Clear chart description
+        </button>
+        <button onClick={() => setChangingHandler((v) => !v)}>Toggle changing error handler</button>
       </div>
       <label>
         Host input <input id="host-input" defaultValue="untouched" />
       </label>
       <output data-testid="revision">{model.revision}</output>
       <output data-testid="ready">{ready}</output>
+      <output data-testid="notification-count">{notifications}</output>
       <output data-testid="ready-history" style={{ display: "block", overflowWrap: "anywhere" }}>
         {JSON.stringify(readyHistory)}
       </output>
@@ -168,7 +188,15 @@ function App() {
         height={460}
         active={active}
         onReady={acknowledge}
-        onError={report}
+        onError={
+          changingHandler
+            ? (message) => {
+                report(message);
+                // Bound a buggy callback feedback loop so the negative test is safe.
+                setNotifications((n) => Math.min(8, n + 1));
+              }
+            : report
+        }
       />
       <output data-testid="failures" style={{ overflowWrap: "anywhere" }}>
         {JSON.stringify(failures)}

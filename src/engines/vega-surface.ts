@@ -96,6 +96,8 @@ interface Engine {
   /** Evaluation failures can leave internal pulses inconsistent; never reuse that dataflow. */
   failed: boolean;
   frameEpoch: number;
+  /** Last frame delivered to active host instrumentation; hidden completions remain pending. */
+  notifiedEpoch: number;
   held: Map<string, string>;
   release(): void;
 }
@@ -280,38 +282,61 @@ export function useVegaSurface(
     }
     latest.current.onInvalidate?.();
   }, []);
+  /** Deliver retained frame observations only while this surface has an active owner. */
+  const observe = useCallback((current: Engine): boolean => {
+    if (
+      !queue.current ||
+      engine.current !== current ||
+      !current.validFrame ||
+      !latest.current.active
+    )
+      return false;
+    if (current.notifiedEpoch !== current.frameEpoch) {
+      current.notifiedEpoch = current.frameEpoch;
+      latest.current.onDrawn?.(current.view);
+    }
+    return true;
+  }, []);
   /** Acknowledgement belongs to one successful frame of one still-mounted engine. */
-  const acknowledge = useCallback((current: Engine, ack: (() => void) | undefined) => {
-    if (!current.validFrame || engine.current !== current || !queue.current) return;
-    const epoch = current.frameEpoch;
-    attested.current = ack;
-    if (ack)
+  const acknowledge = useCallback(
+    (current: Engine, ack: (() => void) | undefined) => {
+      if (!observe(current)) return;
+      // A host can withdraw readiness while its source is pending without changing
+      // the retained rows. That withdrawal also revokes already queued callbacks.
+      if (!ack || !latest.current.onReady) {
+        attested.current = undefined;
+        return;
+      }
+      const epoch = current.frameEpoch;
+      attested.current = ack;
       requestAnimationFrame(() => {
         if (
           queue.current &&
           engine.current === current &&
           current.validFrame &&
           current.frameEpoch === epoch &&
-          latest.current.active
+          latest.current.active &&
+          latest.current.onReady
         )
           ack();
       });
-  }, []);
+    },
+    [observe],
+  );
   const drawn = useCallback(
     (current: Engine, ack: (() => void) | undefined) => {
       current.validFrame = true;
-      latest.current.onDrawn?.(current.view);
       acknowledge(current, ack);
     },
     [acknowledge],
   );
   const fail = useCallback((error: unknown) => {
     const current = engine.current;
-    // Even a queued onReady callback must not attest a partly evaluated frame.
     attested.current = undefined;
     if (current) poisonFrame(current);
+    if (!queue.current) return;
     setShown(null);
-    latest.current.onError(message(error));
+    if (latest.current.active) latest.current.onError(message(error));
   }, []);
   // Lays the retained view out again when its container measures differently.
   const relayout = useCallback(async () => {
@@ -345,10 +370,7 @@ export function useVegaSurface(
       if (data?.sized) current.dataKey = key;
       // Rows still queued belong to a frame their own work will attest.
       if (current.dataKey === key) drawn(current, ack);
-      else {
-        current.validFrame = true;
-        latest.current.onDrawn?.(current.view);
-      }
+      else drawn(current, undefined);
     });
   }, [request, drawn, invalidate]);
 
@@ -465,6 +487,7 @@ export function useVegaSurface(
           validFrame: false,
           failed: false,
           frameEpoch: 0,
+          notifiedEpoch: -1,
           held: new Map(Object.entries(sets).map(([name, rows]) => [name, JSON.stringify(rows)])),
           release: latest.current.onAcquire?.() ?? (() => {}),
         };
@@ -579,7 +602,13 @@ export function useVegaSurface(
     await queue.current?.idle();
   }, []);
   const attest = useCallback(() => {
-    if (latest.current.active && engine.current?.validFrame) attested.current?.();
+    if (
+      queue.current &&
+      latest.current.active &&
+      latest.current.onReady &&
+      engine.current?.validFrame
+    )
+      attested.current?.();
   }, []);
   return { view: shown, run, idle, attest };
 }

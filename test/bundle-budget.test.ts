@@ -34,3 +34,15 @@ test("bundle guard refuses accidental eager renderer loading and compressed-size
   );
   assert.throws(() => bundleReport({}, sizes), /entry/);
 });
+
+test("an optional layout worker has a separate budget without relaxing renderer limits", () => {
+  const worker = { ...sizes, "assets/elk-worker.min-abc.js": { raw: 1600000, gzip: 500000 } };
+  const report = bundleReport(manifest, worker);
+  assert.equal(report.measurements.optionalLayoutWorker, 500000);
+  assert.equal(report.measurements.applicationJavaScript, 220);
+  assert.throws(
+    () =>
+      bundleReport(manifest, { ...worker, "assets/GraphView.js": { raw: 900000, gzip: 230000 } }),
+    /largestApplicationAsset/,
+  );
+});

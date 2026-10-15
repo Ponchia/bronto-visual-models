@@ -103,7 +103,7 @@ try {
       `
     import { createRequire } from "node:module"; import assert from "node:assert/strict";
     const require = createRequire(import.meta.url);
-    for (const engine of ["@xyflow/react", "vega", "vis-timeline", "vis-data"])
+    for (const engine of ["@xyflow/react", "vega", "vis-timeline", "vis-data", "elkjs"])
       assert.throws(() => require.resolve(engine), undefined, engine + " leaked into native install");
   `,
     ],

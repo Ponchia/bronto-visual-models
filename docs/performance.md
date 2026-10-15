@@ -73,8 +73,11 @@ Run `npm run check:bundle` after `npm run site:build:packed`. The guard traverse
 the built manifest's static imports, leaving dynamic renderers out of the
 initial-JavaScript count. It refuses accidentally eager renderer entries and
 records raw/gzip sizes. Limits are kept in `scripts/bundle-budget.mjs`: 128 KiB
-initial JavaScript, 600 KiB total JavaScript, 215 KiB per JavaScript asset,
-12 KiB aggregate CSS and 10 KiB for each native renderer/data-reader asset.
+initial JavaScript, 600 KiB application JavaScript, 215 KiB per application
+JavaScript asset, 12 KiB aggregate CSS and 10 KiB for each native renderer/data
+reader asset. The optional ELK worker retained from the diagram-layout work
+has a separate 650 KiB budget; total JavaScript including that worker is bounded
+at 1,250 KiB. It is not an initial renderer dependency.
 These are gzip transfer limits, not memory budgets or frame-rate claims.
 
 The dedicated native Gantt consumer uses `/react/gantt` and `/base.css`, with no

@@ -1,8 +1,10 @@
 /** Gzip transfer budgets, not memory or rendering-performance claims. */
 export const BUNDLE_LIMITS = Object.freeze({
   initialJavaScript: 128 * 1024,
-  totalJavaScript: 600 * 1024,
-  largestJavaScript: 215 * 1024,
+  totalJavaScript: 1250 * 1024,
+  applicationJavaScript: 600 * 1024,
+  optionalLayoutWorker: 650 * 1024,
+  largestApplicationAsset: 215 * 1024,
   totalCss: 12 * 1024,
   nativeRenderer: 10 * 1024,
 });
@@ -23,13 +25,19 @@ export function bundleReport(manifest, sizes) {
       throw new Error(`Renderer was promoted into the initial bundle: ${key}`);
   }
   const js = Object.entries(sizes).filter(([file]) => file.endsWith(".js"));
+  // The separately requested ELK worker is not an application entry or renderer.
+  // Keep its own explicit budget rather than relaxing the existing renderer limits.
+  const layoutWorkers = js.filter(([file]) => /\/elk-worker(?:\.min)?[-.]/.test(file));
+  const application = js.filter(([file]) => !layoutWorkers.some(([worker]) => worker === file));
   const css = Object.entries(sizes).filter(([file]) => file.endsWith(".css"));
   const initialFiles = [...new Set([...eager].map((key) => manifest[key].file))];
   for (const file of initialFiles) if (!sizes[file]) throw new Error(`Missing size for ${file}`);
   const measurements = {
     initialJavaScript: initialFiles.reduce((sum, file) => sum + sizes[file].gzip, 0),
     totalJavaScript: js.reduce((sum, [, size]) => sum + size.gzip, 0),
-    largestJavaScript: Math.max(0, ...js.map(([, size]) => size.gzip)),
+    applicationJavaScript: application.reduce((sum, [, size]) => sum + size.gzip, 0),
+    optionalLayoutWorker: layoutWorkers.reduce((sum, [, size]) => sum + size.gzip, 0),
+    largestApplicationAsset: Math.max(0, ...application.map(([, size]) => size.gzip)),
     totalCss: css.reduce((sum, [, size]) => sum + size.gzip, 0),
     nativeRenderer: Math.max(
       0,

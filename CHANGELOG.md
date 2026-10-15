@@ -9,6 +9,7 @@
   scenarios and compressed bundle regression gates.
 - Validate completed model envelopes before publication; add fixed-seed
   edit/undo/replacement/restart regressions and avoid cloning bodies for lists.
+
 ### Diagram layouts
 
 - Explicit ELK layered proposals for RIGHT/DOWN diagrams, guarded by source

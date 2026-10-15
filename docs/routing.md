@@ -55,7 +55,9 @@ mechanism: hosts still own the input model, the trusted runner and mutation poli
 ELK routes are drawn as rounded orthogonal polylines. The host font is measured in
 the browser, then labels are placed deterministically around route segments while
 avoiding node rectangles, group heading bands and previously placed labels.
-Font-load completion causes measurement again. Rendering uses the same explicit
+Font-load completion causes measurement again. Labels are painted above group
+bodies; the browser gate checks hit-tested visibility as well as rectangle
+separation, so an apparently clear but occluded label cannot pass. Rendering uses the same explicit
 font as measurement; generic host button styles cannot quietly change the metrics.
 
 A short bounded candidate search is not a global optimization. A label with no

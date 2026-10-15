@@ -179,3 +179,9 @@
   max-width: 100%;
   display: block;
 }
+
+/* Labels may sit inside a group, but never behind its filled body. Measured
+   placement still excludes leaf nodes and the group's heading band. */
+.bvm-graph-shell .react-flow__edgelabel-renderer {
+  z-index: 1001;
+}

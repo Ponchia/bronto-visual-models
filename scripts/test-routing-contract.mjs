@@ -66,6 +66,16 @@ export async function testRoutingContract(browser, outputDirectory) {
       }),
     );
     assert(labels.length >= 2, "Labels could not be placed");
+    const hidden = await page.locator("[data-edge-label]").evaluateAll((labels) =>
+      labels
+        .filter((label) => {
+          const r = label.getBoundingClientRect();
+          const at = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return !at || (at !== label && !label.contains(at));
+        })
+        .map((label) => label.getAttribute("data-edge-label")),
+    );
+    assert.deepEqual(hidden, [], "A label was geometrically clear but hidden behind a group body");
     const boxes = await page.locator(".react-flow__node").evaluateAll((items) =>
       items.map((el) => {
         const r = el.getBoundingClientRect();
@@ -105,6 +115,13 @@ export async function testRoutingContract(browser, outputDirectory) {
     );
     await page.locator(".bvm-edge-reading summary").click();
     await page.getByRole("button", { name: "Rename title", exact: true }).click();
+    // Controlled nodes may undergo a React Flow measurement pass after a new
+    // owned model snapshot. Wait for actual attachment, not an arbitrary delay;
+    // the geometric cache must still be current throughout that update.
+    await page.locator('[data-routing-state="current"]').waitFor();
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-bvm-route="elk"]').length === 5,
+    );
     assert.equal(
       await page.locator('[data-bvm-route="elk"]').count(),
       5,
@@ -148,6 +165,7 @@ export async function testRoutingContract(browser, outputDirectory) {
         "parallel routes and self-loop",
         "measured collision-free label boxes",
         "full relationship reading list",
+        "label stacking above group bodies",
         "title edits retain geometry",
         "remote obstacle changes invalidate all routes",
         "drag invalidation before commit",

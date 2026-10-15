@@ -84,7 +84,10 @@ identifies the model generation and revision the adapter acknowledged.
 
 `useVisualModel(source, id)` bridges a `VisualModelSource` (`get`, `subscribe`) to
 React with `useSyncExternalStore`. Sources notify after commits and advance the
-revision or generation whenever content changes. Returned snapshots are deeply
+revision or generation whenever content changes. The hook does not reread model
+content for unrelated React renders or commits to another model; it always
+rechecks after subscription setup to handle a concurrent commit. Returned
+snapshots are deeply
 frozen and cached by ID/generation/revision; use the store's normal getter for a
 mutable draft. SSR hosts must initialize the browser source from the same
 serialized snapshot used on the server. The hook itself needs React, not the

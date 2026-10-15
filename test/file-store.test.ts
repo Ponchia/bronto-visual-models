@@ -42,6 +42,21 @@ test("file store persists documents, receipts and undo in one restartable snapsh
   assert.equal(snapshot.inverses.length, 2);
   assert.equal((await stat(file)).mode & 0o777, 0o600);
 });
+test("an exact-capacity file is readable after restart despite its trailing newline", async (t) => {
+  const { dir, file } = await fixture(t);
+  const reference = join(dir, "reference.json");
+  await executeFileCommand(reference, create, context);
+  const snapshot = JSON.parse(await readFile(reference, "utf8"));
+  const maxBytes = Buffer.byteLength(JSON.stringify(snapshot), "utf8");
+  const options = { maxBytes };
+  await executeFileCommand(file, create, context, options);
+  assert.equal((await readFile(file)).byteLength, maxBytes + 1);
+  assert.equal((await readFileStore(file, options)).get("graph")?.title, "Test");
+  const before = await readFile(file);
+  assert.equal((await executeFileCommand(file, create, context, options)).replayed, true);
+  assert.deepEqual(await readFile(file), before);
+});
+
 test("replayed file command leaves committed bytes and mtime unchanged", async (t) => {
   const { file } = await fixture(t);
   const first = await executeFileCommand(file, create, context);

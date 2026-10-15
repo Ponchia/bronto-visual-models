@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Enforce in-memory store byte budgets incrementally and exactly in UTF-8,
+  without re-serializing unrelated models and receipt history per edit.
+- Avoid redundant controlled React reads, cache nested graph depths, and reuse
+  unchanged graph edge descriptions while retaining subscription catch-up.
+- Accept a persisted file snapshot at the exact JSON byte budget, including
+  the file adapter's trailing newline; cover restart and replay at that boundary.
+- Add byte-for-byte capacity regressions, packed React subscription checks and
+  a reproducible synthetic store performance benchmark.
+
 ## 0.1.0-beta.2
 
 - Non-mutating, serialized previews for create/edit/undo/fork with the same

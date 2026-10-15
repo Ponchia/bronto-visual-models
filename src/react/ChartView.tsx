@@ -84,16 +84,19 @@ function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: 
 }
 
 function DataCell({ value, row, column }: { value: unknown; row: number; column: string }) {
+  const [open, setOpen] = useState(false);
   const full = chartCellFullText(value);
   if (full.length <= 240) return <>{full}</>;
   return (
-    <details className="bvm-cell-detail">
+    <details className="bvm-cell-detail" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary aria-label={`Full value, row ${row}, column ${column}`}>
         {chartCellText(value)}
       </summary>
-      <pre tabIndex={0} aria-label={`Complete value, row ${row}, column ${column}`}>
-        {full}
-      </pre>
+      {open && (
+        <pre tabIndex={0} aria-label={`Complete value, row ${row}, column ${column}`}>
+          {full}
+        </pre>
+      )}
     </details>
   );
 }

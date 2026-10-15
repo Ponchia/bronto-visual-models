@@ -145,7 +145,10 @@ export async function testExplorationContract(browser, outputDirectory) {
     await chooser.waitFor();
     assert.equal(await page.getByTestId("selected").textContent(), "none");
     await chooser
-      .getByRole("button", { name: "Parallel contract · node-000", exact: true })
+      .getByRole("button", {
+        name: "Component 060 → Component 059 · Parallel contract · node-000",
+        exact: true,
+      })
       .click();
     await page.getByTestId("selected").filter({ hasText: "edges:node-000" }).waitFor();
     await chooser.getByRole("button", { name: "Close relationship choices", exact: true }).click();

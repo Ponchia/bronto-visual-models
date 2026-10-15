@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createModel, editModel, type ModelEdit } from "@ponchia/visual-models";
 import { VisualModelView } from "@ponchia/visual-models/react";
@@ -27,6 +27,11 @@ function App() {
   );
   const [active, setActive] = useState(true);
   const [ready, setReady] = useState(0);
+  const [readyHistory, setReadyHistory] = useState<number[]>([]);
+  const acknowledge = useCallback((identity: { revision: number }) => {
+    setReady(identity.revision);
+    setReadyHistory((old) => (old.includes(identity.revision) ? old : [...old, identity.revision]));
+  }, []);
   const [failures, setFailures] = useState<string[]>([]);
   const change = (content: ModelEdit["content"]) =>
     setModel((current) => editModel(current, { ifRevision: current.revision, content }).model);
@@ -67,6 +72,30 @@ function App() {
           }
         >
           Composed chart
+        </button>
+        <button
+          onClick={() =>
+            change({
+              spec: {
+                ...bar,
+                transform: [{ calculate: "datum.nested.value", as: "computed" }],
+                encoding: { ...bar.encoding, y: { field: "computed", type: "quantitative" } },
+              },
+              values: rows.map((row) => ({ ...row, nested: { value: row.value } })),
+            })
+          }
+        >
+          Nested chart
+        </button>
+        <button onClick={() => change({ values: rows.map((row) => ({ ...row, nested: null })) })}>
+          Invalid calculation rows
+        </button>
+        <button
+          onClick={() =>
+            change({ values: rows.map((row) => ({ ...row, nested: { value: row.value } })) })
+          }
+        >
+          Restore calculation rows
         </button>
         <button onClick={() => change({ spec: { missingMark: true } })}>Invalid grammar</button>
         <button
@@ -119,12 +148,13 @@ function App() {
       </label>
       <output data-testid="revision">{model.revision}</output>
       <output data-testid="ready">{ready}</output>
+      <output data-testid="ready-history">{JSON.stringify(readyHistory)}</output>
       <output data-testid="active">{String(active)}</output>
       <VisualModelView
         model={model}
         height={460}
         active={active}
-        onReady={(identity) => setReady(identity.revision)}
+        onReady={acknowledge}
         onError={(message) =>
           setFailures((old) => (old.at(-1) === message ? old : [...old, message]))
         }

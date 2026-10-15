@@ -117,3 +117,18 @@ The shared **Inspect model** control inspects the authored model and identified
 annotations. **Data table** inside the chart presents raw inline rows before
 transforms. These labels distinguish metadata inspection from source values;
 neither action fetches a connected dataset or changes the saved document.
+
+## Failed data updates and render acknowledgements
+
+A calculation can compile successfully but fail later for an individual input
+row. The engine marks its current frame invalid before a data/size update, and
+publishes a data identity only after evaluation and layout settling succeed.
+Failed data updates never acknowledge the new model revision or clear the error
+surface as if it rendered. This does not roll back or rewrite the saved model.
+
+A failed dataflow may have partially consumed rows, so its cached data identities
+are discarded. Repeating the same invalid rows is evaluated again rather than
+being accepted as an unchanged frame. Supplying repaired rows with the same chart
+grammar recovers normally. Pending acknowledgements are scoped to the current
+engine and frame; invalidation or unmount withdraws them. Source-row values remain
+excluded from public error messages.

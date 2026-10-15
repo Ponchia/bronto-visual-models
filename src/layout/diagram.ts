@@ -235,7 +235,9 @@ export async function layoutDiagram(
       )
         throw fail();
       updates.set(original.id, update);
-      if (node.children?.length) collect(node.children, original.id);
+      // An explicitly supplied malformed child collection must not bypass the
+      // hierarchy check simply because it has no array length.
+      if (node.children !== undefined) collect(node.children, original.id);
     }
   };
   if (!visualRecord(arranged) || arranged.id !== "root") throw fail();

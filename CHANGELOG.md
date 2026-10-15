@@ -2,6 +2,11 @@
 
 ## 0.1.0-beta.3
 
+- Never acknowledge failed same-grammar chart data updates. Invalidate queued frame
+  acknowledgements and stale row caches; preserve structured errors and recovery.
+- Handle malformed optional routing/port/label responses without TypeErrors;
+  refuse invalid child collections with the public geometry error contract.
+
 - Render ELK root-space connector paths from derived, fingerprinted caches without
   changing the stored model format. Suspend stale routes during drag and after
   relevant geometry, topology, label or element-lifetime changes.

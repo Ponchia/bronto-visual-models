@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createModel, editModel } from "../src/index.ts";
+import { createModel, editModel, VisualModelError } from "../src/index.ts";
 import type { GraphContent } from "../src/semantic.ts";
 import { layoutDiagram } from "../src/layout/elk.ts";
 import {
@@ -198,4 +198,111 @@ test("a runner's getter-bearing output is refused without evaluating the getter"
     ),
   );
   assert.equal(read, 0);
+});
+
+for (const defect of [
+  "null-section",
+  "nonarray-bends",
+  "null-edge",
+  "object-edges",
+  "invalid-label",
+] as const) {
+  test(`malformed optional routing (${defect}) is disclosed rather than throwing an unstructured exception`, async () => {
+    const before = model();
+    const bytes = JSON.stringify(before);
+    const proposal = await layoutDiagram(
+      before,
+      {},
+      {
+        engine: {
+          layout: async (root) => {
+            const out = {
+              ...root,
+              width: 1000,
+              height: 300,
+              children: root.children!.map((node, index) => ({
+                ...node,
+                x: index * 300 + 24,
+                y: 24,
+              })),
+            };
+            for (const edge of out.edges!)
+              edge.sections = [
+                { id: "section", startPoint: { x: 204, y: 69 }, endPoint: { x: 324, y: 69 } },
+              ];
+            if (defect === "null-section") out.edges![0]!.sections = [null as any];
+            if (defect === "nonarray-bends")
+              out.edges![0]!.sections![0]!.bendPoints = { x: 250, y: 69 } as any;
+            if (defect === "null-edge") out.edges![0] = null as any;
+            if (defect === "object-edges") out.edges = {} as any;
+            if (defect === "invalid-label") out.edges![0]!.labels = [null as any];
+            return out;
+          },
+        },
+      },
+    );
+    const candidate = editModel(before, proposal.patch).model;
+    assert.equal(JSON.stringify(before), bytes);
+    assert.equal(diagramRoutingMatches(candidate, proposal.routing), true);
+    assert.equal(
+      proposal.routing.edges.length + proposal.routing.omitted.length,
+      before.content.edges!.length,
+    );
+    if (defect !== "invalid-label") assert.ok(proposal.routing.omitted.length > 0);
+    assert.deepEqual(candidate.content.edges, before.content.edges);
+  });
+}
+test("malformed optional port records cannot become offsets or crash geometry conversion", async () => {
+  const before = model();
+  const proposal = await layoutDiagram(
+    before,
+    {},
+    {
+      engine: {
+        layout: async (root) => ({
+          ...root,
+          width: 1000,
+          height: 300,
+          children: root.children!.map((node, index) => ({
+            ...node,
+            x: index * 300 + 24,
+            y: 24,
+            ports: [null as any, { id: "unknown", x: 0, y: 0 }],
+          })),
+        }),
+      },
+    },
+  );
+  const candidate = editModel(before, proposal.patch).model;
+  assert.deepEqual(proposal.routing.ports, []);
+  assert.equal(diagramRoutingMatches(candidate, proposal.routing), true);
+});
+test("malformed child collections are structured refusals with no source change", async () => {
+  for (const children of [{}, null, 4]) {
+    const before = model(),
+      bytes = JSON.stringify(before);
+    await assert.rejects(
+      layoutDiagram(
+        before,
+        {},
+        {
+          engine: {
+            layout: async (root) => ({
+              ...root,
+              width: 1000,
+              height: 300,
+              children: root.children!.map((node, index) => ({
+                ...node,
+                x: index * 300 + 24,
+                y: 24,
+                children: children as any,
+              })),
+            }),
+          },
+        },
+      ),
+      (error: unknown) => error instanceof VisualModelError && error.code === "unavailable",
+    );
+    assert.equal(JSON.stringify(before), bytes);
+  }
 });

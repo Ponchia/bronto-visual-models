@@ -80,6 +80,36 @@ export async function testChartContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Calculated chart", exact: true }).click();
     await ready();
     assert.notEqual(await canvasDigest(), firstCanvas, "Expression-aware chart did not redraw");
+    await page.getByRole("button", { name: "Nested chart", exact: true }).click();
+    await ready();
+    const evaluated = await canvasDigest();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await page.getByRole("button", { name: "Invalid calculation rows", exact: true }).click();
+      const refusedRevision = Number(await page.getByTestId("revision").textContent());
+      await page
+        .getByTestId("failures")
+        .filter({ hasText: "The inline chart could not be rendered" })
+        .waitFor();
+      // Drain painted acknowledgements, not a machine-speed-dependent sleep.
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+      const history = JSON.parse(await page.getByTestId("ready-history").textContent());
+      assert.ok(
+        !history.includes(refusedRevision),
+        `Failed data revision ${refusedRevision} was acknowledged as drawn`,
+      );
+      assert.notEqual(await page.getByTestId("ready").textContent(), String(refusedRevision));
+      await page.getByRole("alert").waitFor();
+    }
+    await page.getByRole("button", { name: "Restore calculation rows", exact: true }).click();
+    await ready();
+    assert.equal(await page.getByRole("alert").count(), 0);
+    assert.equal(
+      await canvasDigest(),
+      evaluated,
+      "Recovery with the same grammar did not restore the valid frame",
+    );
     await page.getByRole("button", { name: "Data table", exact: true }).click();
     await page.getByRole("table").waitFor();
     assert.equal(await page.locator("table tbody tr").count(), 25);
@@ -174,6 +204,8 @@ export async function testChartContract(browser, outputDirectory) {
       "malicious cell text remains text",
       "no resource requests",
       "compiler error recovery without source-data disclosure",
+      "failed data updates and repeated invalid rows never acknowledge undrawn revisions",
+      "same-grammar recovery restores the valid frame",
       "small-screen fit",
     );
     return { device: "chart-contract", passed: true, assertions: results };

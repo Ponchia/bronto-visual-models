@@ -111,3 +111,36 @@ Optional lower-level subpaths expose the extracted Vega and vis-timeline engine
 hooks plus geometry helpers. Hooks accept host instrumentation (`onAcquire`) and
 explicit resolved theme tokens. A host's observers and appearance events stay
 outside the package. Import the relevant engine stylesheet in that host.
+
+## Inline charts
+
+`VisualModelView` now renders the `vega-lite` family with explicit inline rows.
+The same controlled-model API applies: commit through the host and pass a new
+revision to update data or encoding. The chart's internal Chart/Data table toggle
+is local presentation, never a saved mutation. It is not a new model projection
+and does not add synthetic row identities to the stored document.
+
+The reference chart uses canvas and interpreted expressions. It acknowledges
+only drawn chart frames, not a data-table display; `active={false}` defers chart
+work until reactivation. It does not implement the broader family catalog's
+annotation editor, parameter bindings, selection targets, export or connected
+sources. Families describe potential host capabilities, not a claim that every
+reference adapter implements them. See the [chart guide](charts.md).
+
+Headless tools can call `prepareInlineChart(content)` from
+`@ponchia/visual-models/render/inline-chart` to check the reference adapter's input
+policy without loading a compiler, React, DOM or network. This returns owned spec
+and rows plus `fill` (`fit` or `composed`). Passing that check is not proof of valid
+Vega-Lite grammar or bounded compute cost; compilation/rendering can still refuse.
+
+## Routed connector caches and chart advice
+
+`VisualModelView` accepts `diagramRouting`, the derived cache from a
+`layoutDiagram` proposal. Cache validity depends on content and element lifetimes,
+not merely a revision number. Relevant edits and active drags invalidate routes;
+full labels remain readable when visual label placement is unavailable.
+See [routing](routing.md).
+
+`chartEncodingGuidance` is an advisory core API. Its bounded notes do not fail an
+otherwise valid model, fetch data, or modify content. The reference inline chart
+and CLI validation display the same notes. See [chart guidance](chart-guidance.md).

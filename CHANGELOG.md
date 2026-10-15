@@ -1,6 +1,34 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.3
+
+- Render ELK root-space connector paths from derived, fingerprinted caches without
+  changing the stored model format. Suspend stale routes during drag and after
+  relevant geometry, topology, label or element-lifetime changes.
+- Place relationship labels using actual host-font measurements, avoiding nodes,
+  group headers and other labels. Full text remains in a keyboard-readable list
+  when the bounded placement cannot fit it.
+- Add headless chart-encoding advice, CLI/view notes and semantically distinct
+  categorical and temporal examples. Advice never rewrites valid source data.
+
+- Standalone inline Vega-Lite chart rendering with controlled row/spec updates,
+  responsive fitted charts, independently sized compositions and pause/resume.
+- A keyboard-accessible source-data table with pagination, empty states, sparse
+  column discovery and disclosed display limits; no invented row identities.
+- Explicit refusals for host sources, nested data, images, links, parameter
+  bindings and unimplemented annotations; saved source is never rewritten.
+- Interpreted chart expressions, constructor-time deny-all resource loader and
+  plain-text tooltips. The chart fixture exercises a strict script CSP without
+  unsafe-eval; this is not a claim about all existing renderer engines or a CPU
+  sandbox for arbitrary untrusted specifications.
+- Compilation never receives source rows; renderer error callbacks do not expose
+  upstream dumps of datasets or specifications.
+- New headless policy/data-table tests, a packed chart browser consumer, and a
+  public demo for chart-type changes and source-data updates.
+
+Adds `vega-interpreter` as an optional chart peer (and a development test
+requirement), not a core dependency. The stored model format remains version 2;
+this release does not update Spatial's separately pinned version.
 
 ### Diagram layouts
 

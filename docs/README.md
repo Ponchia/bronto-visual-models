@@ -1,8 +1,11 @@
 # Documentation
 
 - [Previews](previews.md): inspect a proposed change without consuming a key or writing a store.
+- [Connector routing](routing.md): derived root-space paths, measured labels and invalidation.
+- [Chart guidance](chart-guidance.md): bounded semantic advice without rewriting data.
 - [Diagram layouts](layouts.md): optional worker-backed ELK proposals with guarded apply/undo.
 - [Visualization engine research](research/visualization-engines-20261015.md): choices, model boundaries and measurement method.
+- [Inline charts](charts.md): embedded charts, accessible source data and resource policy.
 - [API](api.md): models, families, revisions, edits and controlled views.
 - [Storage and authority](storage.md): transactions, receipts, recovery and host responsibilities.
 - [CLI](cli.md): files, commands, exit codes and safe retries.

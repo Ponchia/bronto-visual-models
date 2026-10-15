@@ -1,6 +1,6 @@
 {
   "name": "@ponchia/visual-models",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Persistent, editable visual artifacts with identified elements, guarded operations and optional React renderers.",
   "type": "module",
   "license": "MIT",
@@ -92,7 +92,8 @@
     "@ponchia/ui": "^0.16.3",
     "vega-tooltip": "^1.1.0",
     "d3-sankey": "^0.12.3",
-    "elkjs": "^0.12.0"
+    "elkjs": "^0.12.0",
+    "vega-interpreter": "^2.3.2"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -127,6 +128,9 @@
     },
     "elkjs": {
       "optional": true
+    },
+    "vega-interpreter": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -150,7 +154,8 @@
     "@biomejs/biome": "2.5.15",
     "markdownlint": "0.41.1",
     "elkjs": "0.12.0",
-    "@dagrejs/dagre": "3.1.1"
+    "@dagrejs/dagre": "3.1.1",
+    "vega-interpreter": "2.3.2"
   },
   "overrides": {
     "micromark-extension-math": {

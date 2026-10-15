@@ -20,6 +20,8 @@ try {
     "react-dom",
     "@xyflow/react",
     "vega",
+    "vega-lite",
+    "vega-interpreter",
     "vega-tooltip",
     "vis-timeline",
     "vis-data",
@@ -69,6 +71,34 @@ try {
       "--base=/",
       "--outDir",
       resolve(".tmp/react-contract"),
+      "--emptyOutDir",
+    ],
+    { cwd: directory, stdio: "inherit" },
+  );
+  await cp("test/chart-browser", join(directory, "chart-contract"), { recursive: true });
+  execFileSync(
+    process.execPath,
+    [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      "chart-contract",
+      "--base=/",
+      "--outDir",
+      resolve(".tmp/chart-contract"),
+      "--emptyOutDir",
+    ],
+    { cwd: directory, stdio: "inherit" },
+  );
+  await cp("test/routing-browser", join(directory, "routing-contract"), { recursive: true });
+  execFileSync(
+    process.execPath,
+    [
+      "node_modules/vite/bin/vite.js",
+      "build",
+      "routing-contract",
+      "--base=/",
+      "--outDir",
+      resolve(".tmp/routing-contract"),
       "--emptyOutDir",
     ],
     { cwd: directory, stdio: "inherit" },

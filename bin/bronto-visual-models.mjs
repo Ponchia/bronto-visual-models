@@ -9,6 +9,7 @@ import {
   validateVisualContent,
   withAuthoredTimes,
   modelTargets,
+  chartEncodingGuidance,
   modelSummary,
   visualViewProjection,
 } from "../dist/index.js";
@@ -143,7 +144,12 @@ async function main() {
     if (!definition) throw new VisualModelError("invalid", "Unknown renderer");
     const content = withAuthoredTimes(input.renderer, input.content);
     validateVisualContent(input.renderer, input.modelType ?? definition.modelType, content);
-    print({ valid: true, renderer: input.renderer, content });
+    print({
+      valid: true,
+      renderer: input.renderer,
+      content,
+      ...(input.renderer === "vega-lite" ? { guidance: chartEncodingGuidance(content) } : {}),
+    });
     return;
   }
   const file = required(flags, "--store");

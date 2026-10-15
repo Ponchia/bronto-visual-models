@@ -36,7 +36,7 @@ function stub(root: ElkNode): ElkNode {
     ...node,
     x: index * 280 + 24,
     y: 68,
-    children: node.children?.map(place),
+    ...(node.children ? { children: node.children.map(place) } : {}),
   });
   return { ...root, width: 1200, height: 500, children: root.children?.map(place) };
 }

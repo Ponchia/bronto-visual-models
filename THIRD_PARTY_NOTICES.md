@@ -11,6 +11,7 @@ modules, not a bundled replacement copy of those engines.
 | React and React DOM | Optional component runtime | MIT |
 | React Flow (`@xyflow/react`) | Optional graph interaction engine | MIT |
 | Vega and Vega-Lite | Optional visualization grammar/runtime | BSD-3-Clause |
+| vega-interpreter | Optional chart expression evaluator | BSD-3-Clause |
 | vis-timeline and vis-data | Optional time-view runtime and data collection | Apache-2.0 OR MIT |
 | Bronto UI (`@ponchia/ui`) | Optional renderer theme contract | MIT |
 | d3-sankey | Optional analytical layout helper | BSD-3-Clause |

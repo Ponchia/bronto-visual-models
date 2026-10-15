@@ -1,9 +1,5 @@
 # Diagram layout proposals
 
-**Distribution:** this documents current source, not the immutable beta.2 archive.
-Use a built current-source package; the demo follows successfully verified main.
-No previously published archive is replaced to add this feature.
-
 The optional ELK adapter arranges a validated diagram without changing saved state.
 It does not replace React Flow or turn ELK's graph objects into the document format.
 
@@ -78,11 +74,14 @@ finite, bounded geometry before it can become a normal model patch.
 
 ## What this does not claim
 
-This is a node-placement adapter. ELK's computed edge sections are **not saved or
-rendered** by this version: React Flow continues drawing its own smooth-step edges.
-No optimal crossing count, exact text measurement, fixed-node constraint, minimal
-movement guarantee or universal port-routing fidelity is claimed. Group port sides
-are respected by ELK, but their exact engine-chosen offsets are not imported.
+The proposal includes a derived connector cache in addition to node placement.
+Pass `routing` to the view's `diagramRouting` prop; it is never stored by the
+layout patch. [Coordinate systems, label placement, invalidation and limits](routing.md)
+are explicit. The original approximate label hints are not used to force extra
+layers for single relationships: labels are measured and placed with the actual
+host font after routing. Parallel edges sharing the same port pair reserve small
+separate lanes; those groups can require more space.
+There is no optimal-crossing claim or automatic reroute after every edit.
 
 The bounded graph grammar remains 300 nodes and 600 edges. Layouts exceeding the
 existing coordinate or group-size limits are refused, not clipped. Large or dense

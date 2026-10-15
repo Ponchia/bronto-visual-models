@@ -8,6 +8,7 @@ import {
   type ModelEdit,
   type CommandPreview,
   modelTargets,
+  chartMarkChoices,
 } from "@ponchia/visual-models";
 import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
 import "@ponchia/visual-models/styles.css";
@@ -61,16 +62,69 @@ const milestone = {
     ],
   },
 };
+function chartExample(kind: "services" | "time") {
+  const time = kind === "time";
+  return {
+    spec: {
+      mark: time ? "line" : "bar",
+      encoding: {
+        x: time
+          ? {
+              field: "instant",
+              type: "temporal",
+              title: "Observation time (UTC)",
+              scale: { type: "utc" },
+              axis: { format: "%H:%M" },
+            }
+          : { field: "service", type: "nominal", title: null, axis: { labelAngle: 0 } },
+        y: {
+          field: "requests",
+          type: "quantitative",
+          title: "Requests / minute",
+          scale: { zero: true },
+        },
+        tooltip: [
+          { field: time ? "instant" : "service" },
+          { field: "requests", type: "quantitative" },
+        ],
+      },
+    },
+    values: time
+      ? [90, 130, 115, 155].map((requests, i) => ({
+          instant: `2026-10-15T10:${String(i * 10).padStart(2, "0")}:00Z`,
+          requests,
+        }))
+      : [
+          { service: "Billing", requests: 85 },
+          { service: "Delivery", requests: 130 },
+          { service: "Orders", requests: 120 },
+          { service: "Search", requests: 175 },
+        ],
+  };
+}
+const throughput = {
+  id: "throughput",
+  title: "Example throughput",
+  description: "Illustrative values, not live operational measurements.",
+  renderer: "vega-lite",
+  content: chartExample("services"),
+};
 function App() {
   const [store] = useState(() => new MemoryModelStore());
   const sequence = useRef(0);
   const model = useVisualModel(store, "architecture");
   const timeline = useVisualModel(store, "delivery");
+  const chart = useVisualModel(store, "throughput");
+  const [chartReady, setChartReady] = useState(0);
   const [proposal, setProposal] = useState<{
     command: ModelCommand;
     preview: CommandPreview;
     layout?: boolean;
+    routing?: import("@ponchia/visual-models/render/diagram-routing").DiagramRouting;
   } | null>(null);
+  const [savedRouting, setSavedRouting] = useState<
+    import("@ponchia/visual-models/render/diagram-routing").DiagramRouting | undefined
+  >();
   const [layoutDirection, setLayoutDirection] = useState<"RIGHT" | "DOWN">("RIGHT");
   const [arranging, setArranging] = useState(false);
   const layoutRequest = useRef<AbortController | null>(null);
@@ -96,6 +150,10 @@ function App() {
       );
       await store.execute(
         { type: "create", key: "initial-delivery", model: milestone },
+        { actor: "demo" },
+      );
+      await store.execute(
+        { type: "create", key: "initial-throughput", model: throughput },
         { actor: "demo" },
       );
       if (!disposed) {
@@ -210,7 +268,7 @@ function App() {
       };
       const preview = await store.preview(command, { actor: "demo" });
       controller.signal.throwIfAborted();
-      setProposal({ command, preview, layout: true });
+      setProposal({ command, preview, layout: true, routing: layout.routing });
       setProjection("diagram");
       setStatus(
         `Layout preview: ${layout.nodeCount} nodes, ${layout.edgeCount} unchanged relationships. Nothing saved.`,
@@ -309,6 +367,7 @@ function App() {
                 key={proposal?.layout ? "layout-preview" : "saved-model"}
                 model={proposal?.layout ? proposal.preview.model : model}
                 projection={projection}
+                diagramRouting={proposal?.layout ? proposal.routing : savedRouting}
                 selected={selected}
                 onSelect={setSelected}
                 onEdit={proposal?.layout ? undefined : edit}
@@ -344,6 +403,110 @@ function App() {
                 }
                 height={255}
               />
+            )}
+          </div>
+          <div className="chart-panel">
+            <div className="panel-header">
+              <div>
+                <span className="small-label">Chart and source data</span>
+                <h3>Example throughput</h3>
+              </div>
+              <span className="subtle">Illustrative data · no network</span>
+            </div>
+            {chart && (
+              <>
+                <div className="chart-demo-controls">
+                  <label>
+                    Example data{" "}
+                    <select
+                      aria-label="Example data"
+                      disabled={busy}
+                      value={
+                        (chart.content.spec as any).encoding.x.type === "temporal"
+                          ? "time"
+                          : "services"
+                      }
+                      onChange={(event) =>
+                        run({
+                          type: "edit",
+                          id: "throughput",
+                          key: key("chart-example"),
+                          patch: {
+                            ifRevision: chart.revision,
+                            content: chartExample(event.target.value as "time" | "services"),
+                          },
+                        })
+                      }
+                    >
+                      <option value="services">Compare services</option>
+                      <option value="time">Throughput over time</option>
+                    </select>
+                  </label>
+                  <label>
+                    Chart type{" "}
+                    <select
+                      aria-label="Chart type"
+                      value={String((chart.content.spec as { mark: string }).mark)}
+                      disabled={busy}
+                      onChange={(event) =>
+                        run({
+                          type: "edit",
+                          id: "throughput",
+                          key: key("chart-type"),
+                          patch: {
+                            ifRevision: chart.revision,
+                            content: {
+                              spec: { ...(chart.content.spec as object), mark: event.target.value },
+                            },
+                          },
+                        })
+                      }
+                    >
+                      {chartMarkChoices((chart.content.spec as any).encoding.x.type).map((mark) => (
+                        <option key={mark} value={mark}>
+                          {mark[0]!.toUpperCase() + mark.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      run({
+                        type: "edit",
+                        id: "throughput",
+                        key: key("chart-values"),
+                        patch: {
+                          ifRevision: chart.revision,
+                          content: {
+                            values: (
+                              chart.content.values as { service: string; requests: number }[]
+                            ).map((row, i) => ({ ...row, requests: row.requests + 10 * (i + 1) })),
+                          },
+                        },
+                      })
+                    }
+                  >
+                    Update chart values
+                  </button>
+                </div>
+                <VisualModelView
+                  model={chart}
+                  height={345}
+                  onReady={(identity) => setChartReady(identity.revision)}
+                />
+                <div className="model-footer">
+                  <span>
+                    {(chart.content.spec as any).encoding.x.type === "temporal"
+                      ? "Ordered observations, not category connections."
+                      : "Categories compare with bars or points; trends require ordered observations."}
+                  </span>
+                  <code data-testid="chart-revision">rev {chart.revision}</code>
+                  <span className="sr-only" data-testid="chart-ready">
+                    {chartReady}
+                  </span>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -460,7 +623,10 @@ function App() {
                     disabled={busy}
                     onClick={() => {
                       void execute(proposal.command)
-                        .then(() => setProposal(null))
+                        .then(() => {
+                          if (proposal.layout) setSavedRouting(proposal.routing);
+                          setProposal(null);
+                        })
                         .catch(() => {});
                     }}
                   >

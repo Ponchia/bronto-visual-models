@@ -15,6 +15,7 @@ import type { VisualModelViewProps, AdapterProps } from "./types.ts";
 const Graph = lazy(() => import("./GraphView.tsx"));
 const Matrix = lazy(() => import("./MatrixView.tsx"));
 const Timeline = lazy(() => import("./TimelineView.tsx"));
+const Chart = lazy(() => import("./ChartView.tsx"));
 
 class RendererBoundary extends Component<
   { children: ReactNode; resetKey: string; onError(message: string): void },
@@ -80,9 +81,16 @@ export function VisualModelView(props: VisualModelViewProps) {
     compatibility.ok &&
     projection &&
     ((model.renderer === "diagram" && ["diagram", "network", "matrix"].includes(projection)) ||
-      (model.renderer === "timeline" && !model.content.datasource));
+      (model.renderer === "timeline" && !model.content.datasource) ||
+      (model.renderer === "vega-lite" && projection === "vega-lite"));
   const Renderer =
-    projection === "matrix" ? Matrix : model.renderer === "timeline" ? Timeline : Graph;
+    projection === "matrix"
+      ? Matrix
+      : model.renderer === "timeline"
+        ? Timeline
+        : model.renderer === "vega-lite"
+          ? Chart
+          : Graph;
   return (
     <section
       className={`bvm-view ${props.className ?? ""}`}

@@ -155,11 +155,22 @@ export async function testExplorationContract(browser, outputDirectory) {
     await page.getByText("Explore matrix", { exact: true }).click();
     await page.getByLabel("Matrix order", { exact: true }).selectOption("label");
     await page.waitForFunction(
-      () => document.querySelector(".bvm-matrix .sources text")?.textContent === "Component 001",
+      () =>
+        [...document.querySelectorAll(".bvm-matrix .sources text")]
+          .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]
+          ?.getAttribute("aria-label") === "Component 001",
     );
     assert.ok(
       await svg.evaluate((n) => n.isConnected),
       "Changing matrix order recreated the engine",
+    );
+    assert.ok(
+      await page
+        .locator(".bvm-matrix .sources text")
+        .evaluateAll((labels) =>
+          labels.every((label) => label.textContent === label.getAttribute("aria-label")),
+        ),
+      "Ordinary node labels lose their distinguishing suffixes",
     );
     await page.getByLabel("Filter matrix nodes", { exact: true }).fill("Component 002");
     await page.waitForFunction(

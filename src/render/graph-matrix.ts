@@ -45,11 +45,21 @@ export function graphMatrix(content: GraphContent, query: string, order: MatrixO
 }
 
 /** Label margin and cell size that fit one ordered matrix into the available width. */
-function matrixLayout(data: ReturnType<typeof graphMatrix>, availableWidth: number) {
-  const margin = Math.min(
-    140,
-    Math.max(64, ...data.nodes.map((node) => node.label.length * 7 + 12)),
-  );
+function matrixLayout(
+  data: ReturnType<typeof graphMatrix>,
+  availableWidth: number,
+  measuredLabelWidth?: number,
+) {
+  // Leave room for the actual font plus the label gutter. The prior character
+  // estimate clipped distinguishing suffixes even on ordinary short labels.
+  const estimated = Math.max(0, ...data.nodes.map((node) => node.label.length * 8));
+  const labelWidth =
+    typeof measuredLabelWidth === "number" &&
+    Number.isFinite(measuredLabelWidth) &&
+    measuredLabelWidth >= 0
+      ? measuredLabelWidth
+      : estimated;
+  const margin = Math.min(200, Math.max(80, Math.ceil(labelWidth + 28)));
   const cell = Math.max(
     16,
     Math.min(40, Math.floor((availableWidth - margin - 10) / Math.max(1, data.nodes.length))),
@@ -57,7 +67,11 @@ function matrixLayout(data: ReturnType<typeof graphMatrix>, availableWidth: numb
   return { margin, cell, grid: cell * data.nodes.length };
 }
 /** The datasets one matrix draws at one available width. */
-export function matrixData(data: ReturnType<typeof graphMatrix>, availableWidth: number) {
+export function matrixData(
+  data: ReturnType<typeof graphMatrix>,
+  availableWidth: number,
+  measuredLabelWidth?: number,
+) {
   return {
     // Keep authored source/notes/port arrays out of the layout dataflow. The
     // semantic graph still retains them; these are renderer-owned tuples only.
@@ -71,7 +85,7 @@ export function matrixData(data: ReturnType<typeof graphMatrix>, availableWidth:
       label,
       tooltip,
     })),
-    layout: [matrixLayout(data, availableWidth)],
+    layout: [matrixLayout(data, availableWidth, measuredLabelWidth)],
   };
 }
 /**
@@ -168,6 +182,8 @@ export function matrixSpec(tokens: RendererTokens): Spec {
             x: { signal: "layout.margin - 8" },
             y: { scale: "position", field: "id", band: 0.5 },
             text: { field: "label" },
+            aria: { value: true },
+            description: { field: "label" },
             align: { value: "right" },
             baseline: { value: "middle" },
             fill: { value: ink },
@@ -187,6 +203,8 @@ export function matrixSpec(tokens: RendererTokens): Spec {
             y: { signal: "layout.margin - 8" },
             x: { scale: "position", field: "id", band: 0.5 },
             text: { field: "label" },
+            aria: { value: true },
+            description: { field: "label" },
             angle: { value: -65 },
             align: { value: "left" },
             baseline: { value: "middle" },

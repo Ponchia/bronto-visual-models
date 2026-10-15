@@ -13,6 +13,26 @@ export default function MatrixView(props: AdapterProps) {
   const [order, setOrder] = useState<MatrixOrder>("authored");
   const content = props.model.content as unknown as GraphContent;
   const graph = useMemo(() => graphMatrix(content, query, order), [content, query, order]);
+  const [fontEpoch, setFontEpoch] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const update = () => {
+      if (live) setFontEpoch((value) => value + 1);
+    };
+    void document.fonts?.ready.then(update);
+    document.fonts?.addEventListener("loadingdone", update);
+    return () => {
+      live = false;
+      document.fonts?.removeEventListener("loadingdone", update);
+    };
+  }, []);
+  const labelWidth = useMemo(() => {
+    const canvas = typeof document === "undefined" ? null : document.createElement("canvas");
+    const context = canvas?.getContext("2d");
+    if (!context) return undefined;
+    context.font = `12px ${props.tokens.sans}`;
+    return Math.max(0, ...graph.nodes.map((node) => context.measureText(node.label).width));
+  }, [graph, props.tokens.sans, fontEpoch]);
   const targets = useMemo(
     () => modelTargets(props.model, props.registry),
     [props.model, props.registry],
@@ -28,9 +48,9 @@ export default function MatrixView(props: AdapterProps) {
     active: props.active !== false,
     tokens: props.tokens,
     data: {
-      key: JSON.stringify([props.model.generation, props.model.revision, query, order]),
+      key: JSON.stringify([props.model.generation, props.model.revision, query, order, labelWidth]),
       sized: true,
-      sets: (size) => matrixData(graph, size.width),
+      sets: (size) => matrixData(graph, size.width, labelWidth),
     },
     // The grammar's width/height depend on layout data; retain them for the
     // sparse scrollable grid rather than overwrite with the host viewport size.

@@ -230,3 +230,11 @@ test("visual selection and transient indexes never change model generations or r
   assert.equal(changed.generation, model.generation);
   assert.equal(changed.revision, 2);
 });
+
+test("matrix labels reserve measured font width plus a gutter and retain bounded layout", () => {
+  const matrix = graphMatrix(graph(), "", "authored");
+  assert.equal(matrixData(matrix, 500, 95).layout[0]!.margin, 123);
+  assert.equal(matrixData(matrix, 500, 1000).layout[0]!.margin, 200);
+  assert.equal(matrixData(matrix, 30, 95).layout[0]!.cell, 16);
+  assert.ok(Number.isFinite(matrixData(matrix, 500, NaN).layout[0]!.margin));
+});

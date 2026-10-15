@@ -52,7 +52,9 @@ those exact edge IDs; it does not arbitrarily choose the first relationship. The
 existing relationship select remains available as a keyboard alternative.
 Selections update emphasis immediately by evaluating the changed Vega signals,
 not by waiting for the next unrelated resize or model edit. Filtering and ordering
-retain the compiled matrix engine. The sparse grid can scroll in a small host;
+retain the compiled matrix engine. Label gutters use the actual host font and
+refresh after fonts load; complete labels remain in accessible descriptions when
+a genuinely long name cannot fit the bounded gutter. The sparse grid can scroll in a small host;
 it is not forced into unreadably small cells to claim every node fits at once.
 
 ## Read the full chart data

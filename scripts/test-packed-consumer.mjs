@@ -17,6 +17,8 @@ for (const required of [
   "dist/index.d.ts",
   "dist/react/index.js",
   "dist/react/styles.css",
+  "dist/react/base.css",
+  "dist/react/gantt.js",
   "dist/node/index.js",
   "bin/bronto-visual-models.mjs",
   "LICENSE",

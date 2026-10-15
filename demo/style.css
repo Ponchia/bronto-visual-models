@@ -544,3 +544,10 @@ summary:focus-visible {
   outline: 3px solid #7a94cf;
   outline-offset: 3px;
 }
+
+.gantt-panel {
+  border: 1px solid #d9dfd1;
+  border-radius: 12px;
+  background: white;
+  overflow: hidden;
+}

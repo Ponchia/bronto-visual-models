@@ -3,7 +3,11 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { mkdir, writeFile } from "node:fs/promises";
 import { testReactContract } from "./test-react-contract.mjs";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
+import { checkAccessibility } from "./accessibility.mjs";
+const browserName = process.env.BVM_BROWSER ?? "chromium";
+const browserType = { chromium, firefox, webkit }[browserName];
+assert.ok(browserType, `Unknown BVM_BROWSER: ${browserName}`);
 const root = new URL("../", import.meta.url);
 const server = spawn(
   process.execPath,
@@ -25,19 +29,24 @@ const server = spawn(
 let serverLog = "";
 for (const stream of [server.stdout, server.stderr])
   stream.on("data", (chunk) => {
-    serverLog += chunk;
+    serverLog = (serverLog + chunk).slice(-32000);
   });
+let serverFailure;
+server.on("error", (error) => {
+  serverFailure = error;
+});
 let browser;
-const output = new URL("../.tmp/browser/", import.meta.url);
+const output = new URL(`../.tmp/browser/${browserName}/`, import.meta.url);
 await mkdir(output, { recursive: true });
 const results = [];
 try {
   const url = "http://127.0.0.1:4173/bronto-visual-models/";
   let online = false;
   for (let attempt = 0; attempt < 100; attempt++) {
+    if (serverFailure) throw serverFailure;
     if (server.exitCode !== null) throw new Error(`Preview exited: ${serverLog}`);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(1000) });
       online = response.ok;
     } catch {
       /* startup only */
@@ -46,16 +55,19 @@ try {
     await delay(100);
   }
   assert(online, `Preview did not start: ${serverLog}`);
-  browser = await chromium.launch({ headless: true });
+  browser = await browserType.launch({ headless: true });
   for (const device of [
     { name: "desktop", width: 1440, height: 1100 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
     const context = await browser.newContext({
       viewport: { width: device.width, height: device.height },
-      ...(device.name === "mobile" ? { isMobile: true, hasTouch: true } : {}),
+      ...(device.name === "mobile" && browserName !== "firefox"
+        ? { isMobile: true, hasTouch: true }
+        : {}),
     });
     const page = await context.newPage();
+    page.setDefaultTimeout(15000);
     const errors = [];
     const requests = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -132,6 +144,11 @@ try {
           await page.getByLabel("Selected edge: persist").waitFor();
         }
         assert.equal(await page.getByTestId("revision").textContent(), "rev 4");
+        await checkAccessibility(
+          page,
+          new URL(`${device.name}-${projection.toLowerCase()}-axe.json`, output),
+          ".primary-panel .bvm-view",
+        );
       }
       await page.getByRole("button", { name: "Preview agent edit", exact: true }).click();
       await page.getByRole("region", { name: "Proposed changes" }).waitFor();
@@ -153,6 +170,28 @@ try {
       assert.equal(await page.getByTestId("revision").textContent(), "rev 8");
       await page.getByRole("button", { name: "Discard preview", exact: true }).click();
       await page.locator(".vis-item").filter({ hasText: "Contract review" }).waitFor();
+      const primary = page.locator(".primary-panel");
+      await primary.getByRole("button", { name: "Read data", exact: true }).click();
+      const filter = primary.getByLabel("Filter model elements");
+      await filter.fill("Postgres");
+      await primary.getByRole("rowheader").filter({ hasText: "Postgres" }).waitFor();
+      await primary.getByRole("button", { name: "Postgres", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await page.getByLabel("Selected node: database", { exact: true }).waitFor();
+      await checkAccessibility(
+        page,
+        new URL(`${device.name}-data-axe.json`, output),
+        ".primary-panel .bvm-view",
+      );
+      await primary.getByRole("button", { name: "Visual", exact: true }).click();
+      const gantt = page.locator(".gantt-panel");
+      await gantt.getByRole("button", { name: /Implement controls/ }).focus();
+      await page.keyboard.press("Enter");
+      await gantt.getByLabel("Progress for Implement controls (%)", { exact: true }).fill("60");
+      await gantt.getByRole("button", { name: "Save progress", exact: true }).click();
+      await page.getByTestId("gantt-revision").filter({ hasText: "rev 2" }).waitFor();
+      await gantt.getByRole("button", { name: /Implement controls.*60%/ }).waitFor();
+      await checkAccessibility(page, new URL(`${device.name}-page-axe.json`, output));
       const dimensions = await page.evaluate(() => ({
         width: innerWidth,
         scroll: document.documentElement.scrollWidth,
@@ -168,7 +207,9 @@ try {
         fullPage: true,
       });
       results.push({
-        device: device.name,
+        browser: browserName,
+        device:
+          browserName === "firefox" && device.name === "mobile" ? "narrow-desktop" : device.name,
         passed: true,
         assertions: [
           "create",
@@ -183,6 +224,9 @@ try {
           "manual label",
           "all projections",
           "timeline",
+          "Gantt keyboard selection and guarded progress edit",
+          "semantic data filter and keyboard selection",
+          "WCAG-tagged automated accessibility checks",
           "initial graph fully visible on both viewport sizes",
           "no overflow",
           "no external requests",
@@ -203,7 +247,7 @@ try {
       await context.close();
     }
   }
-  results.push(await testReactContract(browser));
+  results.push(await testReactContract(browser, output));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

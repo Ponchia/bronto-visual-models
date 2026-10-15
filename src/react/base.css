@@ -1,0 +1,315 @@
+.bvm-view {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  isolation: isolate;
+}
+.bvm-view * {
+  box-sizing: border-box;
+}
+.bvm-notice {
+  padding: 24px;
+  max-width: 55ch;
+  line-height: 1.6;
+}
+.bvm-entity {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #70876b;
+  border-radius: 9px;
+  background: inherit;
+  padding: 12px 16px;
+  box-shadow: 0 3px 12px #1827100a;
+}
+.bvm-entity-label {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 550;
+}
+.bvm-group {
+  justify-content: flex-start;
+  align-items: flex-start;
+  background: #eff3e655;
+}
+.bvm-view .react-flow__node.selected .bvm-entity {
+  outline: 2px solid #5d794f;
+  outline-offset: 3px;
+}
+.bvm-view .react-flow__handle {
+  width: 7px;
+  height: 7px;
+  background: #5c7751;
+  border: 1px solid white;
+}
+.bvm-view button,
+.bvm-view select {
+  font: inherit;
+  color: inherit;
+}
+.bvm-view button {
+  cursor: pointer;
+}
+.bvm-error {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 20;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff0ed;
+  border: 1px solid #b34f42;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.bvm-error button {
+  background: none;
+  border: 0;
+}
+.bvm-engine {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+.bvm-matrix {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.bvm-matrix-choice {
+  padding: 10px 14px;
+  border-top: 1px solid #dce2d8;
+  font-size: 12px;
+}
+.bvm-matrix-choice select {
+  margin-left: 8px;
+  max-width: 75%;
+  padding: 6px;
+}
+.bvm-timeline {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.bvm-time-toolbar {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+.bvm-time-toolbar button {
+  background: #f4f6ef;
+  border: 1px solid #c7d2bf;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.bvm-view .vis-item {
+  background: #e9f0df;
+  border-color: #789361;
+  color: #263821;
+}
+.bvm-view .vis-item.vis-selected {
+  background: #cfdfb7;
+  border-color: #435d2f;
+}
+.bvm-view .vis-labelset .vis-label {
+  color: inherit;
+}
+.bvm-view .vis-time-axis .vis-text {
+  color: inherit;
+}
+.bvm-view .vis-panel {
+  border-color: #dce2d8;
+}
+.bvm-view {
+  display: flex;
+  flex-direction: column;
+}
+.bvm-view-modes {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #dce2d8;
+}
+.bvm-view-modes button {
+  border: 1px solid #bac8b3;
+  border-radius: 5px;
+  padding: 4px 10px;
+  background: transparent;
+}
+.bvm-view-modes button[aria-pressed="true"] {
+  background: #e9f0df;
+  color: #263821;
+}
+.bvm-visual-surface {
+  flex: 1;
+  min-height: 0;
+}
+.bvm-visual-surface[hidden] {
+  display: none;
+}
+.bvm-view :is(button, input, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid #335fb0;
+  outline-offset: 2px;
+}
+.bvm-view input {
+  font: inherit;
+  color: inherit;
+  max-width: 100%;
+}
+.bvm-gantt,
+.bvm-data {
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px;
+  height: 100%;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.bvm-gantt h4 {
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
+.bvm-gantt-range {
+  margin: 0;
+}
+.bvm-gantt-tasks {
+  list-style: none;
+  padding: 0;
+}
+.bvm-gantt-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  column-gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #dce2d8;
+}
+.bvm-task-label {
+  text-align: start;
+  border: 0;
+  background: transparent;
+  padding: 5px;
+  overflow-wrap: anywhere;
+}
+.bvm-task-label[aria-pressed="true"],
+.bvm-dependencies button[aria-pressed="true"] {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.bvm-task-meta {
+  display: block;
+  font-size: 12px;
+}
+.bvm-gantt-track {
+  position: relative;
+  align-self: center;
+  height: 18px;
+  margin: 0 8px;
+  background: #e9eee5;
+  border-radius: 3px;
+}
+.bvm-gantt-bar {
+  position: absolute;
+  height: 18px;
+  min-width: 2px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bvm-gantt-progress {
+  display: block;
+  height: 100%;
+  background: #0005;
+}
+.bvm-gantt-milestone {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: 3px;
+  transform: translateX(-50%) rotate(45deg);
+  border: 1px solid currentColor;
+}
+.bvm-task-dates {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  padding: 3px 5px;
+}
+.bvm-progress-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+}
+.bvm-progress-editor input {
+  width: 85px;
+  padding: 5px;
+}
+.bvm-progress-editor button,
+.bvm-data button {
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid #809174;
+  border-radius: 4px;
+}
+.bvm-dependencies {
+  padding-left: 18px;
+}
+.bvm-dependencies button {
+  text-align: start;
+  background: transparent;
+  border: 0;
+  padding: 5px;
+}
+.bvm-data table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.bvm-data caption {
+  text-align: start;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.bvm-data td,
+.bvm-data th {
+  padding: 8px;
+  border-bottom: 1px solid #dce2d8;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.bvm-data pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow: auto;
+}
+.bvm-data input {
+  display: block;
+  padding: 6px;
+  margin: 5px 0;
+  width: 100%;
+}
+.bvm-data-pages {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bvm-view *,
+  .bvm-view *::before,
+  .bvm-view *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

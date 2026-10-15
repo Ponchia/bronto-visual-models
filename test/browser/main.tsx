@@ -53,6 +53,7 @@ function Harness() {
   const [id, setId] = useState("graph");
   const model = useVisualModel(source, id);
   const [mode, setMode] = useState("accept");
+  const [writable, setWritable] = useState(true);
   const [selected, setSelected] = useState<VisualTarget | null>(null);
   const [pending, setPending] = useState(false);
   const rejected = useRef<((error: Error) => void) | null>(null);
@@ -82,6 +83,29 @@ function Harness() {
             },
           },
         });
+      await store.execute({
+        type: "create",
+        key: "create-schedule",
+        model: { id: "schedule", title: "Schedule fixture", template: "gantt" },
+      });
+      await store.execute({
+        type: "create",
+        key: "create-many",
+        model: {
+          id: "many",
+          title: "Large data fixture",
+          renderer: "diagram",
+          content: {
+            nodes: Array.from({ length: 120 }, (_, index) => ({
+              id: `row-${index}`,
+              label: `Record ${index}`,
+              x: index * 10,
+              y: 0,
+            })),
+            edges: [],
+          },
+        },
+      });
     })();
   }, [store]);
   const write = async (patch: ModelEdit) => {
@@ -155,6 +179,9 @@ function Harness() {
       >
         Unrelated update
       </button>
+      <button onClick={() => setId("schedule")}>Open schedule</button>
+      <button onClick={() => setId("many")}>Open large model</button>
+      <button onClick={() => setWritable((current) => !current)}>Toggle editing</button>
       <output data-testid="snapshot-changes">{changed.current}</output>
       <output data-testid="snapshot-reads">{reads.current}</output>
       <output data-testid="pending">{String(pending)}</output>
@@ -166,7 +193,7 @@ function Harness() {
           height={430}
           selected={selected}
           onSelect={setSelected}
-          onEdit={onEdit}
+          onEdit={writable ? onEdit : undefined}
         />
       )}
     </main>

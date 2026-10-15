@@ -5,8 +5,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 /** Exercised from an independently installed tarball, never aliases into source. */
-export async function testReactContract(browser) {
-  const output = resolve(".tmp/browser");
+export async function testReactContract(
+  browser,
+  directory = new URL("../.tmp/browser/", import.meta.url),
+) {
+  const output = typeof directory === "string" ? directory : directory.pathname;
   await mkdir(output, { recursive: true });
   const server = spawn(
     process.execPath,
@@ -33,6 +36,7 @@ export async function testReactContract(browser) {
     failure = error;
   });
   const page = await browser.newPage({ viewport: { width: 1100, height: 850 } });
+  page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   try {
@@ -113,6 +117,34 @@ export async function testReactContract(browser) {
     await page.getByRole("button", { name: "Switch model", exact: true }).click();
     await page.locator('.bvm-view[data-model-id="other"]').waitFor();
     assert.equal(await page.getByRole("alert").count(), 0, "Errors leaked between models");
+    await page.getByRole("button", { name: "Open schedule", exact: true }).click();
+    await page.getByRole("button", { name: /Implement controls/ }).focus();
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Progress for Implement controls (%)", { exact: true }).fill("50");
+    await page.getByRole("button", { name: "Save progress", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "Synchronous edit refused" }).waitFor();
+    assert.equal(await page.getByTestId("revision").textContent(), "1");
+    await page.getByLabel("Commit mode").selectOption("accept");
+    await page.getByRole("button", { name: "Save progress", exact: true }).click();
+    await page.getByTestId("revision").filter({ hasText: "2" }).waitFor();
+    await page.getByRole("button", { name: /Implement controls.*50%/ }).waitFor();
+    await page.getByRole("button", { name: "Toggle editing", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Save progress", exact: true }).count(), 0);
+    await page.getByRole("button", { name: "Open large model", exact: true }).click();
+    await page.getByRole("button", { name: "Read data", exact: true }).click();
+    await page.getByRole("status").filter({ hasText: "1–50 of 120 elements" }).waitFor();
+    assert.equal(await page.getByRole("rowheader").count(), 50);
+    await page.getByRole("button", { name: "Next elements", exact: true }).click();
+    await page.getByRole("status").filter({ hasText: "51–100 of 120 elements" }).waitFor();
+    await page.getByLabel("Filter model elements").fill("Record 119");
+    await page.getByRole("status").filter({ hasText: "1–1 of 1 elements" }).waitFor();
+    assert.equal(await page.getByRole("rowheader").count(), 1);
+    await page.goto("http://127.0.0.1:4174/native/", { waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: "Native Gantt consumer", exact: true }).waitFor();
+    await page.getByRole("button", { name: /Implement controls/ }).click();
+    await page.getByLabel("Progress for Implement controls (%)").fill("80");
+    await page.getByRole("button", { name: "Save progress", exact: true }).click();
+    await page.getByRole("button", { name: /Implement controls.*80%/ }).waitFor();
     assert.deepEqual(errors, [], "Unhandled React or callback error");
     await page.screenshot({ path: resolve(output, "react-contract.png"), fullPage: true });
     return {
@@ -128,6 +160,9 @@ export async function testReactContract(browser) {
         "late refusal restores latest host",
         "synchronous refusal",
         "model-switch error reset",
+        "Gantt refusal, commit and read-only controls",
+        "120-element data pagination and filter reset",
+        "independent native Gantt consumer without third-party engines",
       ],
     };
   } catch (error) {

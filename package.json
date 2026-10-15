@@ -52,7 +52,8 @@
     "./*": {
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js"
-    }
+    },
+    "./base.css": "./dist/react/base.css"
   },
   "types": "./dist/index.d.ts",
   "bin": {
@@ -75,22 +76,23 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint:docs": "node scripts/lint-docs.mjs && node scripts/check-doc-links.mjs",
-    "bench:store": "node --experimental-strip-types scripts/benchmark-store.mjs"
+    "bench:store": "node --experimental-strip-types scripts/benchmark-store.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "lib0": "0.2.119"
   },
   "peerDependencies": {
+    "@ponchia/ui": "^0.16.3",
+    "@xyflow/react": "^12.12.0",
+    "d3-sankey": "^0.12.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@xyflow/react": "^12.12.0",
     "vega": "^6.4.0",
     "vega-lite": "^6.4.3",
-    "vis-timeline": "^8.5.4",
-    "vis-data": "^8.0.5",
-    "@ponchia/ui": "^0.16.3",
     "vega-tooltip": "^1.1.0",
-    "d3-sankey": "^0.12.3"
+    "vis-data": "^8.0.5",
+    "vis-timeline": "^8.5.4"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -125,25 +127,26 @@
     }
   },
   "devDependencies": {
-    "typescript": "7.0.2",
+    "@axe-core/playwright": "4.13.0",
+    "@biomejs/biome": "2.5.15",
+    "@ponchia/ui": "0.16.3",
+    "@types/d3-sankey": "0.12.5",
     "@types/node": "24.13.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@xyflow/react": "12.12.0",
+    "d3-sankey": "0.12.3",
+    "markdownlint": "0.41.1",
+    "playwright": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "@xyflow/react": "12.12.0",
+    "typescript": "7.0.2",
     "vega": "6.4.0",
     "vega-lite": "6.4.3",
-    "vis-timeline": "8.5.4",
-    "vis-data": "8.0.5",
-    "vite": "8.3.3",
-    "playwright": "1.63.0",
-    "@ponchia/ui": "0.16.3",
-    "d3-sankey": "0.12.3",
-    "@types/d3-sankey": "0.12.5",
     "vega-tooltip": "1.1.0",
-    "@biomejs/biome": "2.5.15",
-    "markdownlint": "0.41.1"
+    "vis-data": "8.0.5",
+    "vis-timeline": "8.5.4",
+    "vite": "8.3.3"
   },
   "overrides": {
     "micromark-extension-math": {

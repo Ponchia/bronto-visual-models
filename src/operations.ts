@@ -180,6 +180,8 @@ export function createModel(
     registry,
   );
   assertModelIncarnations(model, registry);
+  // The complete envelope (including generated lifetimes) must be reloadable.
+  assertVisualJson(model);
   return model;
 }
 
@@ -245,6 +247,7 @@ export function editModel<M extends VisualModel>(
   candidate.updatedAt = at;
   candidate.updatedBy = actor;
   assertModelIncarnations(candidate, registry);
+  assertVisualJson(candidate);
   return {
     model: candidate,
     changes: visualUndoChanges(model, candidate, registry),
@@ -272,6 +275,7 @@ export function undoModel<M extends VisualModel>(
     throw new VisualModelError("invalid", "Model revision is exhausted");
   candidate.updatedAt = at;
   candidate.updatedBy = actor;
+  assertVisualJson(candidate);
   return { model: candidate, changes: visualUndoChanges(model, candidate, registry), removed: [] };
 }
 
@@ -305,5 +309,6 @@ export function forkModel(
     registry,
   );
   fork.source = { id: model.id, revision: model.revision };
+  assertVisualJson(fork);
   return fork;
 }

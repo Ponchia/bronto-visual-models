@@ -6,8 +6,10 @@ Do not require Spatial services to develop or test this package.
 
 Run `npm run build`, `npm test` and `npm run test:pack`. Renderer changes also need
 `npm run site:build:packed` and `npm run test:browser`; inspect the resulting desktop
-and mobile images rather than relying on assertions alone. CI supplies Node 22/24
-and Chromium evidence. Other engines must be explicitly tested before being claimed.
+and narrow-viewport images rather than relying on assertions alone. CI supplies Node 22/24
+and Chromium, Firefox and WebKit evidence. Run `npm run check:bundle` after the
+packed UI build; browser scans and keyboard scenarios are documented in
+[verification](docs/verification.md). Other engines must be explicitly tested before being claimed.
 
 Add a regression when fixing a refusal, retry, concurrency or disposal bug. Keep
 examples synthetic; never submit credentials, private documents or saved user

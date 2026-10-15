@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Native Gantt schedules with identified task/dependency selection, guarded
+  progress editing and an engine-free React entry/base stylesheet.
+- Paginated, filterable semantic model data with keyboard-operable selection.
+- Chromium, Firefox and WebKit CI; automated accessibility scans, keyboard
+  scenarios and compressed bundle regression gates.
+- Validate completed model envelopes before publication; add fixed-seed
+  edit/undo/replacement/restart regressions and avoid cloning bodies for lists.
+
 - Enforce in-memory store byte budgets incrementally and exactly in UTF-8,
   without re-serializing unrelated models and receipt history per edit.
 - Avoid redundant controlled React reads, cache nested graph depths, and reuse

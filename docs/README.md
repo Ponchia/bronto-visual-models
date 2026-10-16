@@ -1,5 +1,7 @@
 # Documentation
 
+- [Getting started](getting-started.md): a clean installed-package example and distribution checks.
+
 - [Exploration](exploration.md): find/reveal, guarded keyboard moves, filtered matrices and complete chart data.
 
 - [Previews](previews.md): inspect a proposed change without consuming a key or writing a store.

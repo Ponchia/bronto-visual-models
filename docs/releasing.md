@@ -48,3 +48,16 @@ The development-only KaTeX 0.18.2 override applies under
 `micromark-extension-math`. Revisit the override when the parent dependency
 selects a fixed version itself. CI runs the documentation gate; none of these
 packages is a core runtime dependency.
+
+## Published distribution contract
+
+`docs/distribution.json` identifies the last verified GitHub archive independently
+of `package.json`. Keep the README and first-run guide on that version while a
+new source candidate is in development. After publication, verify the exact
+public bytes, update the manifest and run `node scripts/check-distribution.mjs --online`. CI checks the public archive before publishing the demo; it never
+creates releases or silently substitutes source for an unavailable package.
+
+`@types/node` stays on the reviewed 24.x development line while CI qualifies
+Node 22 and 24. A types-only major update does not prove that Node 26 APIs work
+on the supported runtime floor. Dependabot major bumps for this dependency are
+deferred until the type/runtime support policy is deliberately reviewed.

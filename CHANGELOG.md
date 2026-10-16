@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add a verified distribution manifest, public archive identity/checksum gate and
+  a complete headless first-model example run by clean packed consumers.
+- Separate development source from the published beta.5 installation path.
+- Update reviewed CI actions and development tools while retaining the Node
+  22/24 runtime matrix and the reviewed Node types major line.
+
 ## 0.1.0-beta.5
 
 - Index graph endpoints, routes and port offsets once per content snapshot; selection

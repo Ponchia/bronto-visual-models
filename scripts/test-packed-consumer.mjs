@@ -22,6 +22,7 @@ for (const required of [
   "dist/node/index.js",
   "bin/bronto-visual-models.mjs",
   "LICENSE",
+  "examples/first-model.mjs",
 ])
   assert(entries.includes(required), `Packed package lacks ${required}`);
 assert(
@@ -75,6 +76,11 @@ console.log('Packed core, local transactions, identities and undo work without S
 `,
   );
   execFileSync(process.execPath, ["consumer.mjs"], { cwd: directory, stdio: "inherit" });
+  execFileSync(
+    process.execPath,
+    [join(directory, "node_modules/@ponchia/visual-models/examples/first-model.mjs")],
+    { cwd: directory, stdio: "inherit" },
+  );
   const bin = join(directory, "node_modules/@ponchia/visual-models/bin/bronto-visual-models.mjs");
   const catalog = JSON.parse(
     execFileSync(process.execPath, [bin, "catalog"], { cwd: directory, encoding: "utf8" }),

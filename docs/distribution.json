@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "version": "0.1.0-beta.5",
+  "source": "cf88dc9a6491d0747a85e2159d52e1468e3fdd42",
+  "ciRun": 38772548194,
+  "archive": "ponchia-visual-models-0.1.0-beta.5.tgz",
+  "bytes": 412850,
+  "sha256": "6ae3160dd28b5e11339cfdc71836f5caecc0ff33d05f505a639851acba68e95d",
+  "integrity": "sha512-VTx2xq7nncyCa5QksheKRPy+hnr5wuZ1NDuKZTtLwj0Fjm4wXmlQLft/jA56rQfhLK2vggoCCEnd2rNcbNuymQ=="
+}

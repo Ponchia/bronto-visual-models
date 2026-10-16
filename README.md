@@ -42,6 +42,11 @@ For the reference React views and stylesheet, also install their peers:
 npm install react react-dom @xyflow/react vega vega-lite vega-interpreter vega-tooltip vis-timeline vis-data @ponchia/ui
 ```
 
+The verified public archive is **0.1.0-beta.5**. This source prepares the next
+development version; publication and source versions are deliberately separate.
+Start with the [first-model walkthrough](docs/getting-started.md) for a complete
+headless example with executable assertions, or use the interactive demo above.
+
 ## Change an artifact, not the whole application
 
 ```ts

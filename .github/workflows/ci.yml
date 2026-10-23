@@ -66,6 +66,12 @@ jobs:
   browser:
     name: Packed UI / ${{ matrix.browser }}
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --user 1001
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -86,7 +92,21 @@ jobs:
       - run: npm run format:check
       - run: npm run lint:docs
       - run: npm run build
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Verify Playwright package and preinstalled image agree
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const assert = require('node:assert/strict');
+          const { readFileSync } = require('node:fs');
+          const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+          const version = require('playwright/package.json').version;
+          assert.equal(version, lock.packages['node_modules/playwright'].version);
+          assert.equal(require('playwright-core/package.json').version, version);
+          assert.equal(lock.packages['node_modules/playwright-core'].version, version);
+          const image = JSON.parse(readFileSync('/ms-playwright/.docker-info', 'utf8'));
+          assert.equal(image.driverVersion, version, 'Update the pinned image with Playwright');
+          assert.equal(image.dockerImageName, `mcr.microsoft.com/playwright:v${version}-noble`);
+          console.log(`Verified Playwright ${version} against ${image.dockerImageName}`);
+          NODE
       - run: npm run site:build:packed
       - run: npm run check:bundle
       - run: npm run test:browser

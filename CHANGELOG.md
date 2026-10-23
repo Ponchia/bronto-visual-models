@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Accept the compatible Bronto UI 0.17 minor alongside 0.16.3 in the optional
+  peer contract, so the updated packed UI consumers install without peer overrides.
+- Resolve the latest Node 22 and 24 patch releases in CI on every run.
 - Add a verified distribution manifest, public archive identity/checksum gate and
   a complete headless first-model example run by clean packed consumers.
 - Separate development source from the published beta.5 installation path.

@@ -113,6 +113,7 @@ function fixture() {
   };
   state.rule = immutable;
   state.environment = {
+    can_admins_bypass: false,
     protection_rules: [
       { type: "required_reviewers", prevent_self_review: true, reviewers: [{ type: "User" }] },
     ],
@@ -150,6 +151,8 @@ function fixture() {
           effects.push(["publish", input]);
           return {
             data: {
+              id: 7,
+              immutable: true,
               draft: false,
               prerelease: true,
               tag_name: `v${version}`,
@@ -202,6 +205,12 @@ test("valid beta on main passes the actual publisher guard", async () => {
 });
 
 const refusals = {
+  "environment with administrator bypass": (state) => {
+    state.environment.can_admins_bypass = true;
+  },
+  "environment with unknown administrator bypass": (state) => {
+    delete state.environment.can_admins_bypass;
+  },
   "environment without required review": (state) => {
     state.environment.protection_rules = [];
   },
@@ -363,6 +372,60 @@ test("upload errors propagate and leave the draft unpublished", async () => {
   assert.equal(
     state.effects.some((effect) => effect[0] === "publish"),
     false,
+  );
+});
+test("an interrupted asset upload retains its accepted draft identity", async () => {
+  const state = fixture();
+  await state.guard();
+  const upload = state.github.rest.repos.uploadReleaseAsset;
+  let uploaded = 0;
+  state.github.rest.repos.uploadReleaseAsset = async (input) => {
+    if (uploaded++ === 1) throw new Error("second upload failed");
+    return upload(input);
+  };
+  await assert.rejects(state.publish(), /second upload failed/);
+  const receipt = JSON.parse(state.files.get("candidate/publication-receipt.json"));
+  assert.equal(receipt.releaseId, 7);
+  assert.equal(receipt.phase, "draft-created");
+  assert.deepEqual(receipt.uploaded, [filename]);
+  assert.equal(state.effects.filter((effect) => effect[0] === "create").length, 1);
+  assert.equal(
+    state.effects.some((effect) => effect[0] === "publish"),
+    false,
+  );
+});
+for (const immutable of [false, undefined]) {
+  test(`does not report successful delivery when immutability is ${immutable}`, async () => {
+    const state = fixture();
+    await state.guard();
+    const update = state.github.rest.repos.updateRelease;
+    state.github.rest.repos.updateRelease = async (input) => {
+      const result = await update(input);
+      result.data.immutable = immutable;
+      return result;
+    };
+    await assert.rejects(state.publish(), /not confirmed immutable/);
+    const receipt = JSON.parse(state.files.get("candidate/publication-receipt.json"));
+    assert.equal(receipt.releaseId, 7);
+    assert.equal(receipt.phase, "publication-response");
+    assert.equal(receipt.draft, false);
+    assert.equal(receipt.immutable, immutable);
+    assert.equal(state.effects.filter((effect) => effect[0] === "publish").length, 1);
+    assert.equal(state.files.has("candidate/published-verification.json"), false);
+  });
+}
+test("a verified delivery retains its immutable publication receipt", async () => {
+  const state = fixture();
+  await state.guard();
+  await state.publish();
+  const receipt = JSON.parse(state.files.get("candidate/publication-receipt.json"));
+  assert.equal(receipt.releaseId, 7);
+  assert.equal(receipt.publishedReleaseId, 7);
+  assert.equal(receipt.immutable, true);
+  assert.equal(receipt.uploaded.length, 4);
+  assert.equal(
+    JSON.parse(state.files.get("candidate/published-verification.json")).immutable,
+    true,
   );
 });
 test("tag moving during signing prevents release creation", async () => {

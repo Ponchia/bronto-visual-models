@@ -59,6 +59,7 @@ jobs:
             const version = tag.slice(1);
             const repo = context.repo;
             const environment = (await github.rest.repos.getEnvironment({ ...repo, environment_name: 'github-release' })).data;
+            assert.equal(environment.can_admins_bypass, false, 'Environment approval must not permit administrator bypass');
             assert(environment.protection_rules.some(rule => rule.type === 'required_reviewers' && rule.prevent_self_review === true && rule.reviewers?.length > 0), 'Environment requires reviewers and prevention of self-review');
             assert.equal(environment.deployment_branch_policy?.custom_branch_policies, true);
             const policies = (await github.rest.repos.listDeploymentBranchPolicies({ ...repo, environment_name: 'github-release', per_page: 100 })).data;
@@ -147,16 +148,36 @@ jobs:
               prerelease: true, make_latest: 'false',
               body: `Qualified archive from ${evidence.source}.\n\nCI: ${evidence.run}\n\nSHA-256: ${evidence.sha256}\n\nSee release-evidence.json and provenance.sigstore.json. This beta does not change the npm registry.`,
             })).data;
+            // Keep the accepted draft identity even if an upload or publication
+            // response fails. Recovery must inspect this release, not create another.
+            assert(Number.isSafeInteger(release.id) && release.id > 0);
+            const receipt = { releaseId: release.id, tag, source: evidence.source,
+              phase: 'draft-created', uploaded: [], observedAt: new Date().toISOString() };
+            const recordReceipt = () => fs.writeFileSync('candidate/publication-receipt.json', JSON.stringify(receipt, null, 2));
+            recordReceipt();
             for (const name of [evidence.archive, 'SHA256SUMS', 'release-evidence.json', 'provenance.sigstore.json']) {
               const data = fs.readFileSync(`candidate/${name}`);
               await github.rest.repos.uploadReleaseAsset({ ...repo, release_id: release.id, name, data,
                 headers: { 'content-type': 'application/octet-stream', 'content-length': data.length } });
+              receipt.uploaded.push(name);
+              recordReceipt();
             }
             // Re-read after upload too. A failure leaves the draft for manual inspection.
             assert.deepEqual((await github.rest.git.getRef({ ...repo, ref: `tags/${tag}` })).data.object, evidence.tagObject);
             const published = (await github.rest.repos.updateRelease({
               ...repo, release_id: release.id, draft: false, prerelease: true, make_latest: 'false',
             })).data;
+            // Record the irreversible response before checking its properties.
+            // The settings endpoint needs admin read permission; never grant that
+            // to this publisher. Maintainer setup enables immutability, and the
+            // release response must independently confirm the published outcome.
+            Object.assign(receipt, { phase: 'publication-response', publishedReleaseId: published.id,
+              draft: published.draft, prerelease: published.prerelease,
+              immutable: published.immutable, url: published.html_url,
+              observedAt: new Date().toISOString() });
+            recordReceipt();
+            assert.equal(published.id, release.id);
+            assert.equal(published.immutable, true, 'Published assets are not confirmed immutable; inspect the existing release without retrying publication');
             assert.equal(published.draft, false);
             assert.equal(published.prerelease, true);
             assert.equal(published.tag_name, tag);
@@ -170,7 +191,7 @@ jobs:
             assert.equal(createHash('sha256').update(publicBytes).digest('hex'), evidence.sha256);
             fs.writeFileSync('candidate/published-verification.json', JSON.stringify({
               release: published.html_url, archive: asset[0].browser_download_url,
-              sha256: evidence.sha256, bytes: publicBytes.length, verifiedAt: new Date().toISOString(),
+              sha256: evidence.sha256, bytes: publicBytes.length, immutable: published.immutable, verifiedAt: new Date().toISOString(),
             }, null, 2));
             await core.summary.addHeading('Verified beta archive').addLink(tag, published.html_url)
               .addRaw(`\n\nSource: ${evidence.source}\n\nSHA-256: ${evidence.sha256}\n\nIntegrity: ${evidence.integrity}\n`).write();

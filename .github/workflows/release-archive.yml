@@ -1,0 +1,183 @@
+name: Beta archive release
+on:
+  workflow_call:
+    inputs:
+      sha256:
+        required: true
+        type: string
+      qualification:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  publish:
+    name: Publish qualified beta archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: github-release
+    concurrency:
+      group: beta-archive-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-package
+          path: candidate
+      # No checkout, dependency install, package lifecycle scripts or rebuild here.
+      - name: Validate release authority and candidate bytes
+        id: candidate
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RELEASE_ENABLED: ${{ vars.ENABLE_BETA_RELEASES }}
+          EXPECTED_SHA256: ${{ inputs.sha256 }}
+          QUALIFICATION: ${{ inputs.qualification }}
+        with:
+          script: |
+            const assert = require('node:assert/strict');
+            const fs = require('node:fs');
+            const { createHash } = require('node:crypto');
+            const { execFileSync } = require('node:child_process');
+            assert.equal(process.env.RELEASE_ENABLED, 'true', 'Release automation is opt-in');
+            assert.equal(context.repo.owner + '/' + context.repo.repo, 'Ponchia/bronto-visual-models');
+            assert.equal(context.eventName, 'push');
+            assert.equal(context.payload.created, true, 'Only a newly created tag may release');
+            assert.equal(context.payload.deleted, false);
+            assert.equal(context.payload.repository.private, false);
+            assert.equal(context.payload.repository.fork, false);
+            assert.match(context.ref, /^refs\/tags\/v0\.1\.0-beta\.(0|[1-9]\d*)$/);
+            assert.match(context.sha, /^[a-f0-9]{40}$/);
+            const qualification = JSON.parse(process.env.QUALIFICATION);
+            for (const job of ['package', 'core', 'browser', 'distribution']) {
+              assert.equal(qualification[job]?.result, 'success', `${job} must pass; skipped is not success`);
+            }
+            const tag = context.ref.slice('refs/tags/'.length);
+            const version = tag.slice(1);
+            const repo = context.repo;
+            const environment = (await github.rest.repos.getEnvironment({ ...repo, environment_name: 'github-release' })).data;
+            assert(environment.protection_rules.some(rule => rule.type === 'required_reviewers' && rule.prevent_self_review === true && rule.reviewers?.length > 0), 'Environment requires reviewers and prevention of self-review');
+            assert.equal(environment.deployment_branch_policy?.custom_branch_policies, true);
+            const policies = (await github.rest.repos.listDeploymentBranchPolicies({ ...repo, environment_name: 'github-release', per_page: 100 })).data;
+            assert.equal(policies.total_count, 1, 'Environment must allow only the beta tag policy');
+            assert.equal(policies.branch_policies[0].type, 'tag');
+            assert.equal(policies.branch_policies[0].name, 'v0.1.0-beta.*');
+            const tagObject = (await github.rest.git.getRef({ ...repo, ref: `tags/${tag}` })).data.object;
+            let object = tagObject;
+            for (let depth = 0; object.type === 'tag' && depth < 4; depth++) {
+              object = (await github.rest.git.getTag({ ...repo, tag_sha: object.sha })).data.object;
+            }
+            assert.equal(object.type, 'commit');
+            assert.equal(object.sha, context.sha, 'Tag moved since this run started');
+            const comparison = (await github.rest.repos.compareCommitsWithBasehead({
+              ...repo, basehead: `${context.sha}...main`,
+            })).data;
+            assert(['ahead', 'identical'].includes(comparison.status), 'Tag must be on main');
+            // Require an effective, non-bypassable rule against moving/deleting beta tags.
+            const rulesets = await github.paginate(github.rest.repos.getRepoRulesets, { ...repo, per_page: 100 });
+            let immutableTags = false;
+            for (const row of rulesets.filter(row => row.target === 'tag' && row.enforcement === 'active')) {
+              const rule = (await github.rest.repos.getRepoRuleset({ ...repo, ruleset_id: row.id })).data;
+              if (rule.bypass_actors?.length !== 0) continue;
+              if (rule.conditions?.ref_name?.exclude?.length !== 0) continue;
+              if (!rule.conditions?.ref_name?.include?.some(pattern => ['refs/tags/v*', '~ALL'].includes(pattern))) continue;
+              if (['update', 'deletion'].every(type => rule.rules.some(item => item.type === type))) immutableTags = true;
+            }
+            assert(immutableTags, 'Configure active beta tag update/deletion rules with no bypass or exclusions');
+            try {
+              await github.rest.repos.getReleaseByTag({ ...repo, tag });
+              throw new Error('Release already exists; never replace assets or resume blindly');
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            const source = (await github.rest.repos.getContent({ ...repo, path: 'package.json', ref: context.sha })).data;
+            const metadata = JSON.parse(Buffer.from(source.content, 'base64').toString());
+            assert.equal(metadata.name, '@ponchia/visual-models');
+            assert.equal(metadata.version, version, 'Tag must exactly match the source package');
+            const names = fs.readdirSync('candidate');
+            const filename = `ponchia-visual-models-${version}.tgz`;
+            assert.deepEqual(names, [filename], 'Download must contain exactly one expected archive');
+            assert(fs.lstatSync(`candidate/${filename}`).isFile());
+            const bytes = fs.readFileSync(`candidate/${filename}`);
+            assert(bytes.length > 0 && bytes.length < 20 * 1024 * 1024);
+            const embedded = JSON.parse(execFileSync('tar', ['-xOf', `candidate/${filename}`, 'package/package.json'], { maxBuffer: 1024 * 1024 }));
+            assert.equal(embedded.name, metadata.name);
+            assert.equal(embedded.version, version);
+            const sha256 = createHash('sha256').update(bytes).digest('hex');
+            assert.match(process.env.EXPECTED_SHA256, /^[a-f0-9]{64}$/);
+            assert.equal(sha256, process.env.EXPECTED_SHA256, 'Downloaded bytes differ from the qualified build');
+            const integrity = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
+            fs.writeFileSync('candidate/SHA256SUMS', `${sha256}  ${filename}\n`);
+            fs.writeFileSync('candidate/release-evidence.json', JSON.stringify({
+              version, source: context.sha, tagObject,
+              run: `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`,
+              runAttempt: process.env.GITHUB_RUN_ATTEMPT,
+              archive: filename, bytes: bytes.length, sha256, integrity,
+              qualification: Object.fromEntries(Object.entries(qualification).map(([key, value]) => [key, value.result])),
+            }, null, 2));
+            core.setOutput('filename', filename);
+      - name: Sign provenance of the qualified archive
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: candidate/${{ steps.candidate.outputs.filename }}
+          create-storage-record: false
+      - name: Upload a draft, publish once, and verify public bytes
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        with:
+          script: |
+            const assert = require('node:assert/strict');
+            const fs = require('node:fs');
+            const { createHash } = require('node:crypto');
+            const repo = context.repo;
+            const evidence = JSON.parse(fs.readFileSync('candidate/release-evidence.json', 'utf8'));
+            const tag = `v${evidence.version}`;
+            const current = (await github.rest.git.getRef({ ...repo, ref: `tags/${tag}` })).data.object;
+            assert.deepEqual(current, evidence.tagObject, 'Tag changed during signing');
+            assert.equal(createHash('sha256').update(fs.readFileSync(`candidate/${evidence.archive}`)).digest('hex'), evidence.sha256);
+            fs.copyFileSync(process.env.PROVENANCE_BUNDLE, 'candidate/provenance.sigstore.json');
+            const release = (await github.rest.repos.createRelease({
+              ...repo, tag_name: tag, target_commitish: evidence.source,
+              name: `Bronto Visual Models ${evidence.version}`, draft: true,
+              prerelease: true, make_latest: 'false',
+              body: `Qualified archive from ${evidence.source}.\n\nCI: ${evidence.run}\n\nSHA-256: ${evidence.sha256}\n\nSee release-evidence.json and provenance.sigstore.json. This beta does not change the npm registry.`,
+            })).data;
+            for (const name of [evidence.archive, 'SHA256SUMS', 'release-evidence.json', 'provenance.sigstore.json']) {
+              const data = fs.readFileSync(`candidate/${name}`);
+              await github.rest.repos.uploadReleaseAsset({ ...repo, release_id: release.id, name, data,
+                headers: { 'content-type': 'application/octet-stream', 'content-length': data.length } });
+            }
+            // Re-read after upload too. A failure leaves the draft for manual inspection.
+            assert.deepEqual((await github.rest.git.getRef({ ...repo, ref: `tags/${tag}` })).data.object, evidence.tagObject);
+            const published = (await github.rest.repos.updateRelease({
+              ...repo, release_id: release.id, draft: false, prerelease: true, make_latest: 'false',
+            })).data;
+            assert.equal(published.draft, false);
+            assert.equal(published.prerelease, true);
+            assert.equal(published.tag_name, tag);
+            const assets = await github.paginate(github.rest.repos.listReleaseAssets, { ...repo, release_id: release.id, per_page: 100 });
+            const asset = assets.filter(item => item.name === evidence.archive);
+            assert.equal(asset.length, 1);
+            const response = await fetch(asset[0].browser_download_url, { signal: AbortSignal.timeout(60000) });
+            assert(response.ok, `Public download failed: ${response.status}`);
+            const publicBytes = Buffer.from(await response.arrayBuffer());
+            assert.equal(publicBytes.length, evidence.bytes);
+            assert.equal(createHash('sha256').update(publicBytes).digest('hex'), evidence.sha256);
+            fs.writeFileSync('candidate/published-verification.json', JSON.stringify({
+              release: published.html_url, archive: asset[0].browser_download_url,
+              sha256: evidence.sha256, bytes: publicBytes.length, verifiedAt: new Date().toISOString(),
+            }, null, 2));
+            await core.summary.addHeading('Verified beta archive').addLink(tag, published.html_url)
+              .addRaw(`\n\nSource: ${evidence.source}\n\nSHA-256: ${evidence.sha256}\n\nIntegrity: ${evidence.integrity}\n`).write();
+      - name: Retain publication evidence, including partial failures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: beta-release-evidence
+          path: candidate/
+          if-no-files-found: error

@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve, join } from "node:path";
+import { join } from "node:path";
+import { packageArchive } from "./package-archive.mjs";
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 await mkdir(".tmp", { recursive: true });
-const info = JSON.parse(
-  execFileSync(npm, ["pack", "--json", "--ignore-scripts", "--pack-destination", ".tmp"], {
-    encoding: "utf8",
-  }),
-)[0];
-const tarball = resolve(".tmp", info.filename);
-const entries = info.files.map((file) => file.path);
+const info = packageArchive();
+const tarball = info.path;
+const entries = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8" })
+  .trim()
+  .split("\n")
+  .map((entry) => entry.replace(/^package\//, ""));
 for (const required of [
   "dist/index.js",
   "dist/index.d.ts",
@@ -103,7 +103,6 @@ console.log('Packed core, local transactions, identities and undo work without S
         package: manifest.name,
         version: manifest.version,
         bytes: info.size,
-        unpackedBytes: info.unpackedSize,
         files: entries.length,
         integrity: info.integrity,
       },

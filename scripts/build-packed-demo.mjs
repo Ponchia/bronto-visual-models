@@ -2,19 +2,16 @@ import { execFileSync } from "node:child_process";
 import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
+import { packageArchive } from "./package-archive.mjs";
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 await mkdir(".tmp", { recursive: true });
 const metadata = JSON.parse(await readFile("package.json", "utf8"));
-const packed = JSON.parse(
-  execFileSync(npm, ["pack", "--json", "--ignore-scripts", "--pack-destination", ".tmp"], {
-    encoding: "utf8",
-  }),
-)[0];
+const packed = packageArchive();
 const directory = await mkdtemp(join(tmpdir(), "bvm-ui-consumer-"));
 const output = resolve("site-dist");
 const nativeDirectory = await mkdtemp(join(tmpdir(), "bvm-native-consumer-"));
 try {
-  const dependencies = { "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}` };
+  const dependencies = { "@ponchia/visual-models": `file:${packed.path}` };
   for (const name of [
     "vega-lite",
     "vega-interpreter",
@@ -84,7 +81,7 @@ try {
       private: true,
       type: "module",
       dependencies: {
-        "@ponchia/visual-models": `file:${resolve(".tmp", packed.filename)}`,
+        "@ponchia/visual-models": `file:${packed.path}`,
         react: metadata.devDependencies.react,
         "react-dom": metadata.devDependencies["react-dom"],
         "@ponchia/ui": metadata.devDependencies["@ponchia/ui"],

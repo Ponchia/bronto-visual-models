@@ -2,16 +2,52 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*-beta.*']
   pull_request:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 jobs:
+  package:
+    name: Build candidate archive
+    outputs:
+      sha256: ${{ steps.identity.outputs.sha256 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          check-latest: true
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: mkdir -p .tmp && npm pack --ignore-scripts --pack-destination .tmp
+      - name: Record candidate identity
+        id: identity
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import { inspectArchive } from './scripts/package-archive.mjs';
+          const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
+          const archive = inspectArchive('.tmp', version);
+          appendFileSync(process.env.GITHUB_OUTPUT, `sha256=${archive.sha256}\n`);
+          NODE
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-package
+          path: .tmp/*.tgz
+          include-hidden-files: true
+          if-no-files-found: error
   core:
     name: Core / Node ${{ matrix.node }}
+    needs: package
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -32,7 +68,14 @@ jobs:
       - run: npm run lint:docs
       - run: npm run build
       - run: npm test
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-package
+          path: .tmp/candidate
       - run: npm run test:pack
+        env:
+          BVM_PACKAGE_DIRECTORY: .tmp/candidate
+          BVM_PACKAGE_SHA256: ${{ needs.package.outputs.sha256 }}
       - name: Record reproducible store benchmark
         if: matrix.node == '24'
         run: node --experimental-strip-types scripts/benchmark-store.mjs > .tmp/benchmark-store.json
@@ -55,16 +98,9 @@ jobs:
           path: .tmp/benchmark-store.json
           include-hidden-files: true
           if-no-files-found: error
-      - name: Retain installable beta package
-        if: matrix.node == '24'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: npm-package
-          path: .tmp/*.tgz
-          include-hidden-files: true
-          if-no-files-found: error
   browser:
     name: Packed UI / ${{ matrix.browser }}
+    needs: package
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
@@ -107,7 +143,14 @@ jobs:
           assert.equal(image.dockerImageName, `mcr.microsoft.com/playwright:v${version}-noble`);
           console.log(`Verified Playwright ${version} against ${image.dockerImageName}`);
           NODE
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-package
+          path: .tmp/candidate
       - run: npm run site:build:packed
+        env:
+          BVM_PACKAGE_DIRECTORY: .tmp/candidate
+          BVM_PACKAGE_SHA256: ${{ needs.package.outputs.sha256 }}
       - run: npm run check:bundle
       - run: npm run test:browser
       - name: Retain browser evidence
@@ -154,3 +197,16 @@ jobs:
       - name: Deploy the tested site
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+  release-archive:
+    name: Beta archive release
+    needs: [package, core, browser, distribution]
+    if: github.repository == 'Ponchia/bronto-visual-models' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.ENABLE_BETA_RELEASES == 'true'
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-archive.yml
+    with:
+      sha256: ${{ needs.package.outputs.sha256 }}
+      qualification: ${{ toJSON(needs) }}

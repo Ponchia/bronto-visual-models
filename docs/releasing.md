@@ -44,7 +44,7 @@ Automation stays off until a maintainer completes these prerequisites:
    with update and deletion restrictions, no exclusions and no bypass actors.
    The publisher checks this through the API and refuses absent or unreadable rules.
 3. Create the `github-release` environment with required reviewers, prevent
-   self-review, and select custom deployment policies with exactly one tag policy
+   self-review, disable administrator bypass, and select custom deployment policies with exactly one tag policy
    named `v0.1.0-beta.*`. The publisher verifies these protections. Reviewers must
    check the source SHA, qualified run and package version before approving.
    Enable GitHub immutable releases in repository settings to lock published
@@ -68,16 +68,30 @@ same run, verifies the source/tag/version/checksum again, and signs provenance
 using GitHub OIDC. It has no checkout, build, dependency installation, npm token
 or package lifecycle script execution.
 
+A sole maintainer cannot approve a run they initiated when self-review is
+prevented. Before enabling automation, establish a separately authorized tag
+initiator or an independent eligible reviewer; do not add collaborators or remove
+self-review prevention just to unblock a release. Keep the opt-in variable off
+until that approval path has been reviewed.
+
 The publisher creates a draft, uploads the archive, `SHA256SUMS`,
 `release-evidence.json` (source, run, SHA-256 and npm SHA-512 integrity), and
 `provenance.sigstore.json`, then publishes a prerelease without changing `latest`.
 It rechecks the tag before publication and verifies the anonymous public archive
-download afterward. The run summary and `beta-release-evidence` artifact retain
+download afterward. The publication response must also confirm immutable assets.
+Reading the repository immutability setting requires administrative permission,
+so it remains a maintainer setup check, not an added publisher token capability. The run summary and `beta-release-evidence` artifact retain
 the result. Verify the signature independently after downloading the archive:
 
 ```sh
 gh attestation verify ponchia-visual-models-0.1.0-beta.6.tgz --repo Ponchia/bronto-visual-models
 ```
+
+`publication-receipt.json` records the accepted draft ID, acknowledged uploads
+and publication response, including partial failures. The receipt is written
+before checking the response, so a failed immutability check cannot hide an
+already-published release. It does not prove that an unacknowledged API request
+had no effect. Inspect the identified release and original tag before recovery.
 
 Publication has several steps and no automatic rollback. An upload failure leaves a draft
 for inspection; a public-download failure can occur after publication. Inspect
@@ -85,6 +99,21 @@ the run, release, and retained evidence before taking further action. Existing
 releases are refused, including drafts: retries do not replace assets or blindly
 resume. Keep published versions immutable; correct a bad beta in a new version.
 Turning off `ENABLE_BETA_RELEASES` prevents future automated releases.
+
+## Configuration verified on 24 October 2026
+
+The repository now has an active `Protect release tags` rule for `refs/tags/v*`,
+with update/deletion restrictions and no bypass actors. The `github-release`
+environment requires Ponchia's review, prevents self-review, disallows
+administrator bypass and permits only the `v0.1.0-beta.*` tag policy. Immutable
+releases are enabled for future publications. Existing releases were not changed.
+
+`ENABLE_BETA_RELEASES` remains explicitly `false`. Ponchia is currently the only
+repository collaborator, so a tag run initiated by Ponchia cannot also be
+approved by Ponchia. A separately authorized initiation/review path must be
+settled before activation. No collaborator was added, tag created, approval
+granted, archive signed or release published during this configuration work.
+The source still has a development version; it is not a releasable beta tag.
 
 ## Optional npm registry publication
 

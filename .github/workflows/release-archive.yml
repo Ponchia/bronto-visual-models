@@ -24,14 +24,14 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: npm-package
           path: candidate
       # No checkout, dependency install, package lifecycle scripts or rebuild here.
       - name: Validate release authority and candidate bytes
         id: candidate
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           RELEASE_ENABLED: ${{ vars.ENABLE_BETA_RELEASES }}
           EXPECTED_SHA256: ${{ inputs.sha256 }}
@@ -121,12 +121,12 @@ jobs:
             core.setOutput('filename', filename);
       - name: Sign provenance of the qualified archive
         id: provenance
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: candidate/${{ steps.candidate.outputs.filename }}
           create-storage-record: false
       - name: Upload a draft, publish once, and verify public bytes
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
         with:

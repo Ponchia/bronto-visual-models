@@ -115,6 +115,20 @@ settled before activation. No collaborator was added, tag created, approval
 granted, archive signed or release published during this configuration work.
 The source still has a development version; it is not a releasable beta tag.
 
+## Beta.6 source candidate
+
+The candidate source version is `0.1.0-beta.6`. It contains the reviewed
+Bronto UI peer range `^0.16.3 || ^0.17.0`, which is not present in the published
+beta.5 archive. The package lock changes only the candidate's own version;
+its dependencies and stored model format are unchanged by this preparation.
+
+Qualify this exact source with the existing Node 22/24 and packed browser
+matrix before creating a tag. The public distribution manifest, README and
+first-run guide continue to identify beta.5. Preparing source does not enable
+release automation, change environment protections, approve a deployment or
+publish an archive. The independent reviewer/initiator requirement above
+still applies, and Spatial must qualify the published bytes separately.
+
 ## Optional npm registry publication
 
 The package metadata declares public scope access. Registry publication still

@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.6 (release candidate)
+
+Source candidate only. The published installation remains beta.5 until a new
+archive passes qualification and the protected publication process.
 
 - Accept the compatible Bronto UI 0.17 minor alongside 0.16.3 in the optional
   peer contract, so the updated packed UI consumers install without peer overrides.

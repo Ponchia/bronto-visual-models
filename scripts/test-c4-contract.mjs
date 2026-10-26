@@ -35,6 +35,22 @@ export async function testC4Contract(browser, outputDirectory) {
       log = (log + chunk).slice(-8000);
     });
   const context = await browser.newContext({ viewport: { width: 1440, height: 980 } });
+  await context.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver;
+    window.c4HoldNodeMeasurements = false;
+    window.ResizeObserver = class extends NativeResizeObserver {
+      constructor(callback) {
+        super((entries, observer) => {
+          const visible = entries.filter(
+            (entry) =>
+              !window.c4HoldNodeMeasurements ||
+              !entry.target.classList.contains("react-flow__node"),
+          );
+          if (visible.length) callback(visible, observer);
+        });
+      }
+    };
+  });
   const page = await context.newPage();
   page.setDefaultTimeout(15000);
   const errors = [],
@@ -247,6 +263,11 @@ export async function testC4Contract(browser, outputDirectory) {
     await waitX("api", originalPosition.x + 10);
     checks.push("Keyboard positions belong to one named diagram; undo restores prior layout");
 
+    // Fixed-size cards must not disappear when a browser coalesces size notifications
+    // across controlled readonly/permission updates. Keep the actual observer everywhere else.
+    await page.evaluate(() => {
+      window.c4HoldNodeMeasurements = true;
+    });
     await configure({ readOnly: true });
     await flush();
     const readonly = await snapshot(),
@@ -366,6 +387,13 @@ export async function testC4Contract(browser, outputDirectory) {
     await node("checkout").waitFor();
     await inspect("checkout");
     await a11y("inspector");
+    // Exercise actual canvas ResizeObserver delivery as well as the coalesced
+    // fixed-card measurements above. Any loop/error remains a test failure.
+    for (const width of [700, 420, 950]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await node("checkout").waitFor({ state: "visible" });
+      await flush();
+    }
     await page.setViewportSize({ width: 390, height: 1000 });
     await flush();
     assert.equal(

@@ -72,6 +72,10 @@ export default function C4View(props: AdapterProps) {
         id: element.id,
         type: "c4",
         position: { x, y },
+        // These cards have fixed authored dimensions; never wait for another
+        // ResizeObserver delivery after a controlled permission/state update.
+        initialWidth: C4_CARD.width,
+        initialHeight: C4_CARD.height,
         data: { element },
         ariaLabel: c4ElementText(element),
         draggable: !!props.onEdit && active && !pending,
@@ -88,6 +92,8 @@ export default function C4View(props: AdapterProps) {
         id: `:boundary:${b.element.id}`,
         type: "c4",
         position: { x: b.x, y: b.y },
+        initialWidth: b.width,
+        initialHeight: b.height,
         data: { element: b.element, boundary: true },
         draggable: false,
         selectable: false,
@@ -447,14 +453,16 @@ export default function C4View(props: AdapterProps) {
                 props.onSelect?.(null);
               }
             }}
-            onNodesChange={(changes) =>
-              setNodes((rows) =>
-                applyNodeChanges(
-                  changes.filter((change) => change.type !== "position" || !!drag.current),
-                  rows,
-                ),
-              )
-            }
+            onNodesChange={(changes) => {
+              // Card and boundary sizes are derived, not editable. Do not feed
+              // size-observer notifications synchronously back into controlled
+              // node state; the engine still keeps its internal handle measures.
+              const relevant = changes.filter(
+                (change) =>
+                  change.type !== "dimensions" && (change.type !== "position" || !!drag.current),
+              );
+              if (relevant.length) setNodes((rows) => applyNodeChanges(relevant, rows));
+            }}
             onNodeDragStart={() => {
               if (active && props.onEdit && !pending)
                 drag.current = {

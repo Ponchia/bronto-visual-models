@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { MemoryModelStore, type ModelEdit, type VisualTarget } from "@ponchia/visual-models";
 import { c4RecordEdit, c4PositionEdit, c4Scene } from "@ponchia/visual-models/render/c4";
@@ -20,6 +21,9 @@ async function edit(patch: ModelEdit) {
 const harness = {
   events,
   configure: (patch: any) => configure(patch),
+  // Renders and runs effects synchronously, as an engine store update does when
+  // it happens inside a ResizeObserver delivery.
+  configureSync: (patch: any) => flushSync(() => configure(patch)),
   snapshot: () => store.snapshot(),
   current,
   position: (view: string, id: string) =>

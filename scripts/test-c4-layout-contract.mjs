@@ -35,6 +35,24 @@ export async function testC4LayoutContract(browser, outputDirectory) {
     });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
   await context.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver;
+    window.layoutCameraWritesDuringResize = [];
+    window.ResizeObserver = class extends NativeResizeObserver {
+      constructor(callback) {
+        super((entries, observer) => {
+          const viewport = document.querySelector(".bvm-c4-canvas .react-flow__viewport");
+          const before = viewport?.getAttribute("style");
+          callback(entries, observer);
+          const after = viewport?.getAttribute("style");
+          if (viewport && before !== after)
+            window.layoutCameraWritesDuringResize.push({
+              before,
+              after,
+              targets: entries.map((entry) => entry.target.className),
+            });
+        });
+      }
+    };
     const RealWorker = window.Worker;
     window.layoutWorkers = { created: 0, terminated: 0, active: 0 };
     window.Worker = class extends RealWorker {
@@ -413,6 +431,11 @@ export async function testC4LayoutContract(browser, outputDirectory) {
       [],
     );
     await waitWorkers();
+    assert.deepEqual(
+      await page.evaluate(() => window.layoutCameraWritesDuringResize),
+      [],
+      "Layout preview, apply and camera fitting must not change the viewport from size-observer delivery",
+    );
     assert.deepEqual(errors, []);
     assert.deepEqual(external, []);
     const workers = await page.evaluate(() => window.layoutWorkers);
@@ -428,6 +451,7 @@ export async function testC4LayoutContract(browser, outputDirectory) {
       workers,
       pageErrors: errors,
       externalRequests: external,
+      cameraWritesDuringResize: await page.evaluate(() => window.layoutCameraWritesDuringResize),
     };
     await writeFile(resolve(out, "c4-layout-results.json"), JSON.stringify(result, null, 2));
     return result;
@@ -442,6 +466,9 @@ export async function testC4LayoutContract(browser, outputDirectory) {
           errors,
           external,
           events: await page.evaluate(() => window.c4LayoutHarness?.events).catch(() => []),
+          cameraWritesDuringResize: await page
+            .evaluate(() => window.layoutCameraWritesDuringResize)
+            .catch(() => []),
         },
         null,
         2,

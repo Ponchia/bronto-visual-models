@@ -42,6 +42,7 @@ export async function testC4Contract(browser, outputDirectory) {
     window.c4NodeObserveCalls = {};
     window.c4ResizeTrace = [];
     window.c4ResizeErrors = [];
+    window.c4CameraWritesDuringResize = [];
     window.addEventListener("error", (event) => {
       window.c4ResizeErrors.push({
         message: event.message,
@@ -75,7 +76,18 @@ export async function testC4Contract(browser, outputDirectory) {
             })),
           });
           if (window.c4ResizeTrace.length > 30) window.c4ResizeTrace.shift();
-          if (visible.length) callback(visible, observer);
+          if (visible.length) {
+            const viewport = document.querySelector(".bvm-c4-canvas .react-flow__viewport");
+            const before = viewport?.getAttribute("style");
+            callback(visible, observer);
+            const after = viewport?.getAttribute("style");
+            if (viewport && before !== after)
+              window.c4CameraWritesDuringResize.push({
+                before,
+                after,
+                targets: visible.map((entry) => entry.target.className),
+              });
+          }
         });
       }
     };
@@ -477,6 +489,11 @@ export async function testC4Contract(browser, outputDirectory) {
     checks.push(
       "Concurrent pane resizing and readonly transitions, full-text inspector, semantic data and WCAG-tagged scans",
     );
+    assert.deepEqual(
+      await page.evaluate(() => window.c4CameraWritesDuringResize),
+      [],
+      "Camera fitting must not synchronously change the viewport during a native size-observer callback",
+    );
     assert.deepEqual(errors, [], "C4 page errors");
     assert.deepEqual(external, [], "C4 made an external resource request");
     const result = {
@@ -485,6 +502,7 @@ export async function testC4Contract(browser, outputDirectory) {
       checks,
       pageErrors: errors,
       externalRequests: external,
+      cameraWritesDuringResize: await page.evaluate(() => window.c4CameraWritesDuringResize),
       paneResizeNotifications: await page.evaluate(() => window.c4PaneResizeNotifications),
     };
     await writeFile(resolve(out, "c4-results.json"), JSON.stringify(result, null, 2));
@@ -501,6 +519,9 @@ export async function testC4Contract(browser, outputDirectory) {
           external,
           events: await page.evaluate(() => window.c4Harness?.events).catch(() => []),
           resizeDiagnostics: await page.evaluate(() => window.c4ResizeErrors).catch(() => []),
+          cameraWritesDuringResize: await page
+            .evaluate(() => window.c4CameraWritesDuringResize)
+            .catch(() => []),
         },
         null,
         2,

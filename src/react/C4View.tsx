@@ -5,6 +5,7 @@ import {
   Controls,
   MarkerType,
   applyNodeChanges,
+  getViewportForBounds,
   type ReactFlowInstance,
   type NodeDimensionChange,
 } from "@xyflow/react";
@@ -169,6 +170,38 @@ export default function C4View(props: AdapterProps) {
   const drag = useRef<{ model: VisualModel; viewId: string; positions: C4Position[] } | null>(null);
   const latest = useRef({ props, derived, viewId, active, selected, layoutLocked: layout.locked });
   latest.current = { props, derived, viewId, active, selected, layoutLocked: layout.locked };
+  // Camera-only fitting: the engine's fitView queues setNodes and can complete
+  // synchronously from its native size observer. C4 already owns every box's
+  // dimensions, so use the public bounds/viewport utilities without that queue.
+  const fitArchitecture = useCallback(
+    (
+      options: { elementId?: string; padding?: number; minZoom?: number; maxZoom?: number } = {},
+    ) => {
+      const surface = canvas.current;
+      if (!flow || !surface || !latest.current.active) return;
+      const width = surface.clientWidth,
+        height = surface.clientHeight;
+      const candidates = flow
+        .getNodes()
+        .filter((node) => !node.hidden && (!options.elementId || node.id === options.elementId));
+      if (!width || !height || !candidates.length) return;
+      const bounds = flow.getNodesBounds(candidates);
+      if (!bounds.width || !bounds.height) return;
+      return flow.setViewport(
+        getViewportForBounds(
+          bounds,
+          width,
+          height,
+          options.minZoom ?? 0.05,
+          options.maxZoom ?? 2,
+          options.padding ?? 0.2,
+        ),
+        { duration: 0 },
+      );
+    },
+    [flow],
+  );
+
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -242,10 +275,10 @@ export default function C4View(props: AdapterProps) {
   useEffect(() => {
     if (!active || !scene || !flow) return;
     const frame = requestAnimationFrame(() => {
-      void flow.fitView({ padding: 0.2, duration: 0 });
+      void fitArchitecture();
     });
     return () => cancelAnimationFrame(frame);
-  }, [flow, viewId, active, layout.preview]);
+  }, [flow, viewId, active, layout.preview, fitArchitecture]);
   useEffect(() => {
     if (!active || !scene || !flow) return;
     if (layout.preview) return;
@@ -276,7 +309,7 @@ export default function C4View(props: AdapterProps) {
             target.position.y + C4_CARD.height / 2,
             { zoom: Math.min(flow.getZoom(), 1), duration: 0 },
           );
-        else void flow.fitView({ padding: 0.2, duration: 0 });
+        else void fitArchitecture();
       });
     });
     observer.observe(element);
@@ -284,7 +317,7 @@ export default function C4View(props: AdapterProps) {
       observer.disconnect();
       cancelAnimationFrame(frame);
     };
-  }, [flow, active, viewId]);
+  }, [flow, active, viewId, fitArchitecture]);
   const persist = async (base: VisualModel, id: string, positions: C4Position[]) => {
     const current = latest.current;
     if (writing.current) return;
@@ -371,11 +404,7 @@ export default function C4View(props: AdapterProps) {
               : "People and software systems"}
           </span>
         </div>
-        <button
-          type="button"
-          disabled={!active || !flow}
-          onClick={() => void flow?.fitView({ padding: 0.2, duration: 0 })}
-        >
+        <button type="button" disabled={!active || !flow} onClick={() => void fitArchitecture()}>
           Fit architecture
         </button>
         <button
@@ -442,12 +471,11 @@ export default function C4View(props: AdapterProps) {
             onChange={(e) => {
               if (!e.target.value) return;
               select("elements", e.target.value);
-              void flow?.fitView({
-                nodes: [{ id: e.target.value }],
+              void fitArchitecture({
+                elementId: e.target.value,
                 padding: 0.6,
                 minZoom: 0.7,
                 maxZoom: 1,
-                duration: 0,
               });
             }}
           >
@@ -533,8 +561,6 @@ export default function C4View(props: AdapterProps) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onInit={setFlow}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
             minZoom={0.05}
             maxZoom={2}
             nodesConnectable={false}
@@ -632,7 +658,7 @@ export default function C4View(props: AdapterProps) {
             }}
           >
             <Background color={tokens.line} gap={24} />
-            {active && <Controls showInteractive={false} />}
+            {active && <Controls showInteractive={false} showFitView={false} />}
           </ReactFlow>
         </div>
         {selectedCollection && selectedRecord && (

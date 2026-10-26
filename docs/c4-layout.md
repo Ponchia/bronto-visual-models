@@ -29,6 +29,11 @@ to read at that scale. Read at 100% centers the selected element, the scoped
 system or an element inside its boundary at readable 1:1 size. It changes only
 the local camera, never architecture or layout. Pan/zoom and the inspector remain
 available rather than claiming that every full-diagram overview is readable.
+Camera fitting uses the renderer's public bounds/viewport utilities without
+queuing a node update. Initial fitting, preview fitting and resize refitting run
+outside native size-observer delivery. Measurements remain renderer-local and
+are retained across unchanged geometry; camera operations never write the model.
+
 At a zoom where a label would become a target smaller than 24 CSS pixels, it is
 rendered as passive text. Zooming back in restores its button. The consistently
 sized Inspect relationship chooser preserves selection and full text at every

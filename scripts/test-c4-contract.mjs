@@ -387,6 +387,10 @@ export async function testC4Contract(browser, outputDirectory) {
         selected.bottom <= canvas.bottom + 1
       );
     });
+    // The readonly inspector can overflow without containing inputs or buttons.
+    // It must itself accept keyboard focus so its complete text remains reachable.
+    await inspector().focus();
+    await page.waitForFunction(() => document.activeElement?.matches(".bvm-c4-inspector"));
     await screen("narrow");
     await a11y("narrow");
     await page.getByRole("button", { name: "Read data", exact: true }).click();

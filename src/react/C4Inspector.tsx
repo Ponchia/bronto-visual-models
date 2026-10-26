@@ -78,7 +78,11 @@ export default function C4Inspector({
     }
   };
   return (
-    <aside className="bvm-c4-inspector" aria-label="Architecture inspector">
+    <aside
+      className="bvm-c4-inspector"
+      aria-label="Architecture inspector"
+      tabIndex={props.active === false ? -1 : 0}
+    >
       <p className="bvm-c4-eyebrow">
         {element ? C4_KIND_LABELS[element.kind] : "Directed relationship"}
         {element?.external ? " · External" : ""}

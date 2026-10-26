@@ -134,6 +134,43 @@ export async function testC4Contract(browser, outputDirectory) {
       id,
     );
   };
+  const assertBoundary = async (scope, ids) => {
+    await page.locator(`[data-c4-boundary="${scope}"]`).waitFor();
+    await page.waitForFunction(
+      ({ scope, ids }) => {
+        const box = document
+          .querySelector(`[data-c4-boundary="${scope}"]`)
+          ?.getBoundingClientRect();
+        return (
+          box &&
+          ids.every((id) => {
+            const card = document
+              .querySelector(`.react-flow__node[data-id="${id}"]`)
+              ?.getBoundingClientRect();
+            return (
+              card &&
+              card.left >= box.left - 1 &&
+              card.right <= box.right + 1 &&
+              card.top >= box.top - 1 &&
+              card.bottom <= box.bottom + 1
+            );
+          })
+        );
+      },
+      { scope, ids },
+    );
+    assert.equal(
+      await page.locator('.react-flow__node[data-id^=":boundary:"]').count(),
+      0,
+      "A scope enclosure must not become an engine node with measurement feedback",
+    );
+    assert.deepEqual(
+      await page.evaluate(() =>
+        Object.keys(window.c4NodeObserveCalls).filter((id) => id.startsWith(":boundary:")),
+      ),
+      [],
+    );
+  };
   const renderedX = (id) =>
     node(id).evaluate((element) => new DOMMatrixReadOnly(element.style.transform).m41);
   const waitX = (id, x) =>
@@ -189,6 +226,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await node("api").waitFor();
     assert.equal(await diagram().inputValue(), "containers");
     assert.equal(await page.locator(".bvm-c4-boundary").count(), 1);
+    await assertBoundary("shop", ["web", "api", "database"]);
     assert.equal(await node("api").getByText("Node.js / HTTP", { exact: true }).count(), 1);
     await page.getByRole("button", { name: "Fit architecture", exact: true }).click();
     await screen("containers");
@@ -365,6 +403,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await flush();
     const card = await node("api").boundingBox();
     assert.ok(card);
+    await assertBoundary("shop", ["web", "api", "database"]);
     const dragBefore = await current();
     await page.mouse.move(card.x + card.width / 2, card.y + 25);
     await page.mouse.down();
@@ -374,12 +413,14 @@ export async function testC4Contract(browser, outputDirectory) {
     const dragAfter = await current();
     assert.ok(dragAfter.content.views.find((v) => v.id === "containers").positions?.length);
     assert.deepEqual(dragAfter.content.elements, dragBefore.content.elements);
+    await assertBoundary("shop", ["web", "api", "database"]);
     await page.getByRole("button", { name: "Reset diagram layout", exact: true }).click();
     await waitRevision(dragBefore.revision + 2);
     assert.deepEqual(
       (await current()).content.views.find((v) => v.id === "containers").positions,
       [],
     );
+    await assertBoundary("shop", ["web", "api", "database"]);
     checks.push("Pointer drag and explicit reset go through the host's guarded commit");
 
     await configure({ active: false });

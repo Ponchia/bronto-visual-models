@@ -29,6 +29,10 @@ to read at that scale. Read at 100% centers the selected element, the scoped
 system or an element inside its boundary at readable 1:1 size. It changes only
 the local camera, never architecture or layout. Pan/zoom and the inspector remain
 available rather than claiming that every full-diagram overview is readable.
+Scope enclosures are non-interactive viewport decorations, not synthetic graph
+nodes. Their known geometry follows pan/zoom and is included in Fit architecture;
+changing a diagram's boundary does not enroll it in node measurement feedback.
+
 Camera fitting uses the renderer's public bounds/viewport utilities without
 queuing a node update. Initial fitting, preview fitting and resize refitting run
 outside native size-observer delivery. Measurements remain renderer-local and

@@ -78,15 +78,18 @@ function Symbol({ element }: { element: C4Element }) {
     </svg>
   );
 }
+/** A derived enclosure is presentation, not an engine node with handles or measurements. */
+export function C4Boundary({ element }: { element: C4Element }) {
+  return (
+    <div className="bvm-c4-boundary">
+      <strong>{element.label}</strong>
+      <span>{C4_KIND_LABELS[element.kind]} boundary</span>
+    </div>
+  );
+}
 export const C4Node = memo(function C4Node({ data }: NodeProps<C4FlowNode>) {
   const e = data.element;
-  if (data.boundary)
-    return (
-      <div className="bvm-c4-boundary">
-        <strong>{e.label}</strong>
-        <span>{C4_KIND_LABELS[e.kind]} boundary</span>
-      </div>
-    );
+  if (data.boundary) return <C4Boundary element={e} />;
   return (
     <div className={`bvm-c4-card${e.external ? " bvm-c4-external" : ""}`}>
       <div className="bvm-c4-card-kind">

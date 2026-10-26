@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
+  ViewportPortal,
   Background,
   Controls,
   MarkerType,
@@ -14,7 +15,7 @@ import { c4ElementText, c4PositionEdit, c4Scene, C4_CARD } from "../render/c4.ts
 import { modelTargets, resolveModelTarget, targetResolves } from "../targets.ts";
 import type { VisualModel, VisualTarget } from "../model.ts";
 import type { AdapterProps } from "./types.ts";
-import { C4Node, C4Edge, type C4FlowNode, type C4FlowEdge } from "./C4Notation.tsx";
+import { C4Node, C4Edge, C4Boundary, type C4FlowNode, type C4FlowEdge } from "./C4Notation.tsx";
 import C4Inspector from "./C4Inspector.tsx";
 import { useC4Layout } from "./useC4Layout.ts";
 import C4LayoutControls from "./C4LayoutControls.tsx";
@@ -128,23 +129,6 @@ export default function C4View(props: AdapterProps) {
         },
       };
     });
-    if (scene.boundary) {
-      const b = scene.boundary;
-      nodes.unshift({
-        id: `:boundary:${b.element.id}`,
-        type: "c4",
-        position: { x: b.x, y: b.y },
-        initialWidth: b.width,
-        initialHeight: b.height,
-        data: { element: b.element, boundary: true },
-        draggable: false,
-        selectable: false,
-        focusable: false,
-        ariaLabel: `${b.element.label} boundary`,
-        zIndex: -1,
-        style: { width: b.width, height: b.height, color: tokens.text, pointerEvents: "none" },
-      });
-    }
     return nodes;
   }, [scene, !!props.onEdit, active, pending, layout.locked, tokens]);
   const derived = useMemo(
@@ -168,8 +152,24 @@ export default function C4View(props: AdapterProps) {
   );
 
   const drag = useRef<{ model: VisualModel; viewId: string; positions: C4Position[] } | null>(null);
-  const latest = useRef({ props, derived, viewId, active, selected, layoutLocked: layout.locked });
-  latest.current = { props, derived, viewId, active, selected, layoutLocked: layout.locked };
+  const latest = useRef({
+    props,
+    derived,
+    viewId,
+    active,
+    selected,
+    layoutLocked: layout.locked,
+    boundary: scene?.boundary,
+  });
+  latest.current = {
+    props,
+    derived,
+    viewId,
+    active,
+    selected,
+    layoutLocked: layout.locked,
+    boundary: scene?.boundary,
+  };
   // Camera-only fitting: the engine's fitView queues setNodes and can complete
   // synchronously from its native size observer. C4 already owns every box's
   // dimensions, so use the public bounds/viewport utilities without that queue.
@@ -185,8 +185,19 @@ export default function C4View(props: AdapterProps) {
         .getNodes()
         .filter((node) => !node.hidden && (!options.elementId || node.id === options.elementId));
       if (!width || !height || !candidates.length) return;
-      const bounds = flow.getNodesBounds(candidates);
+      let bounds = flow.getNodesBounds(candidates);
       if (!bounds.width || !bounds.height) return;
+      const boundary = options.elementId ? undefined : latest.current.boundary;
+      if (boundary) {
+        const x = Math.min(bounds.x, boundary.x),
+          y = Math.min(bounds.y, boundary.y);
+        bounds = {
+          x,
+          y,
+          width: Math.max(bounds.x + bounds.width, boundary.x + boundary.width) - x,
+          height: Math.max(bounds.y + bounds.height, boundary.y + boundary.height) - y,
+        };
+      }
       return flow.setViewport(
         getViewportForBounds(
           bounds,
@@ -657,6 +668,26 @@ export default function C4View(props: AdapterProps) {
               void persist(base.model, base.viewId, positions);
             }}
           >
+            {scene.boundary && (
+              <ViewportPortal>
+                <div
+                  data-c4-boundary={scene.boundary.element.id}
+                  role="group"
+                  aria-label={`${scene.boundary.element.label} boundary`}
+                  style={{
+                    position: "absolute",
+                    transform: `translate(${scene.boundary.x}px,${scene.boundary.y}px)`,
+                    width: scene.boundary.width,
+                    height: scene.boundary.height,
+                    color: tokens.text,
+                    pointerEvents: "none",
+                    zIndex: -1,
+                  }}
+                >
+                  <C4Boundary element={scene.boundary.element} />
+                </div>
+              </ViewportPortal>
+            )}
             <Background color={tokens.line} gap={24} />
             {active && <Controls showInteractive={false} showFitView={false} />}
           </ReactFlow>

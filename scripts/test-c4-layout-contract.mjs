@@ -236,6 +236,18 @@ export async function testC4LayoutContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Fit architecture", exact: true }).click();
     await flush();
     assert.equal(await page.locator(".bvm-c4-boundary").count(), 1);
+    assert.equal(await page.locator('.react-flow__node[data-id^=":boundary:"]').count(), 0);
+    assert.equal(await page.locator('[data-c4-boundary="shop"]').count(), 1);
+    await page.waitForFunction(() => {
+      const box = document.querySelector('[data-c4-boundary="shop"]').getBoundingClientRect();
+      const viewport = document.querySelector(".bvm-c4-canvas").getBoundingClientRect();
+      return (
+        box.left >= viewport.left - 1 &&
+        box.right <= viewport.right + 1 &&
+        box.top >= viewport.top - 1 &&
+        box.bottom <= viewport.bottom + 1
+      );
+    });
     const before = await current();
     await apply();
     await waitWorkers();

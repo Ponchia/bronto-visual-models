@@ -18,6 +18,7 @@ for (const required of [
   "dist/react/index.js",
   "dist/react/styles.css",
   "dist/react/base.css",
+  "dist/react/c4.css",
   "dist/react/gantt.js",
   "dist/node/index.js",
   "bin/bronto-visual-models.mjs",
@@ -53,6 +54,8 @@ const require = createRequire(import.meta.url);
 for (const engine of ['react', '@xyflow/react', 'vega', 'vega-lite', 'vega-interpreter', 'vis-timeline', '@ponchia/ui', 'elkjs', '@dagrejs/dagre']) {
   assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
 }
+for (const sheet of ['styles.css', 'base.css', 'c4.css'])
+  assert.match(require.resolve('@ponchia/visual-models/' + sheet), /dist[\\/]react[\\/]/, sheet + ' must stay importable');
 const advice = chartEncodingGuidance({ spec: {mark:'line', encoding: {x: {field:'label',type:'nominal'},y:{field:'value',type:'quantitative'}}},values:[{label:'Unordered',value:2}] });
 assert.equal(advice.notes[0].code, 'nominal-path');
 const store = new MemoryModelStore({ registry: createVisualRegistry() });

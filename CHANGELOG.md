@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Keep the C4 camera's own wheel zoom and pane drag inside an embedding canvas: the inner
+  flow uses namespaced gesture guards, so a host's default React Flow guards cannot disable it.
+- Export `c4.css`, so a host that already loads React Flow's stylesheet can pair it with
+  `base.css` instead of the aggregate `styles.css`.
 - Keep the focused C4 element wholly visible when its canvas shrinks below the card:
   a resize keeps the reading zoom while the card fits and zooms out instead of clipping it.
 - Add scoped C4 automatic-layout proposals with a host-owned optional ELK runner,

@@ -582,6 +582,12 @@ export default function C4View(props: AdapterProps) {
             onInit={setFlow}
             minZoom={0.05}
             maxZoom={2}
+            // An embedding canvas marks node content with React Flow's default
+            // guards so its own camera ignores it. This inner flow checks its own
+            // classes, so those ancestors cannot gate the C4 camera.
+            noDragClassName="bvm-c4-nodrag"
+            noPanClassName="bvm-c4-nopan"
+            noWheelClassName="bvm-c4-nowheel"
             nodesConnectable={false}
             nodesDraggable={!!props.onEdit && active && !pending && !layout.locked}
             elementsSelectable={active}

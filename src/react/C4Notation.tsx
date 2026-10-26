@@ -171,7 +171,7 @@ export function C4Edge(props: EdgeProps<C4FlowEdge>) {
                   onClick: data.select,
                 }
               : {})}
-            className="bvm-c4-edge-label nodrag nopan"
+            className="bvm-c4-edge-label bvm-c4-nodrag bvm-c4-nopan"
             data-c4-label-interactive={interactive ? "true" : "false"}
             title={[data.label, data.technology].filter(Boolean).join(" · ")}
             style={{

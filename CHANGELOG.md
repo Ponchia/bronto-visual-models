@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep the focused C4 element wholly visible when its canvas shrinks below the card:
+  a resize keeps the reading zoom while the card fits and zooms out instead of clipping it.
 - Add scoped C4 automatic-layout proposals with a host-owned optional ELK runner,
   explicit preview/apply/discard, cancel-safe worker lifecycle and per-diagram writes.
 - Add generation/content-bound C4 route caches and collision-aware protocol labels;

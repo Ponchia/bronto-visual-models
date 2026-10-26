@@ -56,11 +56,14 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 .bvm-c4-with-inspector {
   grid-template-columns: minmax(0, 1fr) minmax(200px, 27%);
 }
 .bvm-c4-canvas {
+  /* Internal renderer measurements cannot size the host-controlled viewport. */
+  contain: size layout;
   min-height: 160px;
   min-width: 0;
   position: relative;
@@ -163,6 +166,8 @@
   outline: 2px solid var(--bvm-focus);
 }
 .bvm-c4-inspector {
+  min-height: 0;
+  min-width: 0;
   overflow: auto;
   padding: 16px;
   border-left: 1px solid var(--bvm-line);

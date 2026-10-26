@@ -39,6 +39,14 @@ export async function testC4Contract(browser, outputDirectory) {
     const NativeResizeObserver = window.ResizeObserver;
     window.c4HoldNodeMeasurements = false;
     window.c4PaneResizeNotifications = 0;
+    window.c4ResizeTrace = [];
+    window.c4ResizeErrors = [];
+    window.addEventListener("error", (event) => {
+      window.c4ResizeErrors.push({
+        message: event.message,
+        trace: window.c4ResizeTrace.slice(-12),
+      });
+    });
     window.ResizeObserver = class extends NativeResizeObserver {
       constructor(callback) {
         super((entries, observer) => {
@@ -50,6 +58,15 @@ export async function testC4Contract(browser, outputDirectory) {
               !window.c4HoldNodeMeasurements ||
               !entry.target.classList.contains("react-flow__node"),
           );
+          window.c4ResizeTrace.push({
+            at: performance.now(),
+            targets: visible.map((entry) => ({
+              name: entry.target.className,
+              width: entry.contentRect.width,
+              height: entry.contentRect.height,
+            })),
+          });
+          if (window.c4ResizeTrace.length > 30) window.c4ResizeTrace.shift();
           if (visible.length) callback(visible, observer);
         });
       }
@@ -469,6 +486,7 @@ export async function testC4Contract(browser, outputDirectory) {
           errors,
           external,
           events: await page.evaluate(() => window.c4Harness?.events).catch(() => []),
+          resizeDiagnostics: await page.evaluate(() => window.c4ResizeErrors).catch(() => []),
         },
         null,
         2,

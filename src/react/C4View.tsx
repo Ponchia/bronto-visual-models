@@ -423,6 +423,9 @@ export default function C4View(props: AdapterProps) {
           }}
         >
           <ReactFlow<C4FlowNode, C4FlowEdge>
+            // The host grid owns viewport size; renderer content must not
+            // contribute intrinsic dimensions back into its observed viewport.
+            style={{ position: "absolute", inset: 0 }}
             key={`${model.id}:${model.generation}:${view.id}`}
             nodes={nodes}
             edges={edges}

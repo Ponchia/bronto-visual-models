@@ -323,8 +323,13 @@ export default function C4View(props: AdapterProps) {
         else void fitArchitecture();
       });
     });
-    observer.observe(element);
+    // React can run this effect inside another observer's delivery: an engine store
+    // update there renders synchronously and flushes pending effects. Observing this
+    // shallower canvas there is a skipped notification, which browsers report as a
+    // ResizeObserver loop error. Start observing on the next frame instead.
+    const start = requestAnimationFrame(() => observer.observe(element));
     return () => {
+      cancelAnimationFrame(start);
       observer.disconnect();
       cancelAnimationFrame(frame);
     };

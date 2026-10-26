@@ -506,6 +506,9 @@ export async function testC4Contract(browser, outputDirectory) {
     await configure({ viewId: null, controlNavigation: false, readOnly: true });
     await diagram().selectOption("components");
     await node("checkout").waitFor();
+    // Let the diagram's own fit land first, so the element focus below sets the
+    // camera the resize steps start from (its readable zoom, up to 100%).
+    await flush();
     await inspect("checkout");
     await a11y("inspector");
     // Pane and node observers both stay real here. Exercise their delivery while
@@ -536,20 +539,39 @@ export async function testC4Contract(browser, outputDirectory) {
       true,
       "Narrow C4 UI must not overflow the document",
     );
-    await page.waitForFunction(() => {
-      const canvas = document.querySelector(".bvm-c4-canvas")?.getBoundingClientRect();
-      const selected = document
-        .querySelector('.react-flow__node[data-id="checkout"]')
-        ?.getBoundingClientRect();
-      return (
-        canvas &&
-        selected &&
-        selected.left >= canvas.left - 1 &&
-        selected.right <= canvas.right + 1 &&
-        selected.top >= canvas.top - 1 &&
-        selected.bottom <= canvas.bottom + 1
-      );
-    });
+    const focusedCardContained = () =>
+      page.waitForFunction(() => {
+        const canvas = document.querySelector(".bvm-c4-canvas")?.getBoundingClientRect();
+        const selected = document
+          .querySelector('.react-flow__node[data-id="checkout"]')
+          ?.getBoundingClientRect();
+        return (
+          canvas &&
+          selected &&
+          selected.left >= canvas.left - 1 &&
+          selected.right <= canvas.right + 1 &&
+          selected.top >= canvas.top - 1 &&
+          selected.bottom <= canvas.bottom + 1
+        );
+      });
+    await focusedCardContained();
+    // At the reflow width the canvas is shorter than the focused card at its
+    // reading zoom in every engine. The resize must zoom out rather than clip it.
+    const reading = await page.evaluate(() => window.c4PaneResizeNotifications);
+    await page.setViewportSize({ width: 320, height: 1000 });
+    await page.waitForFunction((before) => window.c4PaneResizeNotifications > before, reading);
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document.querySelector(".bvm-c4-canvas").clientHeight <
+          document.querySelector('.react-flow__node[data-id="checkout"]').offsetHeight,
+      ),
+      true,
+      "The reflow step must leave less canvas height than one card at 100%",
+    );
+    await focusedCardContained();
+    await page.setViewportSize({ width: 390, height: 1000 });
+    await flush();
     // The readonly inspector can overflow without containing inputs or buttons.
     // It must itself accept keyboard focus so its complete text remains reachable.
     await inspector().focus();

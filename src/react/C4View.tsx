@@ -314,12 +314,15 @@ export default function C4View(props: AdapterProps) {
         const selected = latest.current.selected;
         const target =
           selected?.collection === "elements" ? flow.getNode(selected.elementId!) : undefined;
+        // Keep the reading zoom (never above 100%) while the focused card fits;
+        // a canvas shorter or narrower than it zooms out rather than clipping it.
         if (target)
-          void flow.setCenter(
-            target.position.x + C4_CARD.width / 2,
-            target.position.y + C4_CARD.height / 2,
-            { zoom: Math.min(flow.getZoom(), 1), duration: 0 },
-          );
+          void fitArchitecture({
+            elementId: target.id,
+            padding: 0.1,
+            minZoom: 0.05,
+            maxZoom: Math.min(flow.getZoom(), 1),
+          });
         else void fitArchitecture();
       });
     });

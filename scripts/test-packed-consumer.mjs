@@ -48,6 +48,7 @@ import { createRequire } from 'node:module';
 import { MemoryModelStore, createVisualRegistry, modelTargets, chartEncodingGuidance } from '@ponchia/visual-models';
 import { readFileStore, executeFileCommand, previewFileCommand } from '@ponchia/visual-models/node';
 import { c4Scene, c4RecordEdit } from '@ponchia/visual-models/render/c4';
+import { layoutC4 } from '@ponchia/visual-models/layout/c4';
 const require = createRequire(import.meta.url);
 for (const engine of ['react', '@xyflow/react', 'vega', 'vega-lite', 'vega-interpreter', 'vis-timeline', '@ponchia/ui', 'elkjs', '@dagrejs/dagre']) {
   assert.throws(() => require.resolve(engine), undefined, engine + ' should not be necessary for core');
@@ -76,6 +77,7 @@ assert.equal((await readFileStore('models.json')).get('graph').title, 'Independe
 await store.execute({type: 'create', key: 'create-c4', model: {id: 'c4', title: 'Architecture', template: 'c4-commerce'}});
 const c4 = store.get('c4');
 assert.equal(c4Scene(c4.content, 'context').elements.length, 3);
+await assert.rejects(layoutC4(c4, 'context'), /host-owned layout engine/);
 await store.execute({type:'edit', id:'c4', key:'rename-c4', patch:c4RecordEdit(c4,'elements','api',{label:'Checkout API'})});
 assert.equal(store.get('c4').content.elements.find(e=>e.id==='api').label, 'Checkout API');
 console.log('Packed core, local transactions, identities and undo work without Spatial or UI peers.');

@@ -127,8 +127,11 @@ try {
     ["test/surface-browser", "surface-contract"],
     ["test/exploration-browser", "exploration-contract"],
     ["test/c4-browser", "c4-contract"],
+    ["test/c4-layout-browser", "c4-layout-contract"],
   ]) {
     await cp(source, join(directory, name), { recursive: true });
+    if (name === "c4-layout-contract")
+      await cp("demo/layout.ts", join(directory, name, "layout.ts"));
     execFileSync(
       process.execPath,
       [

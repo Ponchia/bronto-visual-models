@@ -15,6 +15,9 @@ import type { VisualModel, VisualTarget } from "../model.ts";
 import type { AdapterProps } from "./types.ts";
 import { C4Node, C4Edge, type C4FlowNode, type C4FlowEdge } from "./C4Notation.tsx";
 import C4Inspector from "./C4Inspector.tsx";
+import { useC4Layout } from "./useC4Layout.ts";
+import C4LayoutControls from "./C4LayoutControls.tsx";
+import { c4RoutingMatches, c4RoutingLabels } from "../render/c4-routing.ts";
 
 const nodeTypes = { c4: C4Node };
 const edgeTypes = { c4: C4Edge };
@@ -42,12 +45,35 @@ export default function C4View(props: AdapterProps) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState(false);
   const writing = useRef(false);
+  const [moving, setMoving] = useState(false);
   const [flow, setFlow] = useState<ReactFlowInstance<C4FlowNode, C4FlowEdge> | null>(null);
   const viewId =
     props.c4ViewId ??
     (content.views.some((v) => v.id === localView) ? localView : content.views[0]?.id);
   const view = content.views.find((v) => v.id === viewId);
-  const scene = useMemo(() => (view ? c4Scene(content, view.id) : undefined), [content, view]);
+  const layout = useC4Layout(props, viewId, pending || moving);
+  const shownModel = layout.preview ?? model;
+  const shownContent = shownModel.content as unknown as C4Content;
+  const scene = useMemo(
+    () => (view ? c4Scene(shownContent, view.id) : undefined),
+    [shownContent, view],
+  );
+  const proposedRouting = layout.proposal?.routing ?? props.c4Routing ?? layout.routing;
+  const validRouting = useMemo(
+    () =>
+      viewId
+        ? [layout.proposal?.routing, props.c4Routing, layout.routing].find((cache) =>
+            c4RoutingMatches(shownModel, viewId, cache),
+          )
+        : undefined,
+    [shownModel, viewId, layout.proposal?.routing, props.c4Routing, layout.routing],
+  );
+  const routing = moving ? undefined : validRouting;
+  const routeIndex = useMemo(() => new Map(routing?.edges.map((e) => [e.id, e])), [routing]);
+  const labelPlan = useMemo(
+    () => (scene && routing ? c4RoutingLabels(scene, routing) : undefined),
+    [scene, routing],
+  );
   const targets = useMemo(
     () =>
       new Map(
@@ -93,7 +119,7 @@ export default function C4View(props: AdapterProps) {
         initialHeight: C4_CARD.height,
         data: { element },
         ariaLabel: c4ElementText(element),
-        draggable: !!props.onEdit && active && !pending,
+        draggable: !!props.onEdit && active && !pending && !layout.locked,
         style: {
           ...C4_CARD,
           background: element.external ? tokens.panel : tokens.categoricalTint[n],
@@ -119,7 +145,7 @@ export default function C4View(props: AdapterProps) {
       });
     }
     return nodes;
-  }, [scene, !!props.onEdit, active, pending, tokens]);
+  }, [scene, !!props.onEdit, active, pending, layout.locked, tokens]);
   const derived = useMemo(
     () =>
       baseNodes.map((node) => ({
@@ -141,8 +167,8 @@ export default function C4View(props: AdapterProps) {
   );
 
   const drag = useRef<{ model: VisualModel; viewId: string; positions: C4Position[] } | null>(null);
-  const latest = useRef({ props, derived, viewId, active, selected });
-  latest.current = { props, derived, viewId, active, selected };
+  const latest = useRef({ props, derived, viewId, active, selected, layoutLocked: layout.locked });
+  latest.current = { props, derived, viewId, active, selected, layoutLocked: layout.locked };
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -155,6 +181,7 @@ export default function C4View(props: AdapterProps) {
   }, [derived]);
   useEffect(() => {
     drag.current = null;
+    setMoving(false);
     setNodes((previous) => retainMeasurements(previous, derived));
   }, [viewId, model.id, model.generation, active]);
   const edges = useMemo((): C4FlowEdge[] => {
@@ -186,6 +213,9 @@ export default function C4View(props: AdapterProps) {
           technology: r.technology,
           lane,
           active,
+          route: routeIndex.get(r.id),
+          labelBox: labelPlan?.labels.get(r.id),
+          managedLabels: !!routing,
           select: () => select("relationships", r.id),
         },
         selected: selected?.collection === "relationships" && selected.elementId === r.id,
@@ -198,19 +228,30 @@ export default function C4View(props: AdapterProps) {
         },
       };
     });
-  }, [scene, selected?.collection, selected?.elementId, tokens.edge, active, select]);
+  }, [
+    scene,
+    selected?.collection,
+    selected?.elementId,
+    tokens.edge,
+    active,
+    select,
+    routeIndex,
+    labelPlan,
+    routing,
+  ]);
   useEffect(() => {
     if (!active || !scene || !flow) return;
     const frame = requestAnimationFrame(() => {
       void flow.fitView({ padding: 0.2, duration: 0 });
     });
     return () => cancelAnimationFrame(frame);
-  }, [flow, viewId, active]);
+  }, [flow, viewId, active, layout.preview]);
   useEffect(() => {
     if (!active || !scene || !flow) return;
+    if (layout.preview) return;
     const frame = requestAnimationFrame(props.ready);
     return () => cancelAnimationFrame(frame);
-  }, [model.revision, viewId, active, flow, props.ready]);
+  }, [model.revision, viewId, active, flow, props.ready, layout.preview]);
   // Resize/inspector changes must not leave the focused architecture off-screen.
   // Only actual canvas geometry changes move the camera; typing and model edits do not.
   useEffect(() => {
@@ -249,6 +290,7 @@ export default function C4View(props: AdapterProps) {
     if (writing.current) return;
     if (
       !current.active ||
+      current.layoutLocked ||
       !current.props.onEdit ||
       current.viewId !== id ||
       current.props.model.id !== base.id ||
@@ -274,6 +316,7 @@ export default function C4View(props: AdapterProps) {
       writing.current = false;
       if (mounted.current) {
         setPending(false);
+        setMoving(false);
         setNodes((previous) => retainMeasurements(previous, latest.current.derived));
       }
     }
@@ -299,7 +342,11 @@ export default function C4View(props: AdapterProps) {
   );
   const controlledNavigation = props.c4ViewId !== undefined && !props.onC4ViewChange;
   return (
-    <div className="bvm-c4">
+    <div
+      className="bvm-c4"
+      data-c4-layout-state={layout.phase}
+      data-c4-routing-state={routing ? "current" : proposedRouting ? "stale" : "none"}
+    >
       <div className="bvm-c4-toolbar">
         <label>
           Architecture diagram
@@ -331,16 +378,44 @@ export default function C4View(props: AdapterProps) {
         >
           Fit architecture
         </button>
+        <button
+          type="button"
+          disabled={!active || !flow}
+          onClick={() => {
+            const inside = scene.elements.filter((e) => e.element.parentId === view.scope);
+            const anchor =
+              scene.elements.find(
+                (e) => e.element.id === selected?.elementId && selected.collection === "elements",
+              ) ??
+              scene.elements.find((e) => e.element.id === view.scope) ??
+              inside[Math.floor(inside.length / 2)] ??
+              scene.elements[0];
+            if (anchor)
+              void flow?.setCenter(anchor.x + C4_CARD.width / 2, anchor.y + C4_CARD.height / 2, {
+                zoom: 1,
+                duration: 0,
+              });
+          }}
+        >
+          Read at 100%
+        </button>
         {props.onEdit && (
           <button
             type="button"
-            disabled={!active || pending || !view.positions?.length}
+            disabled={!active || pending || layout.locked || !view.positions?.length}
             onClick={() => void persist(model, view.id, [])}
           >
             Reset diagram layout
           </button>
         )}
       </div>
+      {props.c4Layout && (
+        <C4LayoutControls
+          layout={layout}
+          enabled={active && !!props.onEdit}
+          blocked={pending || moving}
+        />
+      )}
       <div className="bvm-c4-find">
         <label>
           Find in this diagram
@@ -438,7 +513,7 @@ export default function C4View(props: AdapterProps) {
             if (!delta) return;
             event.preventDefault();
             event.stopPropagation();
-            if (!active || !props.onEdit || writing.current) return;
+            if (!active || !props.onEdit || writing.current || layout.locked) return;
             const step = event.shiftKey ? 50 : 10;
             const positions = scene.elements.map((e) => ({
               elementId: e.element.id,
@@ -463,7 +538,7 @@ export default function C4View(props: AdapterProps) {
             minZoom={0.05}
             maxZoom={2}
             nodesConnectable={false}
-            nodesDraggable={!!props.onEdit && active && !pending}
+            nodesDraggable={!!props.onEdit && active && !pending && !layout.locked}
             elementsSelectable={active}
             panOnDrag={active}
             zoomOnScroll={active}
@@ -527,7 +602,8 @@ export default function C4View(props: AdapterProps) {
               if (immediate.length) setNodes((rows) => applyNodeChanges(immediate, rows));
             }}
             onNodeDragStart={() => {
-              if (active && props.onEdit && !pending)
+              if (active && props.onEdit && !pending && !layout.locked) {
+                setMoving(true);
                 drag.current = {
                   model,
                   viewId: view.id,
@@ -537,11 +613,13 @@ export default function C4View(props: AdapterProps) {
                     y: e.y,
                   })),
                 };
+              }
             }}
             onNodeDragStop={(_, node) => {
               const base = drag.current;
               drag.current = null;
               if (!base) {
+                setMoving(false);
                 setNodes((previous) => retainMeasurements(previous, latest.current.derived));
                 return;
               }
@@ -560,7 +638,11 @@ export default function C4View(props: AdapterProps) {
         {selectedCollection && selectedRecord && (
           <C4Inspector
             key={`${model.generation}:${selectedCollection}:${selected!.elementId}:${selected!.incarnation}`}
-            props={{ ...props, active: active && !pending }}
+            props={{
+              ...props,
+              active: active && !pending,
+              onEdit: layout.locked ? undefined : props.onEdit,
+            }}
             canNavigate={canNavigate}
             collection={selectedCollection}
             record={selectedRecord}
@@ -570,6 +652,13 @@ export default function C4View(props: AdapterProps) {
           />
         )}
       </div>
+      {routing && (routing.omitted.length > 0 || (labelPlan?.unplaced.length ?? 0) > 0) && (
+        <p className="bvm-c4-routing-note" role="status">
+          {routing.omitted.length} relationships use fallback paths;{" "}
+          {labelPlan?.unplaced.length ?? 0} labels are available through Inspect relationship rather
+          than overlapping the drawing.
+        </p>
+      )}
       <div className="bvm-c4-legend" aria-label="C4 notation legend">
         <span>
           <strong>Notation:</strong> explicit element type and responsibility

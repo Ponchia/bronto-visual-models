@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add scoped C4 automatic-layout proposals with a host-owned optional ELK runner,
+  explicit preview/apply/discard, cancel-safe worker lifecycle and per-diagram writes.
+- Add generation/content-bound C4 route caches and collision-aware protocol labels;
+  malformed geometry and stale previews cannot silently rewrite architecture.
+
 - Add the dedicated C4 family with named landscape, system-context, container and
   component diagrams, validated architecture hierarchy and independent layouts.
 - Add a lazy purpose-built C4 renderer with typed notation, boundaries, protocol

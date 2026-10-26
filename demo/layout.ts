@@ -1,6 +1,11 @@
 import ElkApi from "elkjs/lib/elk-api.js";
 import ElkWorker from "elkjs/lib/elk-worker.min.js?worker";
 import type { ELK, ELKConstructorArguments } from "elkjs";
+import {
+  layoutC4,
+  type C4LayoutOptions,
+  type C4LayoutProposal,
+} from "@ponchia/visual-models/layout/c4";
 import type { VisualModel } from "@ponchia/visual-models";
 import {
   layoutDiagram,
@@ -14,6 +19,20 @@ export function computeDiagramLayout(
   options: DiagramLayoutOptions,
   signal: AbortSignal,
 ): Promise<DiagramLayoutProposal> {
+  return withLayoutWorker(signal, (engine) => layoutDiagram(model, options, { engine, signal }));
+}
+export function computeC4Layout(
+  model: VisualModel,
+  viewId: string,
+  options: C4LayoutOptions,
+  signal: AbortSignal,
+): Promise<C4LayoutProposal> {
+  return withLayoutWorker(signal, (engine) => layoutC4(model, viewId, options, { engine, signal }));
+}
+function withLayoutWorker<T>(
+  signal: AbortSignal,
+  request: (engine: ELK) => Promise<T>,
+): Promise<T> {
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new ElkWorker();
@@ -23,7 +42,7 @@ export function computeDiagramLayout(
       signal.removeEventListener("abort", abort);
       worker.terminate();
     };
-    const finish = (error?: Error, proposal?: DiagramLayoutProposal) => {
+    const finish = (error?: Error, proposal?: T) => {
       if (complete) return;
       complete = true;
       cleanup();
@@ -40,7 +59,7 @@ export function computeDiagramLayout(
     try {
       const Constructor = ElkApi as unknown as { new (options: ELKConstructorArguments): ELK };
       const engine = new Constructor({ workerFactory: () => worker });
-      void layoutDiagram(model, options, { engine, signal }).then(
+      void request(engine).then(
         (proposal) => finish(undefined, proposal),
         (error) => finish(error instanceof Error ? error : new Error("Layout could not complete.")),
       );

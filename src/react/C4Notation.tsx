@@ -1,5 +1,11 @@
 import { memo } from "react";
 import {
+  diagramRoutePath,
+  type DiagramEdgeRoute,
+  type DiagramBox,
+} from "../render/diagram-routing.ts";
+import { C4_RELATIONSHIP_LABEL } from "../render/c4-routing.ts";
+import {
   BaseEdge,
   EdgeLabelRenderer,
   Handle,
@@ -18,6 +24,9 @@ export type C4FlowEdge = Edge<{
   technology?: string;
   lane: number;
   active: boolean;
+  route?: DiagramEdgeRoute;
+  labelBox?: DiagramBox;
+  managedLabels?: boolean;
   select(): void;
 }>;
 const sides = {
@@ -130,24 +139,37 @@ export function C4Edge(props: EdgeProps<C4FlowEdge>) {
     x = (sx + 2 * cx + tx) / 4;
     y = (sy + 2 * cy + ty) / 4;
   }
+  if (data.route) path = diagramRoutePath(data.route.points);
+  if (data.labelBox) {
+    x = data.labelBox.x + data.labelBox.width / 2;
+    y = data.labelBox.y + data.labelBox.height / 2;
+  }
+  const showLabel = !data.managedLabels || !!data.labelBox;
   return (
     <>
-      <BaseEdge id={props.id} path={path} markerEnd={props.markerEnd} style={props.style} />
-      <EdgeLabelRenderer>
-        <button
-          type="button"
-          className="bvm-c4-edge-label nodrag nopan"
-          disabled={!data.active}
-          aria-pressed={!!props.selected}
-          aria-label={`Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`}
-          title={[data.label, data.technology].filter(Boolean).join(" · ")}
-          style={{ transform: `translate(-50%, -50%) translate(${x}px,${y}px)` }}
-          onClick={data.select}
-        >
-          <span>{data.label}</span>
-          {data.technology && <small>{data.technology}</small>}
-        </button>
-      </EdgeLabelRenderer>
+      <g data-c4-route={data.route ? "computed" : "fallback"}>
+        <BaseEdge id={props.id} path={path} markerEnd={props.markerEnd} style={props.style} />
+      </g>
+      {showLabel && (
+        <EdgeLabelRenderer>
+          <button
+            type="button"
+            className="bvm-c4-edge-label nodrag nopan"
+            disabled={!data.active}
+            aria-pressed={!!props.selected}
+            aria-label={`Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`}
+            title={[data.label, data.technology].filter(Boolean).join(" · ")}
+            style={{
+              ...(data.managedLabels ? C4_RELATIONSHIP_LABEL : {}),
+              transform: `translate(-50%, -50%) translate(${x}px,${y}px)`,
+            }}
+            onClick={data.select}
+          >
+            <span>{data.label}</span>
+            {data.technology && <small>{data.technology}</small>}
+          </button>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }

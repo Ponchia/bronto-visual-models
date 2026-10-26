@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import {
   MemoryModelStore,
@@ -118,6 +118,11 @@ function App() {
   const [chartReady, setChartReady] = useState(0);
   const schedule = useVisualModel(store, "schedule");
   const c4 = useVisualModel(store, "c4-architecture");
+  const c4Layout = useCallback<import("@ponchia/visual-models/layout/c4").C4LayoutRunner>(
+    async (model, viewId, options, signal) =>
+      (await import("./layout")).computeC4Layout(model, viewId, options, signal),
+    [],
+  );
   const [selectedTask, setSelectedTask] = useState<VisualTarget | null>(null);
   const [proposal, setProposal] = useState<{
     command: ModelCommand;
@@ -800,7 +805,8 @@ function App() {
         {c4 && (
           <VisualModelView
             model={c4}
-            height={760}
+            c4Layout={c4Layout}
+            height={860}
             onEdit={(patch) => execute({ type: "edit", id: c4.id, key: key("c4"), patch })}
           />
         )}

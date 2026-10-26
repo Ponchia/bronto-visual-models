@@ -1,10 +1,17 @@
 import { memo } from "react";
 import {
+  diagramRoutePath,
+  type DiagramEdgeRoute,
+  type DiagramBox,
+} from "../render/diagram-routing.ts";
+import { C4_RELATIONSHIP_LABEL } from "../render/c4-routing.ts";
+import {
   BaseEdge,
   EdgeLabelRenderer,
   Handle,
   Position,
   getSmoothStepPath,
+  useStore,
   type Edge,
   type EdgeProps,
   type Node,
@@ -18,6 +25,9 @@ export type C4FlowEdge = Edge<{
   technology?: string;
   lane: number;
   active: boolean;
+  route?: DiagramEdgeRoute;
+  labelBox?: DiagramBox;
+  managedLabels?: boolean;
   select(): void;
 }>;
 const sides = {
@@ -68,15 +78,18 @@ function Symbol({ element }: { element: C4Element }) {
     </svg>
   );
 }
+/** A derived enclosure is presentation, not an engine node with handles or measurements. */
+export function C4Boundary({ element }: { element: C4Element }) {
+  return (
+    <div className="bvm-c4-boundary">
+      <strong>{element.label}</strong>
+      <span>{C4_KIND_LABELS[element.kind]} boundary</span>
+    </div>
+  );
+}
 export const C4Node = memo(function C4Node({ data }: NodeProps<C4FlowNode>) {
   const e = data.element;
-  if (data.boundary)
-    return (
-      <div className="bvm-c4-boundary">
-        <strong>{e.label}</strong>
-        <span>{C4_KIND_LABELS[e.kind]} boundary</span>
-      </div>
-    );
+  if (data.boundary) return <C4Boundary element={e} />;
   return (
     <div className={`bvm-c4-card${e.external ? " bvm-c4-external" : ""}`}>
       <div className="bvm-c4-card-kind">
@@ -110,6 +123,7 @@ export const C4Node = memo(function C4Node({ data }: NodeProps<C4FlowNode>) {
   );
 });
 export function C4Edge(props: EdgeProps<C4FlowEdge>) {
+  const zoom = useStore((state) => state.transform[2]);
   const { data, sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = props;
   if (!data) return null;
   let [path, x, y] = getSmoothStepPath({
@@ -130,24 +144,46 @@ export function C4Edge(props: EdgeProps<C4FlowEdge>) {
     x = (sx + 2 * cx + tx) / 4;
     y = (sy + 2 * cy + ty) / 4;
   }
+  if (data.route) path = diagramRoutePath(data.route.points);
+  if (data.labelBox) {
+    x = data.labelBox.x + data.labelBox.width / 2;
+    y = data.labelBox.y + data.labelBox.height / 2;
+  }
+  const showLabel = !data.managedLabels || !!data.labelBox;
+  // Overview labels retain their text but must not pretend to be tiny usable buttons.
+  // The always-sized relationship chooser remains available at every zoom level.
+  const interactive =
+    data.active && zoom >= 24 / (data.managedLabels ? C4_RELATIONSHIP_LABEL.height : 36);
+  const Label = interactive ? "button" : "span";
   return (
     <>
-      <BaseEdge id={props.id} path={path} markerEnd={props.markerEnd} style={props.style} />
-      <EdgeLabelRenderer>
-        <button
-          type="button"
-          className="bvm-c4-edge-label nodrag nopan"
-          disabled={!data.active}
-          aria-pressed={!!props.selected}
-          aria-label={`Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`}
-          title={[data.label, data.technology].filter(Boolean).join(" · ")}
-          style={{ transform: `translate(-50%, -50%) translate(${x}px,${y}px)` }}
-          onClick={data.select}
-        >
-          <span>{data.label}</span>
-          {data.technology && <small>{data.technology}</small>}
-        </button>
-      </EdgeLabelRenderer>
+      <g data-c4-route={data.route ? "computed" : "fallback"}>
+        <BaseEdge id={props.id} path={path} markerEnd={props.markerEnd} style={props.style} />
+      </g>
+      {showLabel && (
+        <EdgeLabelRenderer>
+          <Label
+            {...(interactive
+              ? {
+                  type: "button" as const,
+                  "aria-pressed": !!props.selected,
+                  "aria-label": `Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`,
+                  onClick: data.select,
+                }
+              : {})}
+            className="bvm-c4-edge-label nodrag nopan"
+            data-c4-label-interactive={interactive ? "true" : "false"}
+            title={[data.label, data.technology].filter(Boolean).join(" · ")}
+            style={{
+              ...(data.managedLabels ? C4_RELATIONSHIP_LABEL : {}),
+              transform: `translate(-50%, -50%) translate(${x}px,${y}px)`,
+            }}
+          >
+            <span>{data.label}</span>
+            {data.technology && <small>{data.technology}</small>}
+          </Label>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }

@@ -1,6 +1,7 @@
 # Documentation
 
 - [Visual quality](visual-quality.md): capable family-specific tools, not compulsory universal projections.
+- [C4 automatic layout](c4-layout.md): worker-backed scoped proposals, route caches and guarded preview/apply.
 - [C4 architecture](c4.md): unreleased dedicated architecture semantics and interactive diagrams.
 
 - [Getting started](getting-started.md): a clean installed-package example and distribution checks.

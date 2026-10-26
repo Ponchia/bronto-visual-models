@@ -11,7 +11,7 @@ not translate into every visualization. [Visual quality direction](docs/visual-q
 **Unreleased source:** a dedicated C4 architecture family now provides landscape,
 system-context, container and component diagrams, scoped drill-down, typed notation
 and guarded detail/layout edits. It is not included in the published beta.5 archive.
-[Implemented C4 features and limits](docs/c4.md).
+[Implemented C4 features and limits](docs/c4.md) · [Automatic layout previews](docs/c4-layout.md).
 
 **[Try the demo](https://ponchia.github.io/bronto-visual-models/)** ·
 [Documentation](docs/README.md) ·

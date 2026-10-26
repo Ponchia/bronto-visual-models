@@ -1,3 +1,5 @@
+import type { C4LayoutRunner } from "../layout/c4.ts";
+import type { C4Routing } from "../render/c4-routing.ts";
 import type { DiagramRouting } from "../render/diagram-routing.ts";
 import type { RendererTokens } from "@ponchia/ui/renderer";
 import type { VisualFamilyResolver } from "../family-resolver.ts";
@@ -9,6 +11,10 @@ export interface VisualModelViewProps {
   /** C4 only. Omit for local diagram navigation; unknown saved IDs are not silently substituted. */
   c4ViewId?: string;
   onC4ViewChange?(viewId: string): void;
+  /** Optional host-owned cancellable layout runner. Keep the callback stable across renders. */
+  c4Layout?: C4LayoutRunner;
+  /** Derived routes for one diagram; any changed source geometry/lifetime invalidates them. */
+  c4Routing?: C4Routing;
   /** Optional derived routes returned by layoutDiagram; stale content/lifetimes are ignored. */
   diagramRouting?: DiagramRouting;
   registry?: VisualFamilyResolver;

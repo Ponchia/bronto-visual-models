@@ -6,6 +6,9 @@ import type { ModelEdit } from "../operations.ts";
 export interface VisualModelViewProps {
   model: VisualModel;
   projection?: string;
+  /** C4 only. Omit for local diagram navigation; unknown saved IDs are not silently substituted. */
+  c4ViewId?: string;
+  onC4ViewChange?(viewId: string): void;
   /** Optional derived routes returned by layoutDiagram; stale content/lifetimes are ignored. */
   diagramRouting?: DiagramRouting;
   registry?: VisualFamilyResolver;

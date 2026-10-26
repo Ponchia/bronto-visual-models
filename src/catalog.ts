@@ -7,6 +7,7 @@ import {
   validateAgentSchemaValue,
 } from "./schema.ts";
 import { RESERVED_OBJECT_KEYS } from "./reserved-keys.ts";
+import { C4_TEMPLATES } from "./c4-templates.ts";
 import { CREATIVE_TEMPLATES } from "./creative-templates.ts";
 import type { VisualRendererCategory, VisualRendererId } from "./families/identity.ts";
 import { VISUAL_FAMILIES, visualFamily } from "./families/index.ts";
@@ -316,6 +317,7 @@ export const VISUAL_TEMPLATES: readonly VisualTemplate[] = Object.freeze([
       ],
     },
   },
+  ...C4_TEMPLATES,
   ...SPATIAL_TEMPLATES,
   ...SEMANTIC_TEMPLATES,
   ...CREATIVE_TEMPLATES,

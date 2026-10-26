@@ -1,6 +1,7 @@
 @import "@xyflow/react/dist/style.css";
 @import "vis-timeline/styles/vis-timeline-graph2d.css";
 @import "./base.css";
+@import "./c4.css";
 
 .bvm-chart {
   height: 100%;

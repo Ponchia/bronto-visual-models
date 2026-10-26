@@ -152,6 +152,21 @@ const joins =
 
 const identities = [
   {
+    id: "c4",
+    label: "C4 architecture",
+    category: "Relationships",
+    description:
+      "People, software systems, containers and components with scoped architecture diagrams and independent layouts.",
+    modelType: "c4",
+    version: 1,
+    environment: "dom",
+    records: ["elements", "relationships", "views"],
+    summary: (content) =>
+      `${count(content.elements, "element", "elements")} · ${count(content.views, "diagram", "diagrams")}`,
+    labels: { relationships: joins("elements") },
+    adapters: [{ adapter: "c4", capabilities: ["select", "edit", "layout", "camera"] }],
+  },
+  {
     id: "scene3d",
     label: "3D composition",
     category: "Space",

@@ -1,5 +1,9 @@
 # Architecture
 
+Families retain their own semantics and rich interaction surfaces. Shared identity
+and guarded operations do not require lossless conversion between unrelated
+visualizations. See [visual quality](visual-quality.md) and the dedicated [C4 family](c4.md).
+
 The root package has no React, DOM, database, operating-system file or network
 runtime dependency. It uses lib0's SHA-256 helper for canonical request identities.
 Engines and UI are optional subpaths; local file operations are under `/node`.

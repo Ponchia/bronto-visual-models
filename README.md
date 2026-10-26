@@ -4,6 +4,15 @@
 
 Persistent, editable visual artifacts for people, applications and agents.
 
+Purpose-built visual tools with rich family-specific semantics and interactions.
+Shared identity and guarded operations support those tools; every artifact need
+not translate into every visualization. [Visual quality direction](docs/visual-quality.md).
+
+**Unreleased source:** a dedicated C4 architecture family now provides landscape,
+system-context, container and component diagrams, scoped drill-down, typed notation
+and guarded detail/layout edits. It is not included in the published beta.5 archive.
+[Implemented C4 features and limits](docs/c4.md).
+
 **[Try the demo](https://ponchia.github.io/bronto-visual-models/)** ·
 [Documentation](docs/README.md) ·
 [Beta packages](https://github.com/Ponchia/bronto-visual-models/releases)

@@ -117,6 +117,7 @@ function App() {
   const chart = useVisualModel(store, "throughput");
   const [chartReady, setChartReady] = useState(0);
   const schedule = useVisualModel(store, "schedule");
+  const c4 = useVisualModel(store, "c4-architecture");
   const [selectedTask, setSelectedTask] = useState<VisualTarget | null>(null);
   const [proposal, setProposal] = useState<{
     command: ModelCommand;
@@ -166,6 +167,18 @@ function App() {
             id: "schedule",
             title: "Release plan",
             template: "gantt",
+          },
+        },
+        { actor: "demo" },
+      );
+      await store.execute(
+        {
+          type: "create",
+          key: "initial-c4",
+          model: {
+            id: "c4-architecture",
+            title: "Commerce architecture",
+            template: "c4-commerce",
           },
         },
         { actor: "demo" },
@@ -325,13 +338,13 @@ function App() {
         <div>
           <p className="eyebrow">A library in the Bronto family · beta</p>
           <h1>
-            One model.
+            Visual tools with depth.
             <br />
-            <em>Several ways to see it.</em>
+            <em>Built for their subject.</em>
           </h1>
           <p className="intro">
-            Keep visual content editable by people and agents. Change a view without losing the
-            meaning, identity or history of what it shows.
+            Explore architecture, work with timelines and inspect data through purpose-built views.
+            People and agents edit the same identified content, with guarded changes and history.
           </p>
         </div>
         <aside className="hero-note">
@@ -771,6 +784,26 @@ function App() {
             </p>
           </div>
         </div>
+      </section>
+      <section className="c4-demo" aria-label="C4 architecture example">
+        <div className="panel-header">
+          <div>
+            <span className="small-label">Dedicated architecture family · unreleased source</span>
+            <h2>C4 architecture, from context to components</h2>
+          </div>
+        </div>
+        <p>
+          Switch named diagrams, focus an element and open its containers or components. Inspect
+          responsibilities and protocols, edit details, or drag a card to change only the current
+          diagram's layout.
+        </p>
+        {c4 && (
+          <VisualModelView
+            model={c4}
+            height={760}
+            onEdit={(patch) => execute({ type: "edit", id: c4.id, key: key("c4"), patch })}
+          />
+        )}
       </section>
       <section className="principles">
         <article>

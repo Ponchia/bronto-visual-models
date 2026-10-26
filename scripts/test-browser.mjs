@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { mkdir, writeFile } from "node:fs/promises";
+import { testC4Contract } from "./test-c4-contract.mjs";
 import { testRoutingContract } from "./test-routing-contract.mjs";
 import { testReactContract } from "./test-react-contract.mjs";
 import { testChartContract } from "./test-chart-contract.mjs";
@@ -440,6 +441,7 @@ try {
   results.push(await testChartContract(browser, output));
   results.push(await testSurfaceContract(browser, output));
   results.push(await testExplorationContract(browser, output));
+  results.push(await testC4Contract(browser, output));
   await writeFile(new URL("results.json", output), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

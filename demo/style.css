@@ -620,3 +620,24 @@ summary:focus-visible {
     order: 6;
   }
 }
+
+.c4-demo {
+  margin: 36px 0;
+  padding: 20px;
+  border: 1px solid #d9dfd1;
+  border-radius: 14px;
+  background: white;
+}
+.c4-demo > p {
+  line-height: 1.6;
+  max-width: 85ch;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .c4-demo {
+    padding: 8px;
+  }
+  .c4-demo .panel-header {
+    padding: 8px;
+  }
+}

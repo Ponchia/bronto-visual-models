@@ -107,6 +107,7 @@ const RECORDS_BY_VERSION: Record<string, readonly string[]> = {
   "application@1": ["parameters", "targets", "documents"],
   "application@2": ["parameters", "targets", "documents"],
   "diagram@1": ["nodes", "edges"],
+  "c4@1": ["elements", "relationships", "views"],
   "gantt@1": ["workstreams", "tasks", "dependencies"],
   "geography@1": ["features"],
   "infographic@2": ["items", "relations"],

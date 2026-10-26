@@ -126,6 +126,7 @@ try {
     ["test/routing-browser", "routing-contract"],
     ["test/surface-browser", "surface-contract"],
     ["test/exploration-browser", "exploration-contract"],
+    ["test/c4-browser", "c4-contract"],
   ]) {
     await cp(source, join(directory, name), { recursive: true });
     execFileSync(

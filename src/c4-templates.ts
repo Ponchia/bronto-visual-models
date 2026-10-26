@@ -1,0 +1,173 @@
+import type { C4Content } from "./c4.ts";
+
+/** Original illustrative architecture; no account, service or external data access. */
+const content: C4Content = {
+  elements: [
+    {
+      id: "customer",
+      kind: "person",
+      label: "Customer",
+      description: "Places orders and follows their delivery.",
+    },
+    {
+      id: "shop",
+      kind: "software-system",
+      label: "Order platform",
+      description: "Accepts orders, takes payment and coordinates delivery.",
+    },
+    {
+      id: "payments",
+      kind: "software-system",
+      label: "Payment provider",
+      description: "Authorizes and settles card payments.",
+      external: true,
+    },
+    {
+      id: "web",
+      kind: "container",
+      parentId: "shop",
+      label: "Storefront",
+      description: "Lets customers browse and submit an order.",
+      technology: "React / TypeScript",
+    },
+    {
+      id: "api",
+      kind: "container",
+      parentId: "shop",
+      label: "Orders API",
+      description: "Validates orders and coordinates payment.",
+      technology: "Node.js / HTTP",
+    },
+    {
+      id: "database",
+      kind: "container",
+      parentId: "shop",
+      label: "Order database",
+      description: "Stores orders and their current status.",
+      technology: "PostgreSQL",
+      shape: "database",
+    },
+    {
+      id: "controller",
+      kind: "component",
+      parentId: "api",
+      label: "Order controller",
+      description: "Validates requests and invokes the order workflow.",
+      technology: "TypeScript / HTTP routes",
+    },
+    {
+      id: "checkout",
+      kind: "component",
+      parentId: "api",
+      label: "Checkout service",
+      description: "Coordinates payment and persistence.",
+      technology: "TypeScript service",
+    },
+  ],
+  relationships: [
+    { id: "places", source: "customer", target: "shop", label: "Places and tracks orders" },
+    {
+      id: "charges",
+      source: "shop",
+      target: "payments",
+      label: "Authorizes payment",
+      technology: "HTTPS / JSON",
+    },
+    {
+      id: "browses",
+      source: "customer",
+      target: "web",
+      label: "Browses and checks out",
+      technology: "HTTPS",
+    },
+    {
+      id: "submits",
+      source: "web",
+      target: "api",
+      label: "Submits orders",
+      technology: "HTTPS / JSON",
+    },
+    {
+      id: "stores",
+      source: "api",
+      target: "database",
+      label: "Reads and writes orders",
+      technology: "SQL / TLS",
+    },
+    {
+      id: "authorizes",
+      source: "api",
+      target: "payments",
+      label: "Requests authorization",
+      technology: "HTTPS / JSON",
+    },
+    {
+      id: "handles",
+      source: "web",
+      target: "controller",
+      label: "Submits checkout",
+      technology: "HTTPS / JSON",
+    },
+    {
+      id: "invokes",
+      source: "controller",
+      target: "checkout",
+      label: "Starts checkout",
+      technology: "In-process call",
+    },
+    {
+      id: "persists",
+      source: "checkout",
+      target: "database",
+      label: "Persists order",
+      technology: "SQL / TLS",
+    },
+    {
+      id: "pays",
+      source: "checkout",
+      target: "payments",
+      label: "Authorizes payment",
+      technology: "HTTPS / JSON",
+    },
+  ],
+  views: [
+    {
+      id: "context",
+      kind: "context",
+      scope: "shop",
+      label: "Order platform — system context",
+      elementIds: ["customer", "shop", "payments"],
+    },
+    {
+      id: "containers",
+      kind: "container",
+      scope: "shop",
+      label: "Order platform — containers",
+      elementIds: ["customer", "web", "api", "database", "payments"],
+    },
+    {
+      id: "components",
+      kind: "component",
+      scope: "api",
+      label: "Orders API — components",
+      elementIds: ["web", "controller", "checkout", "database", "payments"],
+    },
+    {
+      id: "landscape",
+      kind: "landscape",
+      label: "Commerce landscape",
+      elementIds: ["customer", "shop", "payments"],
+    },
+  ],
+};
+export const C4_TEMPLATES = [
+  {
+    id: "c4-commerce",
+    title: "C4 commerce architecture",
+    renderer: "c4",
+    version: 1,
+    description:
+      "Context, container and component diagrams with explicit relationships and independent layouts.",
+    content: content as unknown as Record<string, unknown>,
+  },
+];

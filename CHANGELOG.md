@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add the dedicated C4 family with named landscape, system-context, container and
+  component diagrams, validated architecture hierarchy and independent layouts.
+- Add a lazy purpose-built C4 renderer with typed notation, boundaries, protocol
+  labels, search/focus, drill-down, detail editing and guarded pointer/keyboard
+  position changes; retain read-only and late-refusal recovery boundaries.
+- Prioritize rich family-specific visualization capabilities without requiring
+  universal projections. No new runtime dependency or consumer upgrade is included.
+
 - Accept the compatible Bronto UI 0.17 minor alongside 0.16.3 in the optional
   peer contract, so the updated packed UI consumers install without peer overrides.
 - Resolve the latest Node 22 and 24 patch releases in CI on every run.

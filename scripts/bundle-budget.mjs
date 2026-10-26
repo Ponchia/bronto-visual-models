@@ -23,7 +23,7 @@ export function bundleReport(manifest, sizes) {
   };
   entries.forEach(visit);
   const renderers =
-    /(?:GraphView|MatrixView|TimelineView|GanttView|ModelDataView|ChartView|vega-surface)/;
+    /(?:C4View|GraphView|MatrixView|TimelineView|GanttView|ModelDataView|ChartView|vega-surface)/;
   for (const key of eager) {
     if (renderers.test(`${key} ${manifest[key].file}`))
       throw new Error(`Renderer was promoted into the initial bundle: ${key}`);

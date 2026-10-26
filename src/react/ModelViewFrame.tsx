@@ -72,7 +72,12 @@ export function ModelViewFrame(
     : null;
   const options: AdapterProps = {
     ...props,
-    selected: selected && targetResolves(selected) ? selected.current : null,
+    selected:
+      props.selected === undefined
+        ? undefined
+        : selected && targetResolves(selected)
+          ? selected.current
+          : null,
     tokens: props.tokens ?? lightTheme,
     projection: projection ?? model.renderer,
     report,

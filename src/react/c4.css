@@ -1,0 +1,234 @@
+.bvm-c4 {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+.bvm-c4-toolbar,
+.bvm-c4-find {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bvm-line);
+}
+.bvm-c4 label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.bvm-c4-toolbar > label {
+  flex: 1;
+  min-width: 180px;
+}
+.bvm-c4-find > label {
+  flex: 1;
+  min-width: 145px;
+}
+.bvm-c4 :is(select, input, textarea, button) {
+  font: inherit;
+  color: inherit;
+  background: var(--bvm-panel);
+  border: 1px solid var(--bvm-edge);
+  border-radius: 5px;
+  padding: 7px 9px;
+  min-width: 0;
+  max-width: 100%;
+}
+.bvm-c4 :is(select, input) {
+  width: 100%;
+}
+.bvm-c4 button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.bvm-c4-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px;
+}
+.bvm-c4-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.bvm-c4-with-inspector {
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 27%);
+}
+.bvm-c4-canvas {
+  min-height: 160px;
+  min-width: 0;
+  position: relative;
+}
+.bvm-c4-card {
+  height: 100%;
+  border: 1.6px solid currentColor;
+  border-radius: 12px;
+  padding: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  box-shadow: 0 4px 15px #0000000a;
+}
+.bvm-c4-external {
+  border-style: dashed;
+}
+.bvm-c4-card-kind {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.bvm-c4-card-name {
+  font-size: 17px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.bvm-c4-technology {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bvm-c4-card p {
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.bvm-c4 .react-flow__node {
+  border-radius: 12px;
+}
+.bvm-c4 .react-flow__node.selected .bvm-c4-card {
+  outline: 3px solid var(--bvm-focus);
+  outline-offset: 4px;
+}
+.bvm-c4 .react-flow__handle {
+  opacity: 0;
+}
+.bvm-c4-boundary {
+  width: 100%;
+  height: 100%;
+  border: 1.5px dashed var(--bvm-edge);
+  border-radius: 14px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  font-size: 12px;
+}
+.bvm-c4-boundary strong {
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bvm-c4-edge-label {
+  position: absolute;
+  pointer-events: all;
+  width: 190px;
+  text-align: center;
+  font-size: 11px !important;
+  line-height: 1.35;
+  box-shadow: 0 2px 7px #00000009;
+}
+.bvm-c4-edge-label span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bvm-c4-edge-label small {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bvm-c4-edge-label[aria-pressed="true"] {
+  outline: 2px solid var(--bvm-focus);
+}
+.bvm-c4-inspector {
+  overflow: auto;
+  padding: 16px;
+  border-left: 1px solid var(--bvm-line);
+  overflow-wrap: anywhere;
+}
+.bvm-c4-inspector h4 {
+  font-size: 17px;
+  line-height: 1.3;
+  margin: 6px 0 12px;
+}
+.bvm-c4-inspector p {
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.bvm-c4-inspector form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bvm-c4-inspector textarea {
+  min-height: 120px;
+  width: 100%;
+  resize: vertical;
+}
+.bvm-c4-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+}
+.bvm-c4-drill {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.bvm-c4-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bvm-c4-legend {
+  border-top: 1px solid var(--bvm-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 9px 14px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .bvm-c4-toolbar,
+  .bvm-c4-find {
+    gap: 7px;
+    padding: 8px;
+  }
+  .bvm-c4-heading {
+    display: none;
+  }
+  .bvm-c4-with-inspector {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(160px, 1fr) minmax(100px, 40%);
+  }
+  .bvm-c4-inspector {
+    border-left: 0;
+    border-top: 1px solid var(--bvm-line);
+  }
+  .bvm-c4-legend {
+    font-size: 10px;
+    gap: 4px 10px;
+  }
+}

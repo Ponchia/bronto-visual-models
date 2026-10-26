@@ -1,4 +1,5 @@
 import type { VisualFamilyResolver } from "../family-resolver.ts";
+import { c4Family } from "./c4.ts";
 import { analysisFamily } from "./analysis.ts";
 import { diagramFamily } from "./diagram.ts";
 import type { VisualFamily } from "./family.ts";
@@ -13,6 +14,7 @@ import { timelineFamily } from "./timeline.ts";
 import { vegaLiteFamily } from "./vega-lite.ts";
 
 const families = {
+  c4: c4Family,
   scene3d: scene3dFamily,
   "spatial-layers": spatialLayersFamily,
   diagram: diagramFamily,

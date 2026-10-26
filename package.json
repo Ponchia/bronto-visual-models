@@ -53,7 +53,8 @@
       "types": "./dist/*.d.ts",
       "import": "./dist/*.js"
     },
-    "./base.css": "./dist/react/base.css"
+    "./base.css": "./dist/react/base.css",
+    "./c4.css": "./dist/react/c4.css"
   },
   "types": "./dist/index.d.ts",
   "bin": {

@@ -84,23 +84,29 @@ function App() {
     <main style={{ margin: 0, maxWidth: "100%" }}>
       <h1 style={{ fontSize: 20 }}>C4 contract fixture</h1>
       {model && options.mounted && (
-        <VisualModelView
-          model={model}
-          height={780}
-          active={options.active}
-          selected={options.controlSelection ? selected : undefined}
-          onSelect={(target) => {
-            setSelected(target);
-            events.push({ kind: "select", target });
-          }}
-          c4ViewId={options.viewId ?? undefined}
-          onC4ViewChange={options.controlNavigation ? (viewId) => configure({ viewId }) : undefined}
-          onEdit={options.readOnly ? undefined : onEdit}
-          onReady={(identity) =>
-            events.push({ kind: "ready", active: options.active, ...identity })
-          }
-          onError={(message) => events.push({ kind: "error", active: options.active, message })}
-        />
+        // An embedding canvas guards its own gestures with React Flow's default
+        // classes on every ancestor of node content, as Spatial's nodes do.
+        <div className="nodrag nowheel nopan">
+          <VisualModelView
+            model={model}
+            height={780}
+            active={options.active}
+            selected={options.controlSelection ? selected : undefined}
+            onSelect={(target) => {
+              setSelected(target);
+              events.push({ kind: "select", target });
+            }}
+            c4ViewId={options.viewId ?? undefined}
+            onC4ViewChange={
+              options.controlNavigation ? (viewId) => configure({ viewId }) : undefined
+            }
+            onEdit={options.readOnly ? undefined : onEdit}
+            onReady={(identity) =>
+              events.push({ kind: "ready", active: options.active, ...identity })
+            }
+            onError={(message) => events.push({ kind: "error", active: options.active, message })}
+          />
+        </div>
       )}
     </main>
   );

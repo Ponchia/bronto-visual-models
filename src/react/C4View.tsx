@@ -6,6 +6,7 @@ import {
   MarkerType,
   applyNodeChanges,
   type ReactFlowInstance,
+  type NodeDimensionChange,
 } from "@xyflow/react";
 import { C4_KIND_LABELS, C4_VIEW_LABELS, type C4Content, type C4Position } from "../c4.ts";
 import { c4ElementText, c4PositionEdit, c4Scene, C4_CARD } from "../render/c4.ts";
@@ -18,6 +19,20 @@ import C4Inspector from "./C4Inspector.tsx";
 const nodeTypes = { c4: C4Node };
 const edgeTypes = { c4: C4Edge };
 const kindIndex = { person: 0, "software-system": 1, container: 2, component: 3 };
+/** Keep the engine's measured geometry when a controlled update changes only state.
+ * Dropping it also resets React Flow handle bounds and re-registers its observer. */
+function retainMeasurements(previous: C4FlowNode[], next: C4FlowNode[]): C4FlowNode[] {
+  const index = new Map(previous.map((node) => [node.id, node]));
+  return next.map((node) => {
+    const old = index.get(node.id);
+    return old?.measured &&
+      old.initialWidth === node.initialWidth &&
+      old.initialHeight === node.initialHeight
+      ? { ...node, measured: old.measured }
+      : node;
+  });
+}
+
 export default function C4View(props: AdapterProps) {
   const { model, tokens } = props;
   const content = model.content as unknown as C4Content;
@@ -72,6 +87,10 @@ export default function C4View(props: AdapterProps) {
         id: element.id,
         type: "c4",
         position: { x, y },
+        // These cards have fixed authored dimensions; never wait for another
+        // ResizeObserver delivery after a controlled permission/state update.
+        initialWidth: C4_CARD.width,
+        initialHeight: C4_CARD.height,
         data: { element },
         ariaLabel: c4ElementText(element),
         draggable: !!props.onEdit && active && !pending,
@@ -88,6 +107,8 @@ export default function C4View(props: AdapterProps) {
         id: `:boundary:${b.element.id}`,
         type: "c4",
         position: { x: b.x, y: b.y },
+        initialWidth: b.width,
+        initialHeight: b.height,
         data: { element: b.element, boundary: true },
         draggable: false,
         selectable: false,
@@ -108,6 +129,17 @@ export default function C4View(props: AdapterProps) {
     [baseNodes, selected?.collection, selected?.elementId],
   );
   const [nodes, setNodes] = useState<C4FlowNode[]>(derived);
+  const measurementFrame = useRef(0);
+  const queuedMeasurements = useRef(new Map<string, NodeDimensionChange>());
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(measurementFrame.current);
+      measurementFrame.current = 0;
+      queuedMeasurements.current.clear();
+    },
+    [model.id, model.generation, viewId],
+  );
+
   const drag = useRef<{ model: VisualModel; viewId: string; positions: C4Position[] } | null>(null);
   const latest = useRef({ props, derived, viewId, active, selected });
   latest.current = { props, derived, viewId, active, selected };
@@ -119,11 +151,11 @@ export default function C4View(props: AdapterProps) {
     };
   }, []);
   useEffect(() => {
-    if (!drag.current) setNodes(derived);
+    if (!drag.current) setNodes((previous) => retainMeasurements(previous, derived));
   }, [derived]);
   useEffect(() => {
     drag.current = null;
-    setNodes(derived);
+    setNodes((previous) => retainMeasurements(previous, derived));
   }, [viewId, model.id, model.generation, active]);
   const edges = useMemo((): C4FlowEdge[] => {
     if (!scene) return [];
@@ -222,7 +254,7 @@ export default function C4View(props: AdapterProps) {
       current.props.model.id !== base.id ||
       current.props.model.generation !== base.generation
     ) {
-      setNodes(current.derived);
+      setNodes((previous) => retainMeasurements(previous, current.derived));
       return;
     }
     writing.current = true;
@@ -242,7 +274,7 @@ export default function C4View(props: AdapterProps) {
       writing.current = false;
       if (mounted.current) {
         setPending(false);
-        setNodes(latest.current.derived);
+        setNodes((previous) => retainMeasurements(previous, latest.current.derived));
       }
     }
   };
@@ -417,6 +449,9 @@ export default function C4View(props: AdapterProps) {
           }}
         >
           <ReactFlow<C4FlowNode, C4FlowEdge>
+            // The host grid owns viewport size; renderer content must not
+            // contribute intrinsic dimensions back into its observed viewport.
+            style={{ position: "absolute", inset: 0 }}
             key={`${model.id}:${model.generation}:${view.id}`}
             nodes={nodes}
             edges={edges}
@@ -447,14 +482,50 @@ export default function C4View(props: AdapterProps) {
                 props.onSelect?.(null);
               }
             }}
-            onNodesChange={(changes) =>
-              setNodes((rows) =>
-                applyNodeChanges(
-                  changes.filter((change) => change.type !== "position" || !!drag.current),
-                  rows,
-                ),
-              )
-            }
+            onNodesChange={(changes) => {
+              // The observer's real dimensions belong to local renderer state,
+              // not a model edit. Apply them on the next frame, never recursively
+              // during ResizeObserver delivery, and retain them across updates.
+              for (const change of changes)
+                if (change.type === "dimensions") queuedMeasurements.current.set(change.id, change);
+              if (queuedMeasurements.current.size && !measurementFrame.current) {
+                const owner = { id: model.id, generation: model.generation, viewId };
+                measurementFrame.current = requestAnimationFrame(() => {
+                  measurementFrame.current = 0;
+                  const queued = [...queuedMeasurements.current.values()];
+                  queuedMeasurements.current.clear();
+                  const now = latest.current;
+                  if (
+                    !mounted.current ||
+                    now.props.model.id !== owner.id ||
+                    now.props.model.generation !== owner.generation ||
+                    now.viewId !== owner.viewId
+                  )
+                    return;
+                  setNodes((rows) => {
+                    const index = new Map(rows.map((node) => [node.id, node]));
+                    const valid = queued.filter((change) => {
+                      const node = index.get(change.id),
+                        size = change.dimensions;
+                      return (
+                        node &&
+                        size &&
+                        Math.abs(size.width - node.initialWidth!) <= 1 &&
+                        Math.abs(size.height - node.initialHeight!) <= 1 &&
+                        (node.measured?.width !== size.width ||
+                          node.measured?.height !== size.height)
+                      );
+                    });
+                    return valid.length ? applyNodeChanges(valid, rows) : rows;
+                  });
+                });
+              }
+              const immediate = changes.filter(
+                (change) =>
+                  change.type !== "dimensions" && (change.type !== "position" || !!drag.current),
+              );
+              if (immediate.length) setNodes((rows) => applyNodeChanges(immediate, rows));
+            }}
             onNodeDragStart={() => {
               if (active && props.onEdit && !pending)
                 drag.current = {
@@ -471,7 +542,7 @@ export default function C4View(props: AdapterProps) {
               const base = drag.current;
               drag.current = null;
               if (!base) {
-                setNodes(latest.current.derived);
+                setNodes((previous) => retainMeasurements(previous, latest.current.derived));
                 return;
               }
               const positions = base.positions.map((p) =>

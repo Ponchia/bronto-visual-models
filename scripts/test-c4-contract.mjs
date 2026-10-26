@@ -35,6 +35,51 @@ export async function testC4Contract(browser, outputDirectory) {
       log = (log + chunk).slice(-8000);
     });
   const context = await browser.newContext({ viewport: { width: 1440, height: 980 } });
+  await context.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver;
+    window.c4HoldNodeMeasurements = false;
+    window.c4PaneResizeNotifications = 0;
+    window.c4NodeObserveCalls = {};
+    window.c4ResizeTrace = [];
+    window.c4ResizeErrors = [];
+    window.addEventListener("error", (event) => {
+      window.c4ResizeErrors.push({
+        message: event.message,
+        trace: window.c4ResizeTrace.slice(-12),
+      });
+    });
+    window.ResizeObserver = class extends NativeResizeObserver {
+      observe(target, options) {
+        if (target.classList.contains("react-flow__node")) {
+          const id = target.getAttribute("data-id");
+          window.c4NodeObserveCalls[id] = (window.c4NodeObserveCalls[id] ?? 0) + 1;
+        }
+        super.observe(target, options);
+      }
+      constructor(callback) {
+        super((entries, observer) => {
+          window.c4PaneResizeNotifications += entries.filter((entry) =>
+            entry.target.classList.contains("react-flow__renderer"),
+          ).length;
+          const visible = entries.filter(
+            (entry) =>
+              !window.c4HoldNodeMeasurements ||
+              !entry.target.classList.contains("react-flow__node"),
+          );
+          window.c4ResizeTrace.push({
+            at: performance.now(),
+            targets: visible.map((entry) => ({
+              name: entry.target.className,
+              width: entry.contentRect.width,
+              height: entry.contentRect.height,
+            })),
+          });
+          if (window.c4ResizeTrace.length > 30) window.c4ResizeTrace.shift();
+          if (visible.length) callback(visible, observer);
+        });
+      }
+    };
+  });
   const page = await context.newPage();
   page.setDefaultTimeout(15000);
   const errors = [],
@@ -247,6 +292,12 @@ export async function testC4Contract(browser, outputDirectory) {
     await waitX("api", originalPosition.x + 10);
     checks.push("Keyboard positions belong to one named diagram; undo restores prior layout");
 
+    // Fixed-size cards must not disappear when a browser coalesces size notifications
+    // across controlled readonly/permission updates. Keep the actual observer everywhere else.
+    await page.evaluate(() => {
+      window.c4HoldNodeMeasurements = true;
+    });
+    const observesBefore = await page.evaluate(() => window.c4NodeObserveCalls.api ?? 0);
     await configure({ readOnly: true });
     await flush();
     const readonly = await snapshot(),
@@ -285,6 +336,11 @@ export async function testC4Contract(browser, outputDirectory) {
     await page.evaluate(() => window.c4Harness.release());
     await page.getByRole("alert").filter({ hasText: "Delayed host refusal" }).waitFor();
     await waitX("api", readonlyX + 90);
+    assert.equal(
+      await page.evaluate(() => window.c4NodeObserveCalls.api ?? 0),
+      observesBefore,
+      "State-only updates must retain measurements instead of re-registering the fixed card observer",
+    );
     checks.push(
       "Readonly geometry, synchronous/asynchronous refusal and latest-state late recovery",
     );
@@ -366,6 +422,27 @@ export async function testC4Contract(browser, outputDirectory) {
     await node("checkout").waitFor();
     await inspect("checkout");
     await a11y("inspector");
+    // Pane and node observers both stay real here. Exercise their delivery while
+    // permissions and responsive pane/inspector geometry change together.
+    assert.equal(await page.evaluate(() => window.c4HoldNodeMeasurements), false);
+    const beforeResize = await snapshot();
+    for (const [width, readOnly] of [
+      [700, false],
+      [420, true],
+      [950, false],
+      [390, true],
+    ]) {
+      const observed = await page.evaluate(() => window.c4PaneResizeNotifications);
+      await Promise.all([configure({ readOnly }), page.setViewportSize({ width, height: 1000 })]);
+      await page.waitForFunction((before) => window.c4PaneResizeNotifications > before, observed);
+      await focusNode("checkout", !readOnly);
+      await flush();
+    }
+    assert.deepEqual(
+      await snapshot(),
+      beforeResize,
+      "Resize and editability changes must not write architecture",
+    );
     await page.setViewportSize({ width: 390, height: 1000 });
     await flush();
     assert.equal(
@@ -398,7 +475,7 @@ export async function testC4Contract(browser, outputDirectory) {
     assert.match(await page.locator(".bvm-data").innerText(), /elements|relationships|views/i);
     await a11y("data");
     checks.push(
-      "Narrow-screen layout, full-text inspector, semantic data and WCAG-tagged automated scans",
+      "Concurrent pane resizing and readonly transitions, full-text inspector, semantic data and WCAG-tagged scans",
     );
     assert.deepEqual(errors, [], "C4 page errors");
     assert.deepEqual(external, [], "C4 made an external resource request");
@@ -408,6 +485,7 @@ export async function testC4Contract(browser, outputDirectory) {
       checks,
       pageErrors: errors,
       externalRequests: external,
+      paneResizeNotifications: await page.evaluate(() => window.c4PaneResizeNotifications),
     };
     await writeFile(resolve(out, "c4-results.json"), JSON.stringify(result, null, 2));
     return result;
@@ -422,6 +500,7 @@ export async function testC4Contract(browser, outputDirectory) {
           errors,
           external,
           events: await page.evaluate(() => window.c4Harness?.events).catch(() => []),
+          resizeDiagnostics: await page.evaluate(() => window.c4ResizeErrors).catch(() => []),
         },
         null,
         2,

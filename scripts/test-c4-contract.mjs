@@ -60,6 +60,23 @@ export async function testC4Contract(browser, outputDirectory) {
   const node = (id) => page.locator(`.react-flow__node[data-id="${id}"]`);
   const position = (view, id) =>
     page.evaluate(({ view, id }) => window.c4Harness.position(view, id), { view, id });
+  const focusNode = async (id, editable = true) => {
+    // React Flow can temporarily hide/re-measure a controlled node after readonly
+    // or pending-write transitions. A fixed frame count is not an interaction barrier.
+    await page.waitForFunction(
+      ({ id, editable }) => {
+        const element = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+        return element && element.classList.contains("draggable") === editable;
+      },
+      { id, editable },
+    );
+    await node(id).waitFor({ state: "visible" });
+    await node(id).focus();
+    await page.waitForFunction(
+      (id) => document.activeElement?.matches(`.react-flow__node[data-id="${id}"]`),
+      id,
+    );
+  };
   const renderedX = (id) =>
     node(id).evaluate((element) => new DOMMatrixReadOnly(element.style.transform).m41);
   const waitX = (id, x) =>
@@ -210,7 +227,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await node("api").waitFor();
     const original = await current();
     const originalPosition = await position("containers", "api");
-    await node("api").focus();
+    await focusNode("api");
     await page.keyboard.press("ArrowRight");
     await waitRevision(original.revision + 1);
     await waitX("api", originalPosition.x + 10);
@@ -221,6 +238,7 @@ export async function testC4Contract(browser, outputDirectory) {
       moved.content.views.filter((v) => v.id !== "containers"),
       original.content.views.filter((v) => v.id !== "containers"),
     );
+    await focusNode("api");
     await page.keyboard.press("Shift+ArrowRight");
     await waitRevision(original.revision + 2);
     await waitX("api", originalPosition.x + 60);
@@ -233,7 +251,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await flush();
     const readonly = await snapshot(),
       readonlyX = await renderedX("api");
-    await node("api").focus();
+    await focusNode("api", false);
     await page.keyboard.press("ArrowRight");
     await flush();
     assert.deepEqual(await snapshot(), readonly);
@@ -244,7 +262,7 @@ export async function testC4Contract(browser, outputDirectory) {
     );
     await configure({ readOnly: false, mode: "sync" });
     await flush();
-    await node("api").focus();
+    await focusNode("api");
     await page.keyboard.press("ArrowRight");
     await page.getByRole("alert").filter({ hasText: "Synchronous host refusal" }).waitFor();
     await waitX("api", readonlyX);
@@ -252,7 +270,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Dismiss visual error" }).click();
     await configure({ mode: "async" });
     await flush();
-    await node("api").focus();
+    await focusNode("api");
     await page.keyboard.press("ArrowRight");
     await page.getByRole("alert").filter({ hasText: "Asynchronous host refusal" }).waitFor();
     await waitX("api", readonlyX);
@@ -260,7 +278,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Dismiss visual error" }).click();
     await configure({ mode: "delayed" });
     await flush();
-    await node("api").focus();
+    await focusNode("api");
     await page.keyboard.press("ArrowRight");
     await page.waitForFunction(() => window.c4Harness.waiting());
     await page.evaluate((x) => window.c4Harness.move("containers", "api", x), readonlyX + 90);

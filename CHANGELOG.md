@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.6
 
 - Keep the C4 camera's own wheel zoom and pane drag inside an embedding canvas: the inner
   flow uses namespaced gesture guards, so a host's default React Flow guards cannot disable it.
@@ -8,6 +8,9 @@
   `base.css` instead of the aggregate `styles.css`.
 - Keep the focused C4 element wholly visible when its canvas shrinks below the card:
   a resize keeps the reading zoom while the card fits and zooms out instead of clipping it.
+- Keep C4 engine measurements across controlled updates, batch size feedback per frame
+  and start canvas observation outside observer delivery, so no browser reports a
+  ResizeObserver loop during selection, drag, readonly changes or remounts.
 - Add scoped C4 automatic-layout proposals with a host-owned optional ELK runner,
   explicit preview/apply/discard, cancel-safe worker lifecycle and per-diagram writes.
 - Add generation/content-bound C4 route caches and collision-aware protocol labels;

@@ -113,7 +113,9 @@ repository collaborator, so a tag run initiated by Ponchia cannot also be
 approved by Ponchia. A separately authorized initiation/review path must be
 settled before activation. No collaborator was added, tag created, approval
 granted, archive signed or release published during this configuration work.
-The source still has a development version; it is not a releasable beta tag.
+Until that path exists, betas use the manual GitHub archive steps above: an
+independently reviewed version PR, CI on the exact merged commit, then a
+maintainer-created tag and prerelease carrying that run's archive and checksums.
 
 ## Optional npm registry publication
 

@@ -1,6 +1,6 @@
 {
   "name": "@ponchia/visual-models",
-  "version": "0.1.0-beta.6-dev.0",
+  "version": "0.1.0-beta.6",
   "description": "Persistent, editable visual artifacts with identified elements, guarded operations and optional React renderers.",
   "type": "module",
   "license": "MIT",

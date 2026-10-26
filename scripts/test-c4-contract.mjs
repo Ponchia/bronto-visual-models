@@ -43,6 +43,8 @@ export async function testC4Contract(browser, outputDirectory) {
     window.c4ResizeTrace = [];
     window.c4ResizeErrors = [];
     window.c4CameraWritesDuringResize = [];
+    window.c4CanvasObservesDuringDelivery = [];
+    let delivering = false;
     window.addEventListener("error", (event) => {
       window.c4ResizeErrors.push({
         message: event.message,
@@ -51,6 +53,10 @@ export async function testC4Contract(browser, outputDirectory) {
     });
     window.ResizeObserver = class extends NativeResizeObserver {
       observe(target, options) {
+        // A new observation of a shallow target inside a delivery is skipped by the
+        // browser and reported as a ResizeObserver loop error.
+        if (delivering && target.classList.contains("bvm-c4-canvas"))
+          window.c4CanvasObservesDuringDelivery.push(performance.now());
         if (target.classList.contains("react-flow__node")) {
           const id = target.getAttribute("data-id");
           window.c4NodeObserveCalls[id] = (window.c4NodeObserveCalls[id] ?? 0) + 1;
@@ -59,6 +65,10 @@ export async function testC4Contract(browser, outputDirectory) {
       }
       constructor(callback) {
         super((entries, observer) => {
+          // The delivery includes this callback and the microtasks it queues, where
+          // React flushes synchronous renders and their pending effects.
+          delivering = true;
+          queueMicrotask(() => queueMicrotask(() => (delivering = false)));
           window.c4PaneResizeNotifications += entries.filter((entry) =>
             entry.target.classList.contains("react-flow__renderer"),
           ).length;
@@ -219,6 +229,29 @@ export async function testC4Contract(browser, outputDirectory) {
     assert.equal(await page.locator(".bvm-c4-edge-label").count(), 2);
     await screen("context");
     await a11y("context");
+    // An engine store update inside an observer delivery renders synchronously and
+    // flushes pending effects there. Re-running the view's effects inside a
+    // delivery must not start the canvas observation there (main CI 40354691072).
+    await configure({ active: false });
+    await flush();
+    await page.evaluate(
+      () =>
+        new Promise((done) => {
+          const trigger = new ResizeObserver(() => {
+            trigger.disconnect();
+            window.c4Harness.configureSync({ active: true });
+            done();
+          });
+          trigger.observe(document.querySelector('.react-flow__node[data-id="customer"]'));
+        }),
+    );
+    await flush();
+    await flush();
+    assert.deepEqual(
+      await page.evaluate(() => window.c4CanvasObservesDuringDelivery),
+      [],
+      "The C4 canvas observer must start outside another ResizeObserver delivery",
+    );
     await inspect("shop");
     await inspector()
       .getByRole("button", { name: /^Open containers:/ })
@@ -535,6 +568,11 @@ export async function testC4Contract(browser, outputDirectory) {
       [],
       "Camera fitting must not synchronously change the viewport during a native size-observer callback",
     );
+    assert.deepEqual(
+      await page.evaluate(() => window.c4CanvasObservesDuringDelivery),
+      [],
+      "The C4 canvas observer must never start inside a ResizeObserver delivery",
+    );
     assert.deepEqual(errors, [], "C4 page errors");
     assert.deepEqual(external, [], "C4 made an external resource request");
     const result = {
@@ -544,6 +582,9 @@ export async function testC4Contract(browser, outputDirectory) {
       pageErrors: errors,
       externalRequests: external,
       cameraWritesDuringResize: await page.evaluate(() => window.c4CameraWritesDuringResize),
+      canvasObservesDuringDelivery: await page.evaluate(
+        () => window.c4CanvasObservesDuringDelivery,
+      ),
       paneResizeNotifications: await page.evaluate(() => window.c4PaneResizeNotifications),
     };
     await writeFile(resolve(out, "c4-results.json"), JSON.stringify(result, null, 2));
@@ -562,6 +603,9 @@ export async function testC4Contract(browser, outputDirectory) {
           resizeDiagnostics: await page.evaluate(() => window.c4ResizeErrors).catch(() => []),
           cameraWritesDuringResize: await page
             .evaluate(() => window.c4CameraWritesDuringResize)
+            .catch(() => []),
+          canvasObservesDuringDelivery: await page
+            .evaluate(() => window.c4CanvasObservesDuringDelivery)
             .catch(() => []),
         },
         null,

@@ -664,6 +664,7 @@ export default function C4View(props: AdapterProps) {
           <strong>Notation:</strong> explicit element type and responsibility
         </span>
         <span>→ directed relationship; second line is protocol</span>
+        <span>At overview scale, use Inspect relationship or zoom in to select labels.</span>
         <span>Dashed card: external element</span>
         <span>Dashed enclosure: scope boundary</span>
         <span>

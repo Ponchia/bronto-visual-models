@@ -11,6 +11,7 @@ import {
   Handle,
   Position,
   getSmoothStepPath,
+  useStore,
   type Edge,
   type EdgeProps,
   type Node,
@@ -119,6 +120,7 @@ export const C4Node = memo(function C4Node({ data }: NodeProps<C4FlowNode>) {
   );
 });
 export function C4Edge(props: EdgeProps<C4FlowEdge>) {
+  const zoom = useStore((state) => state.transform[2]);
   const { data, sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = props;
   if (!data) return null;
   let [path, x, y] = getSmoothStepPath({
@@ -145,6 +147,11 @@ export function C4Edge(props: EdgeProps<C4FlowEdge>) {
     y = data.labelBox.y + data.labelBox.height / 2;
   }
   const showLabel = !data.managedLabels || !!data.labelBox;
+  // Overview labels retain their text but must not pretend to be tiny usable buttons.
+  // The always-sized relationship chooser remains available at every zoom level.
+  const interactive =
+    data.active && zoom >= 24 / (data.managedLabels ? C4_RELATIONSHIP_LABEL.height : 36);
+  const Label = interactive ? "button" : "span";
   return (
     <>
       <g data-c4-route={data.route ? "computed" : "fallback"}>
@@ -152,22 +159,26 @@ export function C4Edge(props: EdgeProps<C4FlowEdge>) {
       </g>
       {showLabel && (
         <EdgeLabelRenderer>
-          <button
-            type="button"
+          <Label
+            {...(interactive
+              ? {
+                  type: "button" as const,
+                  "aria-pressed": !!props.selected,
+                  "aria-label": `Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`,
+                  onClick: data.select,
+                }
+              : {})}
             className="bvm-c4-edge-label nodrag nopan"
-            disabled={!data.active}
-            aria-pressed={!!props.selected}
-            aria-label={`Relationship: ${data.label}${data.technology ? ` (${data.technology})` : ""}`}
+            data-c4-label-interactive={interactive ? "true" : "false"}
             title={[data.label, data.technology].filter(Boolean).join(" · ")}
             style={{
               ...(data.managedLabels ? C4_RELATIONSHIP_LABEL : {}),
               transform: `translate(-50%, -50%) translate(${x}px,${y}px)`,
             }}
-            onClick={data.select}
           >
             <span>{data.label}</span>
             {data.technology && <small>{data.technology}</small>}
-          </button>
+          </Label>
         </EdgeLabelRenderer>
       )}
     </>

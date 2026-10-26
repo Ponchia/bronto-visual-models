@@ -199,6 +199,21 @@ export async function testC4LayoutContract(browser, outputDirectory) {
         ) < 1,
     );
     assert.deepEqual(await snapshot(), overviewSnapshot, "Readable scale changed the architecture");
+    assert.ok(
+      (await page.locator('.bvm-c4-edge-label[data-c4-label-interactive="true"]').count()) > 0,
+      "Readable scale must restore label interaction",
+    );
+    assert.equal(
+      await page.locator("button.bvm-c4-edge-label").evaluateAll(
+        (labels) =>
+          labels.filter((label) => {
+            const box = label.getBoundingClientRect();
+            return box.width < 24 || box.height < 24;
+          }).length,
+      ),
+      0,
+      "Readable labels must have adequate screen-space targets",
+    );
     await screen("containers-readable");
     await page.getByRole("button", { name: "Fit architecture", exact: true }).click();
     await flush();
@@ -358,6 +373,26 @@ export async function testC4LayoutContract(browser, outputDirectory) {
     const inspector = page.getByRole("complementary", { name: "Architecture inspector" });
     await inspector.focus();
     await page.waitForFunction(() => document.activeElement?.matches(".bvm-c4-inspector"));
+    assert.equal(
+      await page.locator("button.bvm-c4-edge-label").evaluateAll(
+        (labels) =>
+          labels.filter((label) => {
+            const box = label.getBoundingClientRect();
+            return box.width < 24 || box.height < 24;
+          }).length,
+      ),
+      0,
+      "Overview must not leave undersized clickable labels",
+    );
+    const relationshipPicker = page.getByRole("combobox", {
+      name: "Inspect architecture relationship",
+      exact: true,
+    });
+    assert.equal(
+      await relationshipPicker.isEnabled(),
+      true,
+      "Relationship inspection must remain available at overview scale",
+    );
     await screen("narrow-preview");
     await a11y("narrow-preview");
     await discard();

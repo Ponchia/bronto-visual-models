@@ -262,3 +262,16 @@
   font-size: 11px;
   line-height: 1.5;
 }
+
+.bvm-c4-edge-label {
+  display: block;
+  min-height: 36px;
+  padding: 7px 9px;
+  color: inherit;
+  background: var(--bvm-panel);
+  border: 1px solid var(--bvm-edge);
+  border-radius: 5px;
+}
+.bvm-c4-edge-label[data-c4-label-interactive="false"] {
+  pointer-events: none;
+}

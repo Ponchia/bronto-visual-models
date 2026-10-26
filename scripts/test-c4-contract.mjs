@@ -229,6 +229,31 @@ export async function testC4Contract(browser, outputDirectory) {
     assert.equal(await page.locator(".bvm-c4-edge-label").count(), 2);
     await screen("context");
     await a11y("context");
+    // The fixture's host wrapper carries the outer canvas's gesture guards. The
+    // C4 camera must still answer its own wheel and pane drag inside them.
+    const camera = () =>
+      page.evaluate(
+        () => document.querySelector(".bvm-c4-canvas .react-flow__viewport").style.transform,
+      );
+    const cameraMoved = (before) =>
+      page.waitForFunction(
+        (before) =>
+          document.querySelector(".bvm-c4-canvas .react-flow__viewport").style.transform !== before,
+        before,
+      );
+    const pane = await page.locator(".bvm-c4-canvas .react-flow__pane").boundingBox();
+    const fitted = await camera();
+    await page.mouse.move(pane.x + 12, pane.y + 12);
+    await page.mouse.wheel(0, -240);
+    await cameraMoved(fitted);
+    const zoomed = await camera();
+    await page.mouse.down();
+    await page.mouse.move(pane.x + 92, pane.y + 72, { steps: 8 });
+    await page.mouse.up();
+    await cameraMoved(zoomed);
+    assert.deepEqual(await snapshot(), before, "Camera gestures must not write architecture");
+    await page.getByRole("button", { name: "Fit architecture", exact: true }).click();
+    await flush();
     // An engine store update inside an observer delivery renders synchronously and
     // flushes pending effects there. Re-running the view's effects inside a
     // delivery must not start the canvas observation there (main CI 40354691072).

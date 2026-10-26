@@ -38,9 +38,13 @@ export async function testC4Contract(browser, outputDirectory) {
   await context.addInitScript(() => {
     const NativeResizeObserver = window.ResizeObserver;
     window.c4HoldNodeMeasurements = false;
+    window.c4PaneResizeNotifications = 0;
     window.ResizeObserver = class extends NativeResizeObserver {
       constructor(callback) {
         super((entries, observer) => {
+          window.c4PaneResizeNotifications += entries.filter((entry) =>
+            entry.target.classList.contains("react-flow__renderer"),
+          ).length;
           const visible = entries.filter(
             (entry) =>
               !window.c4HoldNodeMeasurements ||
@@ -387,13 +391,27 @@ export async function testC4Contract(browser, outputDirectory) {
     await node("checkout").waitFor();
     await inspect("checkout");
     await a11y("inspector");
-    // Exercise actual canvas ResizeObserver delivery as well as the coalesced
-    // fixed-card measurements above. Any loop/error remains a test failure.
-    for (const width of [700, 420, 950]) {
-      await page.setViewportSize({ width, height: 1000 });
-      await node("checkout").waitFor({ state: "visible" });
+    // Pane and node observers both stay real here. Exercise their delivery while
+    // permissions and responsive pane/inspector geometry change together.
+    assert.equal(await page.evaluate(() => window.c4HoldNodeMeasurements), false);
+    const beforeResize = await snapshot();
+    for (const [width, readOnly] of [
+      [700, false],
+      [420, true],
+      [950, false],
+      [390, true],
+    ]) {
+      const observed = await page.evaluate(() => window.c4PaneResizeNotifications);
+      await Promise.all([configure({ readOnly }), page.setViewportSize({ width, height: 1000 })]);
+      await page.waitForFunction((before) => window.c4PaneResizeNotifications > before, observed);
+      await focusNode("checkout", !readOnly);
       await flush();
     }
+    assert.deepEqual(
+      await snapshot(),
+      beforeResize,
+      "Resize and editability changes must not write architecture",
+    );
     await page.setViewportSize({ width: 390, height: 1000 });
     await flush();
     assert.equal(
@@ -426,7 +444,7 @@ export async function testC4Contract(browser, outputDirectory) {
     assert.match(await page.locator(".bvm-data").innerText(), /elements|relationships|views/i);
     await a11y("data");
     checks.push(
-      "Narrow-screen layout, full-text inspector, semantic data and WCAG-tagged automated scans",
+      "Concurrent pane resizing and readonly transitions, full-text inspector, semantic data and WCAG-tagged scans",
     );
     assert.deepEqual(errors, [], "C4 page errors");
     assert.deepEqual(external, [], "C4 made an external resource request");
@@ -436,6 +454,7 @@ export async function testC4Contract(browser, outputDirectory) {
       checks,
       pageErrors: errors,
       externalRequests: external,
+      paneResizeNotifications: await page.evaluate(() => window.c4PaneResizeNotifications),
     };
     await writeFile(resolve(out, "c4-results.json"), JSON.stringify(result, null, 2));
     return result;

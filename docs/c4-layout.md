@@ -1,7 +1,7 @@
 # C4 automatic layout
 
-This is unreleased source built on the dedicated [C4 family](c4.md). It does not
-change the published beta.5 package or upgrade Spatial.
+Automatic layout is included in the published beta.6 archive and is built on the
+dedicated [C4 family](c4.md). The host supplies the layout runner.
 
 ## Scope and interaction
 

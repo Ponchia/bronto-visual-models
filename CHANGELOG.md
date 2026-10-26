@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Advertise the published beta.6 archive in the distribution manifest, README and
+  getting-started guide; source development continues as 0.1.0-beta.7-dev.0.
+
 ## 0.1.0-beta.6
 
 - Keep the C4 camera's own wheel zoom and pane drag inside an embedding canvas: the inner

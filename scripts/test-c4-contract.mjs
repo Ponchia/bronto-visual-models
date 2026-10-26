@@ -39,6 +39,7 @@ export async function testC4Contract(browser, outputDirectory) {
     const NativeResizeObserver = window.ResizeObserver;
     window.c4HoldNodeMeasurements = false;
     window.c4PaneResizeNotifications = 0;
+    window.c4NodeObserveCalls = {};
     window.c4ResizeTrace = [];
     window.c4ResizeErrors = [];
     window.addEventListener("error", (event) => {
@@ -48,6 +49,13 @@ export async function testC4Contract(browser, outputDirectory) {
       });
     });
     window.ResizeObserver = class extends NativeResizeObserver {
+      observe(target, options) {
+        if (target.classList.contains("react-flow__node")) {
+          const id = target.getAttribute("data-id");
+          window.c4NodeObserveCalls[id] = (window.c4NodeObserveCalls[id] ?? 0) + 1;
+        }
+        super.observe(target, options);
+      }
       constructor(callback) {
         super((entries, observer) => {
           window.c4PaneResizeNotifications += entries.filter((entry) =>
@@ -289,6 +297,7 @@ export async function testC4Contract(browser, outputDirectory) {
     await page.evaluate(() => {
       window.c4HoldNodeMeasurements = true;
     });
+    const observesBefore = await page.evaluate(() => window.c4NodeObserveCalls.api ?? 0);
     await configure({ readOnly: true });
     await flush();
     const readonly = await snapshot(),
@@ -327,6 +336,11 @@ export async function testC4Contract(browser, outputDirectory) {
     await page.evaluate(() => window.c4Harness.release());
     await page.getByRole("alert").filter({ hasText: "Delayed host refusal" }).waitFor();
     await waitX("api", readonlyX + 90);
+    assert.equal(
+      await page.evaluate(() => window.c4NodeObserveCalls.api ?? 0),
+      observesBefore,
+      "State-only updates must retain measurements instead of re-registering the fixed card observer",
+    );
     checks.push(
       "Readonly geometry, synchronous/asynchronous refusal and latest-state late recovery",
     );

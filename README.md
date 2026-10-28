@@ -59,32 +59,46 @@ headless example with executable assertions, or use the interactive demo above.
 ## Change an artifact, not the whole application
 
 ```ts
-import { MemoryModelStore } from '@ponchia/visual-models';
+import { MemoryModelStore } from "@ponchia/visual-models";
 
 const store = new MemoryModelStore();
 await store.execute({
-  type: 'create', key: 'create-architecture',
+  type: "create",
+  key: "create-architecture",
   model: {
-    id: 'architecture', title: 'Order service', renderer: 'diagram',
+    id: "architecture",
+    title: "Order service",
+    renderer: "diagram",
     content: {
-      nodes: [{ id: 'api', label: 'Orders API', x: 100, y: 80 }],
+      nodes: [{ id: "api", label: "Orders API", x: 100, y: 80 }],
       edges: [],
     },
   },
 });
 
 const edit = {
-  type: 'edit' as const, id: 'architecture', key: 'rename-api',
+  type: "edit" as const,
+  id: "architecture",
+  key: "rename-api",
   patch: {
-    items: [{ field: 'nodes', set: [{
-      id: 'api', label: 'Orders service', expect: { label: 'Orders API' },
-    }] }],
+    items: [
+      {
+        field: "nodes",
+        set: [
+          {
+            id: "api",
+            label: "Orders service",
+            expect: { label: "Orders API" },
+          },
+        ],
+      },
+    ],
   },
 };
 
 await store.execute(edit);
 const replay = await store.execute(edit); // replayed: true; no second edit
-const model = store.get('architecture');
+const model = store.get("architecture");
 ```
 
 `MemoryModelStore` is a bounded single-process reference implementation. It is
@@ -105,18 +119,20 @@ The CLI supports `--dry-run` on create, edit, undo and fork, plus `list` and
 ## Embed a view
 
 ```tsx
-import { VisualModelView, useVisualModel } from '@ponchia/visual-models/react';
-import '@ponchia/visual-models/styles.css';
+import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
+import "@ponchia/visual-models/styles.css";
 
 // Inside your component; store is a stable MemoryModelStore or compatible host adapter.
-const model = useVisualModel(store, 'architecture');
+const model = useVisualModel(store, "architecture");
 
-model && <VisualModelView
-  model={model}
-  projection="diagram"
-  onSelect={(target) => selectElement(target)}
-  onEdit={(patch) => applyAuthorizedEdit(patch)}
-/>
+model && (
+  <VisualModelView
+    model={model}
+    projection="diagram"
+    onSelect={(target) => selectElement(target)}
+    onEdit={(patch) => applyAuthorizedEdit(patch)}
+  />
+);
 ```
 
 The view is controlled: the host passes the updated model after committing an

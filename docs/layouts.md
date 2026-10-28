@@ -8,15 +8,15 @@ npm install elkjs
 ```
 
 ```ts
-import { layoutDiagram } from '@ponchia/visual-models/layout/elk';
+import { layoutDiagram } from "@ponchia/visual-models/layout/elk";
 
-const saved = store.get('architecture');
-if (!saved) throw new Error('Architecture is not available');
-const layout = await layoutDiagram(saved, { direction: 'RIGHT' });
+const saved = store.get("architecture");
+if (!saved) throw new Error("Architecture is not available");
+const layout = await layoutDiagram(saved, { direction: "RIGHT" });
 const command = {
-  type: 'edit' as const,
+  type: "edit" as const,
   id: saved.id,
-  key: 'layout-review-001',
+  key: "layout-review-001",
   patch: layout.patch,
 };
 const preview = await store.preview(command);

@@ -25,14 +25,14 @@ its own acceptance evidence. Adding another name to the catalog is not enough.
 
 ## Next capability investments
 
-| Family | Direction | Evidence required |
-| --- | --- | --- |
-| C4 architecture | Context/container/component navigation, architecture notation and independent diagram layout; then dedicated dynamic/deployment semantics and interoperation | Purpose-built interactive fixture, semantic refusals, scoped edit/undo, visual review |
-| Editable diagrams | Better boundary/port authoring, routing and collision-aware labels | Dense nested and parallel-edge journeys, readable small-screen inspection |
-| Networks | Useful exploration layouts, filtering and neighborhood focus rather than only a circular placement | Graph-specific tasks and frame/memory profiles on realistic sizes |
-| Charts | Rich interactions appropriate to their grammar, readable legends/axes, deliberate annotations and export | Chart-specific controlled-edit and data-fidelity journeys |
-| Timeline and Gantt | Time navigation, dependency and scheduling interactions with their distinct semantics | Keyboard rescheduling, conflict recovery and large-lane behavior |
-| Infographic, geography and 3D | Purpose-built standalone editors and specialized engines where justified | Independent consumer proof, resource boundaries and accessible alternatives |
+| Family                        | Direction                                                                                                                                                    | Evidence required                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| C4 architecture               | Context/container/component navigation, architecture notation and independent diagram layout; then dedicated dynamic/deployment semantics and interoperation | Purpose-built interactive fixture, semantic refusals, scoped edit/undo, visual review |
+| Editable diagrams             | Better boundary/port authoring, routing and collision-aware labels                                                                                           | Dense nested and parallel-edge journeys, readable small-screen inspection             |
+| Networks                      | Useful exploration layouts, filtering and neighborhood focus rather than only a circular placement                                                           | Graph-specific tasks and frame/memory profiles on realistic sizes                     |
+| Charts                        | Rich interactions appropriate to their grammar, readable legends/axes, deliberate annotations and export                                                     | Chart-specific controlled-edit and data-fidelity journeys                             |
+| Timeline and Gantt            | Time navigation, dependency and scheduling interactions with their distinct semantics                                                                        | Keyboard rescheduling, conflict recovery and large-lane behavior                      |
+| Infographic, geography and 3D | Purpose-built standalone editors and specialized engines where justified                                                                                     | Independent consumer proof, resource boundaries and accessible alternatives           |
 
 These are development priorities, not shipped features. The first implementation
 under this direction is [C4 architecture](c4.md). No engine replacement, universal

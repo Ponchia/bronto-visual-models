@@ -8,13 +8,13 @@ The root package has no React, DOM, database, operating-system file or network
 runtime dependency. It uses lib0's SHA-256 helper for canonical request identities.
 Engines and UI are optional subpaths; local file operations are under `/node`.
 
-| Layer | Owns | Does not own |
-| --- | --- | --- |
-| Core | Content contracts, identity, validation, mutations, projections, compatibility, inverse construction. | Canvas placement, navigation, credentials or network loading. |
-| Reference stores | Serialized in-memory operations; cooperative local-file atomic persistence. | Distributed transactions, CRDT convergence or a production identity system. |
-| Render helpers/hooks | Engine lifecycle, render work sequencing, geometry and theme inputs. | Host appearance events, connected-data queries or instrumentation storage. |
-| Reference React surface | Controlled diagram/network/matrix/timeline interactions and inline charts with source tables. | All ten complete editors, application layout or automatic resource navigation. |
-| Host integration | Current authority, durable commit, datasets/assets, canvas state, chrome and navigation. | A second copy of the portable model algorithms. |
+| Layer                   | Owns                                                                                                  | Does not own                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Core                    | Content contracts, identity, validation, mutations, projections, compatibility, inverse construction. | Canvas placement, navigation, credentials or network loading.                  |
+| Reference stores        | Serialized in-memory operations; cooperative local-file atomic persistence.                           | Distributed transactions, CRDT convergence or a production identity system.    |
+| Render helpers/hooks    | Engine lifecycle, render work sequencing, geometry and theme inputs.                                  | Host appearance events, connected-data queries or instrumentation storage.     |
+| Reference React surface | Controlled diagram/network/matrix/timeline interactions and inline charts with source tables.         | All ten complete editors, application layout or automatic resource navigation. |
+| Host integration        | Current authority, durable commit, datasets/assets, canvas state, chrome and navigation.              | A second copy of the portable model algorithms.                                |
 
 The first beta deliberately keeps existing family contracts instead of renaming
 every model and writing a new grammar. Host-specific routing, estates and source

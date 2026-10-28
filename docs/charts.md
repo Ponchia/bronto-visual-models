@@ -7,30 +7,36 @@ second chart model or an implicit dataset service.
 ## Create and display
 
 ```tsx
-import { MemoryModelStore } from '@ponchia/visual-models';
-import { VisualModelView, useVisualModel } from '@ponchia/visual-models/react';
-import '@ponchia/visual-models/styles.css';
+import { MemoryModelStore } from "@ponchia/visual-models";
+import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
+import "@ponchia/visual-models/styles.css";
 
 const store = new MemoryModelStore();
 await store.execute({
-  type: 'create', key: 'create-throughput',
+  type: "create",
+  key: "create-throughput",
   model: {
-    id: 'throughput', title: 'Example throughput', renderer: 'vega-lite',
+    id: "throughput",
+    title: "Example throughput",
+    renderer: "vega-lite",
     content: {
       spec: {
-        mark: 'bar',
+        mark: "bar",
         encoding: {
-          x: { field: 'service', type: 'nominal' },
-          y: { field: 'requests', type: 'quantitative' },
+          x: { field: "service", type: "nominal" },
+          y: { field: "requests", type: "quantitative" },
         },
       },
-      values: [{ service: 'Orders', requests: 120 }, { service: 'Search', requests: 180 }],
+      values: [
+        { service: "Orders", requests: 120 },
+        { service: "Search", requests: 180 },
+      ],
     },
   },
 });
 
 // Inside a component; store remains stable across renders.
-const model = useVisualModel(store, 'throughput');
+const model = useVisualModel(store, "throughput");
 model && <VisualModelView model={model} height={360} />;
 ```
 

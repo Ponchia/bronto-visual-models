@@ -46,12 +46,15 @@ scale; no accessibility rule is disabled to excuse small controls.
 ## Headless API
 
 ```ts
-import { layoutC4 } from '@ponchia/visual-models/layout/c4-elk';
+import { layoutC4 } from "@ponchia/visual-models/layout/c4-elk";
 
-const model = store.get('commerce')!;
-const proposal = await layoutC4(model, 'containers', { direction: 'RIGHT' });
+const model = store.get("commerce")!;
+const proposal = await layoutC4(model, "containers", { direction: "RIGHT" });
 const command = {
-  type: 'edit' as const, id: model.id, key: 'arrange-containers', patch: proposal.patch,
+  type: "edit" as const,
+  id: model.id,
+  key: "arrange-containers",
+  patch: proposal.patch,
 };
 const preview = await store.preview(command);
 // Inspect the candidate, then deliberately commit the same guarded command.

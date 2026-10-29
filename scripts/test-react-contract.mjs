@@ -103,6 +103,15 @@ export async function testReactContract(
     const latestPosition = await node.evaluate((element) => element.style.transform);
     await page.getByRole("button", { name: "Reject pending", exact: true }).click();
     await page.getByRole("alert").filter({ hasText: "Delayed edit refused" }).waitFor();
+    const noticeGeometry = await page.locator(".bvm-view").evaluate((view) => {
+      const alert = view.querySelector(".bvm-error")?.getBoundingClientRect();
+      const canvas = view.querySelector(".bvm-visual-surface")?.getBoundingClientRect();
+      return { alertBottom: alert?.bottom, canvasTop: canvas?.top };
+    });
+    assert.ok(
+      noticeGeometry.alertBottom <= noticeGeometry.canvasTop + 1,
+      "An edit refusal overlaps the interactive diagram instead of remaining in normal flow",
+    );
     // React Flow may hide nodes for one measurement pass after controlled state changes.
     // Require visibility again, then assert the authored coordinates rather than incidental style flags.
     await node.waitFor({ state: "visible" });

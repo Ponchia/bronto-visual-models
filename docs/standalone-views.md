@@ -40,6 +40,9 @@ The full entry and native entry share their host frame, target validation,
 read-only policy, error recovery and data reader. There is not a second Gantt
 implementation to maintain.
 
+Renderer failures appear in a normal-flow dismissible notice above the visual surface.
+The notice reduces available canvas space rather than covering interactive elements.
+
 ## Reading and editing a plan
 
 Workstreams group tasks in authored order. Time bars use the supplied start/end

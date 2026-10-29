@@ -86,14 +86,17 @@
   cursor: pointer;
 }
 .bvm-error {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  z-index: 20;
+  /* A refusal must not intercept gestures on the diagram beneath it. Keep
+     the notification in normal flow, outside the visual canvas. */
+  position: relative;
+  flex: 0 0 auto;
+  max-height: 120px;
+  overflow: auto;
+  margin: 8px 10px;
   padding: 10px 12px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 16px;
   background: color-mix(in srgb, var(--bvm-danger, #b34f42) 9%, var(--bvm-panel, white));
   border: 1px solid var(--bvm-danger, #b34f42);

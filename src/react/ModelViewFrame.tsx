@@ -131,6 +131,14 @@ export function ModelViewFrame(
           </RendererBoundary>
         </Suspense>
       )}
+      {error && (
+        <div className="bvm-error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={() => setFailure(null)} aria-label="Dismiss visual error">
+            ×
+          </button>
+        </div>
+      )}
       <div className="bvm-visual-surface" hidden={reading && compatibility.ok}>
         {!supported || !Renderer ? (
           <div className="bvm-notice" role="status">
@@ -156,14 +164,6 @@ export function ModelViewFrame(
           </RendererBoundary>
         )}
       </div>
-      {error && (
-        <div className="bvm-error" role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={() => setFailure(null)} aria-label="Dismiss visual error">
-            ×
-          </button>
-        </div>
-      )}
     </section>
   );
 }

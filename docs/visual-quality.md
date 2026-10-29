@@ -19,6 +19,11 @@ controlled-write path and refusal recovery. Exploration must remain usable on
 narrow screens and by keyboard, with a semantic reading alternative. Record
 actual rendering and memory evidence separately from helper benchmarks.
 
+Custom trusted families can now provide independent React adapters through a
+lazy instance-local registry, without replacing the reference viewer. The core
+registry remains DOM-free. Diagram appearance uses bounded theme-aware tokens;
+no renderer interprets saved CSS as executable styling.
+
 The family catalog is not a promise that every standalone editor is finished.
 Distinguish a stored contract, renderer, editor, importer and exporter. Each needs
 its own acceptance evidence. Adding another name to the catalog is not enough.

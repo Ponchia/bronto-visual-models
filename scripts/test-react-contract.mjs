@@ -103,6 +103,15 @@ export async function testReactContract(
     const latestPosition = await node.evaluate((element) => element.style.transform);
     await page.getByRole("button", { name: "Reject pending", exact: true }).click();
     await page.getByRole("alert").filter({ hasText: "Delayed edit refused" }).waitFor();
+    const noticeGeometry = await page.locator(".bvm-view").evaluate((view) => {
+      const alert = view.querySelector(".bvm-error")?.getBoundingClientRect();
+      const canvas = view.querySelector(".bvm-visual-surface")?.getBoundingClientRect();
+      return { alertBottom: alert?.bottom, canvasTop: canvas?.top };
+    });
+    assert.ok(
+      noticeGeometry.alertBottom <= noticeGeometry.canvasTop + 1,
+      "An edit refusal overlaps the interactive diagram instead of remaining in normal flow",
+    );
     // React Flow may hide nodes for one measurement pass after controlled state changes.
     // Require visibility again, then assert the authored coordinates rather than incidental style flags.
     await node.waitFor({ state: "visible" });
@@ -112,6 +121,11 @@ export async function testReactContract(
       "Late rejection restored obsolete host coordinates",
     );
     assert.ok((await node.textContent()).includes("Latest host A"));
+    // Dismiss the previous refusal before another pointer gesture. A persistent
+    // alert at the foot of a small embedded canvas can cover the node's center;
+    // a drag through its closeable notice is not a diagram drag.
+    await page.getByRole("button", { name: "Dismiss visual error" }).click();
+    await page.getByRole("alert").waitFor({ state: "detached" });
     await page.getByLabel("Commit mode").selectOption("sync");
     await drag();
     await page.getByRole("alert").filter({ hasText: "Synchronous edit refused" }).waitFor();

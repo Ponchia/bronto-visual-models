@@ -341,3 +341,84 @@
 .bvm-cell-detail[open] summary {
   white-space: normal;
 }
+
+/* Authored changes stay behind a compact disclosure; exploration remains visible. */
+.bvm-graph-authoring {
+  flex: 0 0 auto;
+  max-height: min(42%, 310px);
+  overflow: auto;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--bvm-line);
+  font-size: 12px;
+}
+.bvm-graph-authoring summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.bvm-graph-authoring-content {
+  display: grid;
+  gap: 10px;
+  padding-block: 8px;
+}
+.bvm-graph-authoring button {
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid var(--bvm-line);
+  background: var(--bvm-panel);
+  border-radius: 6px;
+}
+.bvm-graph-authoring button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.bvm-graph-authoring button:focus-visible,
+.bvm-graph-authoring summary:focus-visible,
+.bvm-graph-authoring :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--bvm-focus);
+  outline-offset: 2px;
+}
+.bvm-graph-link-form,
+.bvm-graph-item-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.bvm-graph-item-editor {
+  border-top: 1px solid var(--bvm-line);
+  padding-top: 9px;
+}
+.bvm-graph-item-editor > strong {
+  flex-basis: 100%;
+}
+.bvm-graph-link-form label,
+.bvm-graph-item-editor label {
+  display: grid;
+  gap: 3px;
+  min-width: 110px;
+  flex: 1 1 115px;
+}
+.bvm-graph-link-form input,
+.bvm-graph-link-form select,
+.bvm-graph-item-editor input,
+.bvm-graph-item-editor select,
+.bvm-graph-item-editor textarea {
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  color: var(--bvm-text);
+  background: var(--bvm-panel);
+  border: 1px solid var(--bvm-line);
+  border-radius: 5px;
+  padding: 5px 6px;
+}
+.bvm-graph-authoring-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bvm-graph-authoring-content > [role="status"],
+.bvm-graph-item-editor > [role="status"] {
+  flex-basis: 100%;
+  font-size: 11px;
+}

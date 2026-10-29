@@ -37,7 +37,17 @@ export interface SemanticEntity {
   description?: string;
   entityId?: string;
 }
+/** A bounded visual vocabulary; never pass authored CSS or SVG into the DOM. */
+export const GRAPH_SHAPES = ["box", "rounded", "pill", "database", "queue"] as const;
+export const GRAPH_TONES = ["neutral", "accent", "info", "success", "warning", "danger"] as const;
+export const GRAPH_EDGE_LINES = ["solid", "dashed", "dotted"] as const;
+export type GraphShape = (typeof GRAPH_SHAPES)[number];
+export type GraphTone = (typeof GRAPH_TONES)[number];
+export type GraphEdgeLine = (typeof GRAPH_EDGE_LINES)[number];
+
 export interface GraphNode extends SemanticEntity {
+  shape?: GraphShape;
+  tone?: GraphTone;
   x: number;
   y: number;
   width?: number;
@@ -48,6 +58,8 @@ export interface GraphNode extends SemanticEntity {
   ports?: Array<{ id: string; label?: string; side: "top" | "right" | "bottom" | "left" }>;
 }
 export interface GraphEdge extends SemanticEntity {
+  line?: GraphEdgeLine;
+  tone?: GraphTone;
   source: string;
   target: string;
   sourcePort?: string;
@@ -131,6 +143,8 @@ export const GRAPH_SCHEMA = record(
       record(
         {
           ...identity,
+          shape: { type: "string", enum: GRAPH_SHAPES },
+          tone: { type: "string", enum: GRAPH_TONES },
           x: position,
           y: position,
           width: size,
@@ -149,12 +163,18 @@ export const GRAPH_SCHEMA = record(
       SEMANTIC_LIMITS.graphNodes,
     ),
     edges: array(
-      record({ ...identity, source: id, target: id, sourcePort: id, targetPort: id }, [
-        "id",
-        "label",
-        "source",
-        "target",
-      ]),
+      record(
+        {
+          ...identity,
+          source: id,
+          target: id,
+          sourcePort: id,
+          targetPort: id,
+          line: { type: "string", enum: GRAPH_EDGE_LINES },
+          tone: { type: "string", enum: GRAPH_TONES },
+        },
+        ["id", "label", "source", "target"],
+      ),
       SEMANTIC_LIMITS.graphEdges,
     ),
     direction: { type: "string", enum: ["RIGHT", "DOWN"] },

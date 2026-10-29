@@ -11,6 +11,7 @@ import { chartSourceKey, type ResolvedChartRows } from "../chart-source.ts";
 import type { VisualFamilyResolver } from "../family-resolver.ts";
 import { sha256Hex } from "../hash.ts";
 import { assertVisualModel } from "../operations.ts";
+import { validSourceRevision } from "../source-snapshot.ts";
 
 export interface InlineChartInput {
   spec: Record<string, unknown>;
@@ -93,8 +94,7 @@ export function prepareHostChart(
     !supplied ||
     typeof supplied.sourceKey !== "string" ||
     supplied.sourceKey !== expected ||
-    typeof supplied.revision !== "string" ||
-    !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(supplied.revision)
+    !validSourceRevision(supplied.revision)
   )
     throw new VisualModelError("unavailable", "Host chart rows do not match this source snapshot");
   if (

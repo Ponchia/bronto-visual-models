@@ -20,7 +20,7 @@ const rows = [
   },
   {
     rowId: "build-2",
-    label: '<img src="https://example.invalid/tracker">',
+    label: 'R&D <img src="https://example.invalid/tracker">',
     started: "2026-10-29T10:00:00Z",
     stream: "Build",
     entity: "job-456",

@@ -120,6 +120,18 @@ export async function testAdapterContract(browser, directory) {
     assert.equal(await page.locator(".react-flow__node").count(), 0);
     await page.getByRole("button", { name: "Enable custom adapters" }).click();
     await api.waitFor({ state: "visible" });
+    // Remounting the diagram and its authoring controls must not make the
+    // same initial port geometry measure twice or trigger WebKit RO loops.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await page.getByRole("button", { name: "Open scorecard" }).click();
+      await page.getByTestId("custom-scorecard").waitFor();
+      await page.getByRole("button", { name: "Open diagram" }).click();
+      await api.waitFor({ state: "visible" });
+    }
+    // Flush browser ResizeObserver delivery before examining page errors.
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
     assert.deepEqual(errors, [], "Custom adapters raised browser errors");
     assert.deepEqual(requests, [], "Custom adapters loaded an external resource");
     const accessibility = await checkAccessibility(

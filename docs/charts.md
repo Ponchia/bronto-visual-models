@@ -80,8 +80,16 @@ credential or proof that the host checked a permission. The package cannot
 query a dataset or resolve a connector. The host must enforce authorization
 before every read and must replace the supplied snapshot when the source
 binding or its result changes. A different model lifetime, source name,
-parameter or connection rejects old rows. Unbound inline charts cannot
+parameter or connection rejects old rows. `chartSourceKey` also validates
+the authored content when computing a key and throws on malformed/non-JSON
+models; callers should calculate it only for validated model snapshots. Unbound inline charts cannot
 be overridden by a host snapshot.
+
+Pass an immutable, referentially stable `rows` array for each snapshot and
+change `revision` when the host's source changes. The outer `chartRows`
+object may be reconstructed on React rerenders without revalidating unchanged
+rows. Mutating existing rows in place without advancing the source revision
+violates the controlled snapshot contract.
 
 The host supplies a stable snapshot `revision` and up to 2,000 JSON records
 within the existing content budget. The renderer separately fingerprints

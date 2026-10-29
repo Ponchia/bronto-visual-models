@@ -261,7 +261,16 @@ export default function ChartView(props: AdapterProps) {
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
-  }, [props.model, props.chartRows, props.registry]);
+    // A host may create a new chartRows envelope on each React render. The
+    // source snapshot identity is its key/revision plus the immutable rows
+    // reference, never the incidental wrapper object.
+  }, [
+    props.model,
+    props.registry,
+    props.chartRows?.sourceKey,
+    props.chartRows?.revision,
+    props.chartRows?.rows,
+  ]);
   const identity = `${props.model.id}:${props.model.generation}:${props.model.revision}:${props.chartRows?.sourceKey ?? ""}:${props.chartRows?.revision ?? ""}`;
   const reported = useRef<{ identity: string; error: string } | null>(null);
   useEffect(() => {

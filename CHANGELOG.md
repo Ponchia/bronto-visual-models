@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.7
 
 - Advertise the published beta.6 archive in the distribution manifest, README and
-  getting-started guide; source development continues as 0.1.0-beta.7-dev.0.
+  getting-started guide.
+- Accept `@ponchia/ui` 0.18 as the optional design-system peer (`^0.18.1`; the
+  `v0.18.0` tag was never published). Development and the packed consumers
+  qualify against 0.18.1.
 
 ## 0.1.0-beta.6
 

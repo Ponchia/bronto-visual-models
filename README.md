@@ -210,9 +210,16 @@ selection. No dataset access is implemented inside the library.
 [Connected chart contract](docs/charts.md#host-resolved-chart-rows) ·
 [Timeline contract](docs/standalone-views.md#host-resolved-timelines).
 
+A [runnable host-data example](examples/host-source.mjs) loads one local
+JSON snapshot into both chart and timeline source views without storing
+the records in the models. The
+[getting-started guide](docs/getting-started.md#work-with-host-owned-chart-and-timeline-data-source-preview)
+shows how to run it from a current source checkout; the published beta.7
+does not contain these new source-view APIs.
+
 ## Explore charts with local selections
 
-The reference Vega-Lite view accepts bounded, safe \`spec.params\`
+The reference Vega-Lite view accepts bounded, safe `spec.params`
 point/click and interval/brush selections. Their interactions stay local to
 the rendered chart: they never create a model edit, load a URL or bind an
 external DOM input. Free-form event selectors and executable parameter

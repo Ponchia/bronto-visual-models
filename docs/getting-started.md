@@ -33,6 +33,44 @@ Use [standalone views](standalone-views.md) for React integration, and read
 `MemoryModelStore` is not durable by itself. A successful local example does not
 establish production authorization, collaborative storage or deployment safety.
 
+## Work with host-owned chart and timeline data (source preview)
+
+The next beta's source tree includes a [runnable host-data example](../examples/host-source.mjs)
+and [sample JSON rows](../examples/host-source.json). This is a second,
+more realistic workflow: a host reads its own file, prepares both a chart
+and a timeline from the same rows, then refreshes the source without
+writing dataset records into either visual model.
+
+This is a **source-preview example**, not part of the currently published
+beta.7 archive. Run from a checked-out current source tree:
+
+```sh
+npm ci --ignore-scripts
+npm run build
+node examples/host-source.mjs
+# Optionally substitute a trusted local JSON file:
+node examples/host-source.mjs /absolute/path/to/local-rows.json
+```
+
+Rows must carry a unique `rowId`, a `label`, a timezone-qualified
+`started` timestamp, and mapped `team`, `service`,
+`requests` columns. Optional `ended` and `entity`
+fields describe ranges and shared entity identity. The example bounds the
+local file at 128 KiB, and the model families enforce their row limits.
+
+The host must authorize every real source read itself. A source key guards
+against stale data; it is not a permission grant. The example imports only
+`@ponchia/visual-models` plus its public render helper subpaths,
+without React, Spatial, Vega, vis-timeline or a network connection. It
+verifies a new data snapshot can change both views' digests while the
+saved model revisions remain unchanged. The independently packed consumer
+test installs the candidate archive in a clean directory and runs this same
+file from that installation.
+
+A headless preparation step does not claim to draw a chart. The package's
+separate packed browser tests verify render acknowledgements after the
+canvas/timeline actually draws.
+
 ## Package identity and failures
 
 The [distribution manifest](distribution.json) records the verified public

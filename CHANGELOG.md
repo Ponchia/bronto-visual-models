@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Enable bounded Vega-Lite local point/interval selection parameters in the
+  reference chart without enabling external events, DOM bindings or resource
+  loads. The packed browser suite checks click-driven selection and clearing
+  under strict CSP, leaving authored rows and model revisions unchanged.
 - Avoid double-escaping authored and dataset timeline tooltips, update drawn-frame
   callback references only after React commits, and share the source revision
   validator across charts and timelines. The sourceSnapshotKey helper now

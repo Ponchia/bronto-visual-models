@@ -16,6 +16,28 @@ const bar = {
     tooltip: [{ field: "label" }, { field: "note" }],
   },
 };
+/** A single full-plot mark makes a click-selection visually observable. */
+const localPoint = {
+  mark: "rect",
+  params: [{ name: "picked", select: { type: "point", encodings: ["x"], toggle: false } }],
+  encoding: {
+    x: { field: "category", type: "nominal", axis: null },
+    y: { field: "series", type: "nominal", axis: null },
+    color: {
+      condition: { param: "picked", empty: false, value: "#b30000" },
+      value: "#cccccc",
+    },
+  },
+};
+const localInterval = {
+  mark: "point",
+  params: [{ name: "brush", select: { type: "interval", encodings: ["x", "y"] } }],
+  encoding: {
+    x: { field: "value", type: "quantitative", axis: null },
+    y: { field: "point", type: "quantitative", axis: null },
+    color: { condition: { param: "brush", empty: false, value: "#b30000" }, value: "#cccccc" },
+  },
+};
 function App() {
   const [model, setModel] = useState(() =>
     createModel({
@@ -149,6 +171,29 @@ function App() {
           }
         >
           External binding
+        </button>
+        <button
+          onClick={() =>
+            change({
+              spec: localPoint,
+              values: [{ category: "Selected region", series: "One", value: 1 }],
+            })
+          }
+        >
+          Local point selection
+        </button>
+        <button
+          onClick={() =>
+            change({
+              spec: localInterval,
+              values: [
+                { value: 1, point: 1 },
+                { value: 2, point: 2 },
+              ],
+            })
+          }
+        >
+          Local interval selection
         </button>
         <button onClick={() => change({ spec: bar, values: rows })}>Recover chart</button>
         <button onClick={() => setActive((a) => !a)}>Toggle active</button>

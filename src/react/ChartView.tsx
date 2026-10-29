@@ -15,21 +15,30 @@ import {
 import {
   inlineChartLoader,
   prepareInlineChart,
+  prepareHostChart,
   type InlineChartInput,
+  type PreparedHostChart,
 } from "../render/inline-chart.ts";
 import type { AdapterProps } from "./types.ts";
 
-function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: boolean }) {
+type AcceptedChart = {
+  input: InlineChartInput;
+  source?: PreparedHostChart["source"];
+};
+function ChartSurface(props: AdapterProps & AcceptedChart & { showing: boolean }) {
   const container = useRef<HTMLDivElement>(null);
   const { input } = props;
-  const frame = `${props.model.id}:${props.model.generation}:${props.model.revision}`;
+  const dataKey = props.source
+    ? `${props.model.generation}:${props.model.revision}:${props.source.sourceKey}:${props.source.revision}:${props.source.digest}`
+    : `${props.model.generation}:${props.model.revision}`;
+  const frame = `${props.model.id}:${dataKey}`;
   const [failedFrame, setFailedFrame] = useState<string | null>(null);
   useVegaSurface(container, {
     identity: `${props.model.id}:${props.model.generation}:${canonicalVisualJson(input.spec)}`,
     active: props.active !== false && props.showing,
     tokens: props.tokens,
     data: {
-      key: `${props.model.generation}:${props.model.revision}`,
+      key: dataKey,
       sets: () => ({ bvm_rows: input.values }),
     },
     resize: (view, size) => {
@@ -64,7 +73,7 @@ function ChartSurface(props: AdapterProps & { input: InlineChartInput; showing: 
     onDrawn: (view) => view.description(props.model.description || props.model.title),
     onReady: () => {
       setFailedFrame(null);
-      props.ready();
+      props.ready(props.source);
     },
     onError: () => {
       setFailedFrame(frame);
@@ -101,9 +110,15 @@ function DataCell({ value, row, column }: { value: unknown; row: number; column:
   );
 }
 
-function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
+function ChartBody(props: AdapterProps & AcceptedChart) {
   const [table, setTable] = useState(false);
-  const advice = useMemo(() => chartEncodingGuidance(props.model.content), [props.model.content]);
+  const advice = useMemo(
+    () =>
+      chartEncodingGuidance(
+        props.source ? { spec: props.input.spec, values: props.input.values } : props.model.content,
+      ),
+    [props.model.content, props.source, props.input.spec, props.input.values],
+  );
   const [requestedPage, setPage] = useState(0);
   const [requestedColumnPage, setColumnPage] = useState(0);
   const columns = useMemo(() => chartTableColumns(props.input.values), [props.input.values]);
@@ -120,7 +135,9 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
         <button type="button" aria-pressed={table} onClick={() => setTable(true)}>
           Data table
         </button>
-        <span>{props.input.values.length} inline rows</span>
+        <span>
+          {props.input.values.length} {props.source ? "host-resolved" : "inline"} rows
+        </span>
       </div>
       {!!advice.notes.length && (
         <details className="bvm-chart-advice">
@@ -166,7 +183,7 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
                     {page.columns.map((column) => (
                       <td key={column}>
                         <DataCell
-                          key={`${props.model.revision}:${page.start + index}:${column}`}
+                          key={`${props.model.revision}:${props.source?.digest ?? "inline"}:${page.start + index}:${column}`}
                           value={row[column]}
                           row={page.start + index + 1}
                           column={column}
@@ -178,7 +195,11 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
               </tbody>
             </table>
             {!page.total && (
-              <p role="status">No inline rows. There is no external source to load.</p>
+              <p role="status">
+                {props.source
+                  ? "The host supplied no rows for this source snapshot."
+                  : "No inline rows. There is no external source to load."}
+              </p>
             )}
           </div>
           <div className="bvm-chart-pagination" role="group" aria-label="Chart data pages">
@@ -230,14 +251,27 @@ function ChartBody(props: AdapterProps & { input: InlineChartInput }) {
 
 /** An inline, read-only chart. All content edits, permissions and source resolution remain with the host. */
 export default function ChartView(props: AdapterProps) {
-  const prepared = useMemo(() => {
+  const prepared = useMemo<
+    (AcceptedChart & { error?: undefined }) | { input?: undefined; error: string }
+  >(() => {
     try {
-      return { input: prepareInlineChart(props.model.content) };
+      return props.chartRows
+        ? prepareHostChart(props.model, props.chartRows, props.registry)
+        : { input: prepareInlineChart(props.model.content) };
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
-  }, [props.model.content]);
-  const identity = `${props.model.id}:${props.model.generation}:${props.model.revision}`;
+    // A host may create a new chartRows envelope on each React render. The
+    // source snapshot identity is its key/revision plus the immutable rows
+    // reference, never the incidental wrapper object.
+  }, [
+    props.model,
+    props.registry,
+    props.chartRows?.sourceKey,
+    props.chartRows?.revision,
+    props.chartRows?.rows,
+  ]);
+  const identity = `${props.model.id}:${props.model.generation}:${props.model.revision}:${props.chartRows?.sourceKey ?? ""}:${props.chartRows?.revision ?? ""}`;
   const reported = useRef<{ identity: string; error: string } | null>(null);
   useEffect(() => {
     if (!prepared.error) {
@@ -258,5 +292,5 @@ export default function ChartView(props: AdapterProps) {
         {prepared.error} The saved source is unchanged.
       </div>
     );
-  return <ChartBody {...props} input={prepared.input} />;
+  return <ChartBody {...props} input={prepared.input} source={prepared.source} />;
 }

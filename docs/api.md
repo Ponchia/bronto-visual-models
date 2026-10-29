@@ -201,6 +201,18 @@ policy without loading a compiler, React, DOM or network. This returns owned spe
 and rows plus `fill` (`fit` or `composed`). Passing that check is not proof of valid
 Vega-Lite grammar or bounded compute cost; compilation/rendering can still refuse.
 
+## Connected charts with pre-resolved rows
+
+A chart with `datasource` or `connection` may be displayed using
+`chartRows={{ sourceKey: chartSourceKey(model), revision, rows }}`.
+The host performs all source authorization and loading. The renderer checks
+the bound source fingerprint and applies the inline chart's strict
+no-resource policy to the supplied JSON rows. A source snapshot's own
+revision and exact row digest distinguish updates without requiring a model
+edit. `onReady` includes `source: { sourceKey, revision, digest }` after
+a bound chart is actually drawn; other viewers and existing callers are
+unchanged. See [the connected chart guide](charts.md#host-resolved-chart-rows).
+
 ## Routed connector caches and chart advice
 
 `VisualModelView` accepts `diagramRouting`, the derived cache from a

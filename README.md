@@ -129,14 +129,16 @@ an authorization grant. Cameras, hover and exploratory layout stay local.
 The core carries validated contracts for diagram, timeline, Gantt, analysis,
 geography, infographic, Vega-Lite, 3D scene, spatial layers and source diagrams.
 
-The beta.7 standalone React surface implements **C4 architecture, diagram, network,
+The development standalone React surface implements **C4 architecture, diagram, network,
 matrix, authored timeline, native Gantt and inline Vega-Lite charts**, plus a paginated
 semantic reader and an engine-free Gantt entry. See
 [standalone views](docs/standalone-views.md). Other families are core contracts and renderer
 integration utilities, not claims of ten complete standalone editors. Existing
 Spatial adapters can continue using the extracted engine hooks independently.
-Dataset-backed timelines require host source resolution and are not rendered by
-the reference component.
+Dataset-backed timelines can render bounded rows already resolved by an
+authorized host. Their events are read-only source facts, with row identities
+separate from authored model records.
+[Host-resolved timeline contract](docs/standalone-views.md#host-resolved-timelines).
 
 Charts render explicit `content.values` with Vega-Lite, without automatically
 loading data, images or links. A paginated table exposes the original rows rather
@@ -202,8 +204,11 @@ by an authorized host. Pass `chartRows` with `chartSourceKey(model)`, a
 source revision and the bounded rows to `VisualModelView`. The same chart
 renderer refuses stale source keys, unsafe resource references and invalid
 rows. It acknowledges the exact drawn source revision separately from the
-model's own revision. No dataset access is implemented inside the library.
-[Connected chart contract](docs/charts.md#host-resolved-chart-rows).
+model's own revision. Dataset-backed timelines have the corresponding
+`timelineRows` / `timelineSourceKey(model)` contract, with read-only source
+selection. No dataset access is implemented inside the library.
+[Connected chart contract](docs/charts.md#host-resolved-chart-rows) ·
+[Timeline contract](docs/standalone-views.md#host-resolved-timelines).
 
 ## Truthful chart encodings
 

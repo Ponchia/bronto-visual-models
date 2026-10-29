@@ -59,11 +59,15 @@ export function ModelViewFrame(
   );
   const ready = useCallback(
     (source?: { sourceKey: string; revision: string; digest: string } | number) => {
-      // Bound chart data may recover at the same model revision. Only a
-      // successfully drawn bound chart clears that frame's prior error.
-      // Other renderers (notably React Flow on canvas resize) must not
-      // mutate host-frame state during their readiness/measurement cycle.
-      if (model.renderer === "vega-lite" && source && typeof source === "object")
+      // Bound chart and timeline data can recover at the same authored model
+      // revision. Only an acknowledged source frame clears the earlier
+      // snapshot error. Other renderers (notably React Flow on resize) must
+      // not mutate the host-frame state during their measurement cycle.
+      if (
+        (model.renderer === "vega-lite" || model.renderer === "timeline") &&
+        source &&
+        typeof source === "object"
+      )
         setFailure((previous) => (previous?.identity === identity ? null : previous));
       props.onReady?.({
         id: model.id,

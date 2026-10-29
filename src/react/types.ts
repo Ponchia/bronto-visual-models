@@ -7,6 +7,8 @@ import type { VisualModel, VisualTarget } from "../model.ts";
 import type { ModelEdit } from "../operations.ts";
 import type { VisualViewAdapterRegistry } from "./view-adapters.ts";
 import type { ResolvedChartRows } from "../chart-source.ts";
+import type { ResolvedTimelineRows } from "../timeline-source.ts";
+import type { SourceRowTarget } from "../source-snapshot.ts";
 export interface VisualModelViewProps {
   model: VisualModel;
   projection?: string;
@@ -24,6 +26,11 @@ export interface VisualModelViewProps {
    * Must match chartSourceKey(model); never causes a fetch.
    */
   chartRows?: ResolvedChartRows;
+  /** Dataset-only timeline source rows already authorized and read by the host. */
+  timelineRows?: ResolvedTimelineRows;
+  /** Controlled source-row selection, kept separate from persisted VisualTarget identities. */
+  sourceSelected?: SourceRowTarget | null;
+  onSourceSelect?(selection: SourceRowTarget | null): void;
   registry?: VisualFamilyResolver;
   /** Trusted host adapters for family-declared visualizations; can override a built-in viewer. */
   viewAdapters?: VisualViewAdapterRegistry;

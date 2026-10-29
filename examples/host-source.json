@@ -1,0 +1,31 @@
+[
+  {
+    "rowId": "order-created",
+    "label": "Order received",
+    "started": "2026-10-29T08:00:00Z",
+    "ended": "2026-10-29T08:04:00Z",
+    "team": "Checkout",
+    "service": "API",
+    "requests": 12,
+    "entity": "order-42"
+  },
+  {
+    "rowId": "order-verified",
+    "label": "Payment verified",
+    "started": "2026-10-29T08:05:00Z",
+    "ended": "2026-10-29T08:10:00Z",
+    "team": "Payments",
+    "service": "Payments",
+    "requests": 7,
+    "entity": "order-42"
+  },
+  {
+    "rowId": "order-fulfilled",
+    "label": "Order dispatched",
+    "started": "2026-10-29T08:11:00Z",
+    "team": "Fulfilment",
+    "service": "Worker",
+    "requests": 3,
+    "entity": "order-42"
+  }
+]

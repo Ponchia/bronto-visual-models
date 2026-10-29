@@ -210,6 +210,15 @@ selection. No dataset access is implemented inside the library.
 [Connected chart contract](docs/charts.md#host-resolved-chart-rows) ·
 [Timeline contract](docs/standalone-views.md#host-resolved-timelines).
 
+## Explore charts with local selections
+
+The reference Vega-Lite view accepts bounded, safe \`spec.params\`
+point/click and interval/brush selections. Their interactions stay local to
+the rendered chart: they never create a model edit, load a URL or bind an
+external DOM input. Free-form event selectors and executable parameter
+expressions are still refused.
+[Example and security boundaries](docs/charts.md#local-click-and-brush-selections).
+
 ## Truthful chart encodings
 
 `chartEncodingGuidance(content)` flags common semantic pitfalls without changing

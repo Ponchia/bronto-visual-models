@@ -8,12 +8,12 @@ Spatial installation or private data is required.
 mkdir visual-models-first-run
 cd visual-models-first-run
 npm init -y
-npm install --ignore-scripts --omit=optional https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.6/ponchia-visual-models-0.1.0-beta.6.tgz
+npm install --ignore-scripts --omit=optional https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.7/ponchia-visual-models-0.1.0-beta.7.tgz
 ```
 
 Save the [first-model example](../examples/first-model.mjs) as `first-model.mjs`
 in that directory and run `node first-model.mjs`. The example uses the core APIs
-available in beta.6; newer source checkouts also include it in the packed archive.
+available in beta.7; newer source checkouts also include it in the packed archive.
 It creates a graph, previews a change without writing, commits the change,
 retries the same key, refuses a stale edit and undoes the committed rename.
 Each step asserts the result rather than merely printing an optimistic message.

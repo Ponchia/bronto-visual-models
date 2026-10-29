@@ -21,8 +21,9 @@ export function sourceSnapshotKey(
 ): string | undefined {
   const source = visualFamilyIdentity(model.renderer, registry)?.source;
   if (!source) return undefined;
-  // Invalid payloads are refused before any family-specific callback can read
-  // caller-controlled accessors. This API is used only on trusted model data.
+  // Invalid payloads throw before any family-specific callback can read
+  // caller-controlled accessors (including malformed inline-only models).
+  // This API is used only on trusted model data.
   assertVisualJson(model.content);
   const kind = source.kind(model.content);
   if (kind !== "dataset" && kind !== "render-data" && kind !== "connection") return undefined;

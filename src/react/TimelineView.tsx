@@ -166,12 +166,15 @@ function TimelineSurface(props: AdapterProps & { view: Accepted }) {
 
 /** Inline authoring remains guarded; dataset facts are temporary, read-only views. */
 export default function TimelineView(props: AdapterProps) {
-  const prepared = useMemo<Accepted | { error: string }>(() => {
+  const prepared = useMemo<Accepted | { error: string; report: boolean }>(() => {
     if (!props.model.content.datasource)
       return { content: props.model.content as unknown as TimelineContent };
     if (!props.timelineRows)
       return {
         error: "Resolve this timeline's dataset in the host; no source rows were supplied.",
+        // An unresolved datasource was previously an informational notice,
+        // not a host error. Preserve that embedding behavior.
+        report: false,
       };
     try {
       return prepareHostTimeline(props.model, props.timelineRows, props.registry);
@@ -179,6 +182,7 @@ export default function TimelineView(props: AdapterProps) {
       return {
         error:
           "The host's timeline snapshot is missing, stale or invalid; source rows were not displayed.",
+        report: true,
       };
     }
   }, [
@@ -188,7 +192,7 @@ export default function TimelineView(props: AdapterProps) {
     props.timelineRows?.revision,
     props.timelineRows?.rows,
   ]);
-  const error = "error" in prepared ? prepared.error : undefined;
+  const error = "error" in prepared && prepared.report ? prepared.error : undefined;
   const reported = useRef<{ key: string; error: string } | null>(null);
   const frame = `${props.model.id}:${props.model.generation}:${props.model.revision}:${props.timelineRows?.sourceKey ?? ""}:${props.timelineRows?.revision ?? ""}`;
   useEffect(() => {

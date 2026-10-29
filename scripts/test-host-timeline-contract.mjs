@@ -110,8 +110,14 @@ export async function testHostTimelineContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Resolve current timeline source" }).click();
     await page.getByTestId("ready-model").filter({ hasText: "2" }).waitFor();
     await page.waitForFunction(() => document.querySelectorAll('[role="alert"]').length === 0);
+    const priorErrorHistory = await page.getByTestId("error-messages").textContent();
     await page.getByRole("button", { name: "Remove timeline snapshot" }).click();
-    await page.getByRole("alert").waitFor();
+    await page.getByText("Resolve this timeline's dataset in the host", { exact: false }).waitFor();
+    assert.equal(
+      await page.getByTestId("error-messages").textContent(),
+      priorErrorHistory,
+      "A host that has not supplied timeline rows received an unexpected error callback",
+    );
     await page.getByRole("button", { name: "Restore timeline snapshot" }).click();
     await page.waitForFunction(() => document.querySelectorAll('[role="alert"]').length === 0);
     assert.equal(await page.getByTestId("edit-attempts").textContent(), "0");

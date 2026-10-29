@@ -112,6 +112,11 @@ export async function testReactContract(
       "Late rejection restored obsolete host coordinates",
     );
     assert.ok((await node.textContent()).includes("Latest host A"));
+    // Dismiss the previous refusal before another pointer gesture. A persistent
+    // alert at the foot of a small embedded canvas can cover the node's center;
+    // a drag through its closeable notice is not a diagram drag.
+    await page.getByRole("button", { name: "Dismiss visual error" }).click();
+    await page.getByRole("alert").waitFor({ state: "detached" });
     await page.getByLabel("Commit mode").selectOption("sync");
     await drag();
     await page.getByRole("alert").filter({ hasText: "Synchronous edit refused" }).waitFor();

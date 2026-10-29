@@ -201,6 +201,16 @@ policy without loading a compiler, React, DOM or network. This returns owned spe
 and rows plus `fill` (`fit` or `composed`). Passing that check is not proof of valid
 Vega-Lite grammar or bounded compute cost; compilation/rendering can still refuse.
 
+## Local chart selection parameters
+
+\`prepareInlineChart\` and the React chart viewer accept up to four
+top-level \`spec.params\` with bounded local \`point\` or \`interval\`
+selections. Vega-Lite handles the default click/drag gestures within its
+canvas, without changing model content or requiring a host edit callback.
+Bindings, custom event streams, parameter expressions and selections nested
+inside layers/compositions continue to be refused.
+See [the local selection guide](charts.md#local-click-and-brush-selections).
+
 ## Connected charts with pre-resolved rows
 
 A chart with `datasource` or `connection` may be displayed using

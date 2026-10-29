@@ -163,3 +163,157 @@ test("table display truncation is bounded and disclosed, not lost from stored ro
   assert.equal(chartCellText("x".repeat(300)).length, 240);
   assert.equal(chartCellText("<script>alert(1)</script>"), "<script>alert(1)</script>");
 });
+
+test("bounded Vega-Lite point and interval selections remain local and preserve source", () => {
+  const spec = {
+    mark: "point",
+    params: [
+      { name: "picked", select: { type: "point", encodings: ["x"], toggle: false } },
+      { name: "brush", select: { type: "interval", encodings: ["x", "y"], clear: false } },
+    ],
+    encoding: {
+      x: { field: "label", type: "nominal" },
+      y: { field: "value", type: "quantitative" },
+      opacity: { condition: { param: "picked", empty: false, value: 1 }, value: 0.25 },
+    },
+  };
+  const content = { spec, values: [{ label: "Alpha", value: 2 }] };
+  const before = JSON.stringify(content);
+  const prepared = prepareInlineChart(content);
+  assert.deepEqual(prepared.spec.params, spec.params);
+  assert.equal(JSON.stringify(content), before);
+  (prepared.spec.params as Array<Record<string, unknown>>)[0]!.name = "changed";
+  prepared.values[0]!.value = 99;
+  assert.equal(JSON.stringify(content), before);
+});
+
+test("simple shorthand local selections are available without event bindings", () => {
+  for (const kind of ["point", "interval"] as const) {
+    const content = {
+      ...base(),
+      spec: { ...base().spec, params: [{ name: "sel", select: kind }] },
+    };
+    assert.deepEqual(prepareInlineChart(content).spec.params, content.spec.params);
+  }
+  const content = {
+    ...base(),
+    spec: {
+      ...base().spec,
+      params: [
+        {
+          name: "sel",
+          select: {
+            type: "point",
+            fields: ["Field with spaces", "metric.value"],
+            nearest: false,
+            clear: false,
+            resolve: "global",
+          },
+        },
+      ],
+    },
+  };
+  assert.deepEqual(prepareInlineChart(content).spec.params, content.spec.params);
+});
+
+for (const [reason, params] of [
+  ["no selections", []],
+  [
+    "too many selections",
+    Array.from({ length: 5 }, (_, i) => ({ name: "sel_" + i, select: "point" })),
+  ],
+  ["non-selection parameter", [{ name: "x", value: 1 }]],
+  ["parameter bound to input", [{ name: "bound", select: "point", bind: { element: "#control" } }]],
+  ["selection initialized from data", [{ name: "picked", select: "point", value: [1] }]],
+  [
+    "duplicate selection names",
+    [
+      { name: "picked", select: "point" },
+      { name: "picked", select: "interval" },
+    ],
+  ],
+  ["reserved selection name", [{ name: "__proto__", select: "point" }]],
+  ["reserved internal selection name", [{ name: "bvm_rows", select: "point" }]],
+  ["unsafe selection name", [{ name: "bad-name", select: "point" }]],
+  [
+    "arbitrary selection event stream",
+    [{ name: "picked", select: { type: "point", on: "pointerover" } }],
+  ],
+  [
+    "event callback object",
+    [{ name: "picked", select: { type: "point", on: { source: "window", type: "click" } } }],
+  ],
+  ["custom clear event stream", [{ name: "picked", select: { type: "point", clear: "click" } }]],
+  ["expression toggle", [{ name: "picked", select: { type: "point", toggle: "event.altKey" } }]],
+  [
+    "expression-based selection",
+    [{ name: "picked", select: { type: "point", toggle: { expr: "true" } } }],
+  ],
+  [
+    "unrecognized selection config",
+    [{ name: "picked", select: { type: "interval", bind: "scales" } }],
+  ],
+  ["unrecognized selection type", [{ name: "picked", select: { type: "multi" } }]],
+  ["nonnumeric selection name", [{ name: 42, select: "point" }]],
+  [
+    "unsupported interval projection",
+    [{ name: "brushed", select: { type: "interval", encodings: ["color"] } }],
+  ],
+  ["empty selection fields", [{ name: "picked", select: { type: "point", fields: [] } }]],
+  [
+    "oversized field projection",
+    [{ name: "picked", select: { type: "point", fields: ["a", "b", "c", "d", "e"] } }],
+  ],
+  [
+    "duplicate field projection",
+    [{ name: "picked", select: { type: "point", fields: ["a", "a"] } }],
+  ],
+  [
+    "invalid field control character",
+    [{ name: "picked", select: { type: "point", fields: ["value\n"] } }],
+  ],
+  ["unsafe resolve", [{ name: "picked", select: { type: "point", resolve: "javascript:bad" } }]],
+  ["incorrect boolean nearest", [{ name: "picked", select: { type: "point", nearest: "true" } }]],
+] as const) {
+  test("reference chart refuses " + reason + " without mutating the stored grammar", () => {
+    const content = { ...base(), spec: { ...base().spec, params } };
+    const before = JSON.stringify(content);
+    assert.throws(() => prepareInlineChart(content), unavailable);
+    assert.equal(JSON.stringify(content), before);
+  });
+}
+test("local selections in layers and nested branches cannot escape the top-level policy", () => {
+  for (const spec of [
+    { layer: [{ mark: "bar", params: [{ name: "nested", select: "point" }] }] },
+    { hconcat: [{ mark: "bar", params: [{ name: "nested", select: "point" }] }] },
+    { mark: "bar", encoding: { condition: { params: [{ name: "nested", select: "point" }] } } },
+  ])
+    assert.throws(() => prepareInlineChart({ spec, values: [] }), unavailable);
+});
+test("local selection does not allow data/image/url access through nearby spec properties", () => {
+  for (const spec of [
+    {
+      ...base().spec,
+      params: [{ name: "local", select: "point" }],
+      data: { url: "https://example.invalid/tracker" },
+    },
+    {
+      ...base().spec,
+      params: [{ name: "local", select: "interval" }],
+      encoding: {
+        href: { field: "link", type: "nominal" },
+      },
+    },
+    {
+      ...base().spec,
+      params: [{ name: "local", select: "point" }],
+      layer: [
+        {
+          mark: "image",
+          encoding: { url: { field: "logo", type: "nominal" } },
+        },
+      ],
+    },
+  ])
+    assert.throws(() => prepareInlineChart({ spec, values: [] }), unavailable);
+});

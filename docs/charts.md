@@ -150,8 +150,10 @@ stored chart family. It requires `spec` and explicit `values`. It refuses:
   also present. Resolve access and data deliberately in the host first.
 - `data` and `datasets` inside the spec, including layers, compositions and
   lookup transforms. The sole source of rows is `content.values`.
-- Image marks, URL/href properties, interactive parameters, bindings and legacy
-  selections. This reference view neither loads resources nor binds host DOM.
+- Image marks, URL/href properties, DOM input bindings, arbitrary event
+  selectors and legacy selections. The reference view neither loads external
+  resources nor binds host DOM. A bounded set of **local** point/interval
+  selection parameters is supported, as described below.
 - Nonempty authored annotations, because silently omitting them would present an
   incomplete artifact as a complete one. Use a host adapter that draws them.
 
@@ -159,6 +161,59 @@ Refusal leaves source untouched and does not acknowledge a rendered revision.
 A subsequent valid revision can recover; a failed compile hides a previous frame
 rather than attributing stale pixels to the new source. This policy is not a
 migration or a restriction on what other authorized host adapters may support.
+
+## Local click and brush selections
+
+The reference chart now supports Vega-Lite's default point (click) and interval
+(drag) selection interactions, kept **inside the view**. They can highlight
+marks or filter a local chart without modifying source rows, producing model
+edits, opening links or selecting persistent \`VisualTarget\` elements.
+
+\`\`\`json
+{
+  "spec": {
+    "mark": "point",
+    "params": [
+      { "name": "picked", "select": { "type": "point", "encodings": ["x"], "toggle": false } }
+    ],
+    "encoding": {
+      "x": { "field": "service", "type": "nominal" },
+      "y": { "field": "requests", "type": "quantitative" },
+      "opacity": {
+        "condition": { "param": "picked", "empty": false, "value": 1 },
+        "value": 0.25
+      }
+    }
+  },
+  "values": [
+    { "service": "API", "requests": 43 },
+    { "service": "Worker", "requests": 26 }
+  ]
+}
+\`\`\`
+
+A maximum of four uniquely named top-level \`spec.params\` definitions may
+use \`select: "point"\`, \`select: "interval"\`, or an object with
+\`type: "point" | "interval"\`. Optional projection fields/encodings are
+bounded to four, with safe channel names; simple boolean toggle, clear
+(disabled), nearest and interval translate/zoom controls, plus global/union/
+intersect resolution, can be supplied. Default events remain the renderer's
+standard click, drag and double-click interactions.
+
+The following continue to **refuse** rather than execute: \`bind\`, custom
+event streams (\`on\`, string \`clear\`), expression-based toggles, parameter
+initialization (\`value\`), signal/DOM references, nested selection definitions
+and obsolete \`selection\` grammar. Top-level \`content.params\` remains a
+*host source binding* and is still refused by the inline chart. Connected
+charts may use these safe \`spec.params\` when their host supplies
+\`chartRows\` through the separate source-authorization contract.
+
+Selection state is transient reader state; it is not serialized, translated
+into persistent element identity or sent back through \`onEdit\`. Reopening a
+view or changing its grammar may reset selections. The engine still uses the
+deny-all loader and the Vega expression interpreter; this is **not** an
+untrusted-code sandbox or a promise that arbitrary complex transforms are
+computationally cheap.
 
 A deny-all loader is installed in the Vega constructor, before any potential
 resource loading. Canvas rendering and native text tooltips avoid interpreting

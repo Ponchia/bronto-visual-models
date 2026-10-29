@@ -215,6 +215,36 @@ export async function testChartContract(browser, outputDirectory) {
       await ready();
       assert.equal(await page.getByRole("alert").count(), 0);
     }
+    // Click/brush selections are local Vega signals; neither edits the saved
+    // rows on pointer gestures nor needs external bindings or script eval.
+    await page.getByRole("button", { name: "Local point selection", exact: true }).click();
+    await ready();
+    const pointBefore = await canvasDigest();
+    const pointRevision = await page.getByTestId("revision").textContent();
+    await page.locator(".bvm-chart canvas").click();
+    await page.waitForFunction((previous) => {
+      const canvas = document.querySelector(".bvm-chart canvas");
+      if (!canvas) return false;
+      const bytes = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      let hash = 2166136261;
+      for (let i = 0; i < bytes.length; i++) hash = Math.imul(hash ^ bytes[i], 16777619);
+      return hash !== previous;
+    }, pointBefore);
+    assert.equal(await page.getByTestId("revision").textContent(), pointRevision);
+    await page.locator(".bvm-chart canvas").dblclick();
+    await page.waitForFunction((previous) => {
+      const canvas = document.querySelector(".bvm-chart canvas");
+      if (!canvas) return false;
+      const bytes = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      let hash = 2166136261;
+      for (let i = 0; i < bytes.length; i++) hash = Math.imul(hash ^ bytes[i], 16777619);
+      return hash === previous;
+    }, pointBefore);
+    await page.getByRole("button", { name: "Local interval selection", exact: true }).click();
+    await ready();
+    assert.equal(await page.getByRole("alert").count(), 0);
+    await page.getByRole("button", { name: "Recover chart", exact: true }).click();
+    await ready();
     for (const width of [1100, 390]) {
       await page.setViewportSize({ width, height: 850 });
       await page.waitForFunction(() => {
@@ -256,6 +286,8 @@ export async function testChartContract(browser, outputDirectory) {
       "small-screen fit",
       "metadata-only accessible descriptions update without rebuilding the chart",
       "inline host error handlers cannot cause report feedback loops",
+      "local Vega-Lite point/interval selections under strict CSP",
+      "chart clicks update only local selection signals, not authored data",
     );
     return { device: "chart-contract", passed: true, assertions: results };
   } catch (error) {

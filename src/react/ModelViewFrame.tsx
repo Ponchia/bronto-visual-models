@@ -59,9 +59,12 @@ export function ModelViewFrame(
   );
   const ready = useCallback(
     (source?: { sourceKey: string; revision: string; digest: string } | number) => {
-      // An accepted callback is not a commit. Here a renderer acknowledges
-      // that it has actually drawn; a prior failure for this frame can clear.
-      setFailure((previous) => (previous?.identity === identity ? null : previous));
+      // Bound chart data may recover at the same model revision. Only a
+      // successfully drawn bound chart clears that frame's prior error.
+      // Other renderers (notably React Flow on canvas resize) must not
+      // mutate host-frame state during their readiness/measurement cycle.
+      if (model.renderer === "vega-lite" && source && typeof source === "object")
+        setFailure((previous) => (previous?.identity === identity ? null : previous));
       props.onReady?.({
         id: model.id,
         generation: model.generation,

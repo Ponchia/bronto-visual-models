@@ -220,7 +220,8 @@ const identities = [
     category: "Relationships",
     description: "Identified nodes, groups, ports and relationships with deliberate layout.",
     modelType: "graph",
-    version: 1,
+    // 2 adds the authored shape/tone/line vocabulary to diagrams.
+    version: 2,
     environment: "dom",
     records: ["nodes", "edges"],
     summary: (content) =>

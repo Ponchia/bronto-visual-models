@@ -149,6 +149,22 @@ schemas, identified collections, validation and projections without mutating a
 global registry. The reference React surface does not automatically invent a UI
 for a new family. [Extension contract](docs/api.md#families-and-registries).
 
+## Extend renderers and author diagrams
+
+Applications can install trusted, lazy React adapters for their own model families
+with `createVisualViewAdapters`, alongside the instance-local
+`createVisualRegistry`. `VisualModelView` uses the family-declared adapter,
+supports an explicit override of its built-in viewers and never resolves module
+names from saved content. Adapters are controlled components: they receive
+model and selection state and propose writes through the host's authority
+callback. [API and standalone example](docs/api.md#trusted-renderer-extensions).
+
+Editable diagrams now retain theme-aware node shapes and tones plus edge
+line styles (renderer version 2). Expand **Author diagram** in the reference
+React view to add nodes/relationships or edit a selected item; previewed
+or refused writes still need the host to commit. Existing version-1 diagrams
+remain readable. [Appearance and editing contract](docs/api.md#diagram-appearance-and-authoring).
+
 ## Optional diagram layouts
 
 The ELK adapter proposes a layout; it does not change the saved diagram.

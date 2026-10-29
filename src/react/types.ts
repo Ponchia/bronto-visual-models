@@ -5,6 +5,7 @@ import type { RendererTokens } from "@ponchia/ui/renderer";
 import type { VisualFamilyResolver } from "../family-resolver.ts";
 import type { VisualModel, VisualTarget } from "../model.ts";
 import type { ModelEdit } from "../operations.ts";
+import type { VisualViewAdapterRegistry } from "./view-adapters.ts";
 export interface VisualModelViewProps {
   model: VisualModel;
   projection?: string;
@@ -18,6 +19,8 @@ export interface VisualModelViewProps {
   /** Optional derived routes returned by layoutDiagram; stale content/lifetimes are ignored. */
   diagramRouting?: DiagramRouting;
   registry?: VisualFamilyResolver;
+  /** Trusted host adapters for family-declared visualizations; can override a built-in viewer. */
+  viewAdapters?: VisualViewAdapterRegistry;
   selected?: VisualTarget | null;
   onSelect?(target: VisualTarget | null): void;
   /** Absent means read-only. Authorization is checked by the host's transaction, never inferred from this prop. */

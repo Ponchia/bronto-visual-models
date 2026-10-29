@@ -78,3 +78,18 @@ uninterpreted and are not rewritten.
 
 See [accessibility and browsers](verification.md), [API](api.md) and
 [performance](performance.md) for guarantees and verification boundaries.
+
+## Extending the view
+
+A host may supply `viewAdapters={createVisualViewAdapters([...])}` alongside
+the `registry` that recognizes its custom model family. Each adapter is trusted
+React code keyed to a declared family adapter; a lazy `load` callback keeps
+its engine out of unrelated views. This makes custom families usable in
+`VisualModelView` without introducing a global registry or modifying this
+package. See [the API](api.md#trusted-renderer-extensions).
+
+The built-in diagram offers compact authoring controls for node and relationship
+creation and selected-record details. It retains authored shape, tone and
+line styles (diagram renderer version 2), with guarded writes and a read-only
+mode. Creating an item at the camera center does not auto-layout the rest of
+the model. Large datasets still need host-side aggregation/windowing.

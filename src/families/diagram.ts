@@ -115,6 +115,8 @@ export function createDiagramFamily(options: { linkPattern?: string } = {}) {
         search: SEMANTIC_SEARCH,
         fields: {
           ...SEMANTIC_FIELDS,
+          shape: { label: "Shape", control: "choice", section: "Appearance" },
+          tone: { label: "Color", control: "tone", section: "Appearance" },
           parentId: { label: "Group", control: "ref", ref: "nodes" },
           group: { label: "Holds other nodes", section: "Structure" },
           href: { label: "Canvas link", control: "text", section: "Structure" },
@@ -139,6 +141,8 @@ export function createDiagramFamily(options: { linkPattern?: string } = {}) {
           ...SEMANTIC_FIELDS,
           source: { label: "From", control: "ref", ref: "nodes", order: 2 },
           target: { label: "To", control: "ref", ref: "nodes", order: 3 },
+          line: { label: "Line style", control: "choice", section: "Appearance" },
+          tone: { label: "Color", control: "tone", section: "Appearance" },
           sourcePort: { label: "From port", control: "ref", ref: "ports", of: "source" },
           targetPort: { label: "To port", control: "ref", ref: "ports", of: "target" },
         },

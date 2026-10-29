@@ -4,6 +4,10 @@
 
 - Override the development-only `markdownlint` transitive `re2js` pin to patched
   2.8.7 for GHSA-gg6h-894w-4m9c (CVE-2026-116795); no runtime dependency changes.
+- Accept pre-authorized, revisioned host chart rows through an explicit
+  source-key binding without persisting data or enabling implicit network
+  requests. Verify independent source-refresh acknowledgements and stale
+  refusals in a packed browser consumer.
 
 - Advertise the published beta.7 archive in the distribution manifest, README and
   getting-started guide; source development continues as 0.1.0-beta.8-dev.0.

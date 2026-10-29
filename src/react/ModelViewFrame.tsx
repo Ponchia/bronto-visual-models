@@ -58,14 +58,27 @@ export function ModelViewFrame(
     [props.onError, identity],
   );
   const ready = useCallback(
-    () =>
+    (source?: { sourceKey: string; revision: string; digest: string } | number) => {
+      // An accepted callback is not a commit. Here a renderer acknowledges
+      // that it has actually drawn; a prior failure for this frame can clear.
+      setFailure((previous) => (previous?.identity === identity ? null : previous));
       props.onReady?.({
         id: model.id,
         generation: model.generation,
         revision: model.revision,
         projection: projection ?? model.renderer,
-      }),
-    [props.onReady, model.id, model.generation, model.revision, projection, model.renderer],
+        ...(source && typeof source === "object" ? { source } : {}),
+      });
+    },
+    [
+      props.onReady,
+      model.id,
+      model.generation,
+      model.revision,
+      projection,
+      model.renderer,
+      identity,
+    ],
   );
   const selected = props.selected
     ? resolveModelTarget(model, props.selected, undefined, registry)

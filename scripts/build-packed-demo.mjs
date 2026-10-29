@@ -129,6 +129,7 @@ try {
     ["test/c4-browser", "c4-contract"],
     ["test/c4-layout-browser", "c4-layout-contract"],
     ["test/adapter-browser", "adapter-contract"],
+    ["test/host-chart-browser", "host-chart-contract"],
   ]) {
     await cp(source, join(directory, name), { recursive: true });
     if (name === "c4-layout-contract")

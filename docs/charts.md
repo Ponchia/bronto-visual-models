@@ -49,6 +49,63 @@ Presentation toggles, table pages and viewport changes never modify saved data.
 An inactive chart does not draw or acknowledge a new revision; reactivation
 applies the current input. `onReady` acknowledges the chart, not the table.
 
+## Host-resolved chart rows
+
+A connected or dataset-bound chart can now use the same reference renderer
+without copying private dataset rows into persistent model content. The host
+resolves and authorizes its own source, then supplies a bounded JSON snapshot
+with an exact source fingerprint:
+
+```tsx
+import { chartSourceKey } from "@ponchia/visual-models";
+import { VisualModelView } from "@ponchia/visual-models/react";
+
+// The host already checked access and read rows at its own datasource revision.
+// chartModel.content keeps only spec/datasource/params, never copied result rows.
+const sourceKey = chartSourceKey(chartModel);
+if (sourceKey) {
+  const chartRows = {
+    sourceKey,
+    revision: "dataset-revision-42",
+    rows: authorizedRows,
+  };
+  // <VisualModelView model={chartModel} chartRows={chartRows} />
+}
+```
+
+`chartRows` is a **trusted host input**. It authorizes nothing: a source key
+is an SHA-256 fingerprint of the model's identity, generation, renderer,
+source kind and declared source inputs. It is a *staleness guard*, never a
+credential or proof that the host checked a permission. The package cannot
+query a dataset or resolve a connector. The host must enforce authorization
+before every read and must replace the supplied snapshot when the source
+binding or its result changes. A different model lifetime, source name,
+parameter or connection rejects old rows. Unbound inline charts cannot
+be overridden by a host snapshot.
+
+The host supplies a stable snapshot `revision` and up to 2,000 JSON records
+within the existing content budget. The renderer separately fingerprints
+the actual supplied rows, so a new dataset revision or new data at the same
+model revision draws a new frame. `onReady` gains an optional `source`
+field with `sourceKey`, `revision` and the drawn row `digest`; it is
+sent only after a successfully drawn chart. Old `onReady` consumers continue
+to receive the existing model identity. Model revisions and undo receipts
+remain unchanged when merely refreshing source rows.
+
+The same deny-all browser loader, interpreted Vega expressions, inert text
+tooltips, prohibited URL/image/HTML properties and input limits apply to
+host-resolved data. Authored annotations and unsupported interactive
+specifications still refuse; these aren't silently removed. Failed rows
+cannot acknowledge a frame or disclose private row values in public error
+callbacks. The source table displays exactly the host-supplied raw rows,
+without copying them into the model. A missing/mismatched snapshot shows
+an actionable refusal and preserves the saved model.
+
+The packed independent consumer exercises data refresh, stale-key rejection,
+raw-table provenance, error recovery and read-only rendering without a host
+network request. This is not a general datasource service, streaming query
+engine, authorization sandbox or arbitrary-length chart virtualization.
+
 ## Read the source table
 
 The **Data table** button shows a semantic HTML table with column headers, row

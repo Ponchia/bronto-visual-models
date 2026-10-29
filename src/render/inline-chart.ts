@@ -1,6 +1,16 @@
 import { validateVisualContent } from "../catalog.ts";
 import { chartFill, type ChartFill } from "../families/vega-lite.ts";
-import { assertVisualJson, VisualModelError, visualRecord } from "../model.ts";
+import {
+  assertVisualJson,
+  canonicalVisualJson,
+  VisualModelError,
+  visualRecord,
+  type VisualModel,
+} from "../model.ts";
+import { chartSourceKey, type ResolvedChartRows } from "../chart-source.ts";
+import type { VisualFamilyResolver } from "../family-resolver.ts";
+import { sha256Hex } from "../hash.ts";
+import { assertVisualModel } from "../operations.ts";
 
 export interface InlineChartInput {
   spec: Record<string, unknown>;
@@ -55,6 +65,71 @@ export function prepareInlineChart(content: unknown): InlineChartInput {
     spec,
     values: structuredClone(content.values) as Record<string, unknown>[],
     fill: chartFill(spec),
+  };
+}
+
+export interface PreparedHostChart {
+  readonly input: InlineChartInput;
+  /** Current source revision and exact accepted row identity for draw acknowledgements. */
+  readonly source: Readonly<{ sourceKey: string; revision: string; digest: string }>;
+}
+
+/**
+ * Reuse the inline viewer's deny-all Vega policy, but accept rows that an
+ * authorized host has already materialized from the model's exact source.
+ * Never perform access checks or reads here, and never persist resolved rows.
+ */
+export function prepareHostChart(
+  model: VisualModel,
+  supplied: ResolvedChartRows,
+  registry?: VisualFamilyResolver,
+): PreparedHostChart {
+  assertVisualModel(model, registry);
+  if (model.renderer !== "vega-lite")
+    throw new VisualModelError("unavailable", "Only chart models accept chart rows");
+  const expected = chartSourceKey(model, registry);
+  if (!expected) throw new VisualModelError("unavailable", "The chart has no bound row source");
+  if (
+    !supplied ||
+    typeof supplied.sourceKey !== "string" ||
+    supplied.sourceKey !== expected ||
+    typeof supplied.revision !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(supplied.revision)
+  )
+    throw new VisualModelError("unavailable", "Host chart rows do not match this source snapshot");
+  if (
+    Object.hasOwn(model.content, "values") ||
+    (Object.hasOwn(model.content, "connection") && Object.hasOwn(model.content, "datasource"))
+  )
+    throw new VisualModelError(
+      "unavailable",
+      "Bound charts cannot mix inline or competing sources",
+    );
+  // Do not include the stored datasource/connection/params when passing this
+  // temporary input through the reference viewer's schema and resource policy.
+  // A failing row is not echoed to a host error callback.
+  let input: InlineChartInput;
+  try {
+    input = prepareInlineChart({
+      spec: model.content.spec,
+      values: supplied.rows,
+      ...(Object.hasOwn(model.content, "annotations")
+        ? { annotations: model.content.annotations }
+        : {}),
+    });
+  } catch {
+    throw new VisualModelError(
+      "unavailable",
+      "Host chart rows or grammar cannot be shown by the reference renderer",
+    );
+  }
+  return {
+    input,
+    source: Object.freeze({
+      sourceKey: expected,
+      revision: supplied.revision,
+      digest: sha256Hex(canonicalVisualJson(input.values)),
+    }),
   };
 }
 

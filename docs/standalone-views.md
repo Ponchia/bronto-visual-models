@@ -128,8 +128,9 @@ authorization token**. A new dataset binding, parameter, mapping or model
 generation invalidates old rows. New host snapshots update the visible
 events without incrementing the authored model revision. After drawing,
 `onReady` acknowledges the source key, host revision and exact row digest.
-or invalid or stale snapshot refuses rendering without quoting private row
-values or changing the saved timeline. Missing host rows show a passive
+An invalid or stale snapshot refuses rendering without quoting private row
+values or changing the saved timeline. Withdrawing a refused snapshot clears
+its former alert. Missing host rows show a passive
 status notice rather than a host error callback, preserving the behavior
 of existing unresolved dataset timelines.
 

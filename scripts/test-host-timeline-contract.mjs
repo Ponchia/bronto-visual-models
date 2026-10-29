@@ -101,6 +101,17 @@ export async function testHostTimelineContract(browser, outputDirectory) {
     await page.getByRole("button", { name: "Wrong timeline source" }).click();
     await page.getByRole("alert").waitFor();
     assert.equal(await page.getByTestId("ready-source").textContent(), "snapshot-4");
+    const refusedMessages = await page.getByTestId("error-messages").textContent();
+    await page.getByRole("button", { name: "Remove timeline snapshot" }).click();
+    await page.getByText("Resolve this timeline's dataset in the host", { exact: false }).waitFor();
+    await page.waitForFunction(() => document.querySelectorAll('[role="alert"]').length === 0);
+    assert.equal(
+      await page.getByTestId("error-messages").textContent(),
+      refusedMessages,
+      "Withdrawing a refused snapshot reported another error",
+    );
+    await page.getByRole("button", { name: "Restore timeline snapshot" }).click();
+    await page.getByRole("alert").waitFor();
     await page.getByRole("button", { name: "Resolve current timeline source" }).click();
     await ready("snapshot-6");
     await page.getByRole("button", { name: "Change timeline source" }).click();

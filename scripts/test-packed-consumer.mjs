@@ -24,6 +24,8 @@ for (const required of [
   "bin/bronto-visual-models.mjs",
   "LICENSE",
   "examples/first-model.mjs",
+  "examples/host-source.mjs",
+  "examples/host-source.json",
 ])
   assert(entries.includes(required), `Packed package lacks ${required}`);
 assert(
@@ -92,6 +94,26 @@ console.log('Packed core, local transactions, identities and undo work without S
     [join(directory, "node_modules/@ponchia/visual-models/examples/first-model.mjs")],
     { cwd: directory, stdio: "inherit" },
   );
+  const hostExample = join(
+    directory,
+    "node_modules/@ponchia/visual-models/examples/host-source.mjs",
+  );
+  const hostResult = JSON.parse(
+    execFileSync(process.execPath, [hostExample], {
+      cwd: directory,
+      encoding: "utf8",
+    }),
+  );
+  assert.equal(hostResult.sourceReadBy, "host");
+  assert.equal(hostResult.rowsPersistedInModels, false);
+  assert.equal(hostResult.chartRows, 3);
+  assert.equal(hostResult.timelineEvents, 3);
+  assert.equal(hostResult.timelineLanes, 3);
+  assert.equal(hostResult.sourceRowSelection, "order-created");
+  assert.equal(hostResult.dataRefreshDoesNotEditModels, true);
+  assert.equal(hostResult.refreshChangedDataDigests, true);
+  assert.equal(hostResult.staleSourceRefused, true);
+  assert.equal(hostResult.networkRequestedByLibrary, false);
   const bin = join(directory, "node_modules/@ponchia/visual-models/bin/bronto-visual-models.mjs");
   const catalog = JSON.parse(
     execFileSync(process.execPath, [bin, "catalog"], { cwd: directory, encoding: "utf8" }),

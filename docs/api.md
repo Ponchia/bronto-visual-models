@@ -203,8 +203,8 @@ Vega-Lite grammar or bounded compute cost; compilation/rendering can still refus
 
 ## Local chart selection parameters
 
-\`prepareInlineChart\` and the React chart viewer accept up to four
-top-level \`spec.params\` with bounded local \`point\` or \`interval\`
+`prepareInlineChart` and the React chart viewer accept up to four
+top-level `spec.params` with bounded local `point` or `interval`
 selections. Vega-Lite handles the default click/drag gestures within its
 canvas, without changing model content or requiring a host edit callback.
 Bindings, custom event streams, parameter expressions and selections nested

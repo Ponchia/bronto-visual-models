@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a runnable, independently packed Node host-data example using public
+  APIs to validate and present the same local JSON rows through bound chart
+  and timeline models without persisting external data or invoking UI engines.
 - Enable bounded Vega-Lite local point/interval selection parameters in the
   reference chart without enabling external events, DOM bindings or resource
   loads. The packed browser suite checks click-driven selection and clearing

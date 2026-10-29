@@ -73,6 +73,15 @@ export async function testHostTimelineContract(browser, outputDirectory) {
       0,
       "HTML row text became an image",
     );
+    const ampersand = page.locator(".bvm-timeline .vis-item").filter({
+      hasText: "R&D <img",
+    });
+    await ampersand.hover();
+    const tooltip = page.locator(".vis-tooltip");
+    await tooltip.waitFor({ state: "visible" });
+    assert.match(await tooltip.textContent(), /R&D <img/);
+    assert.doesNotMatch(await tooltip.textContent(), /R&#38;D/);
+    await page.mouse.move(1, 1);
     const digest = await page.getByTestId("ready-digest").textContent();
     assert.match(digest, /^[a-f0-9]{64}$/);
     await page.locator(".bvm-timeline .vis-item").filter({ hasText: "Order received" }).click();

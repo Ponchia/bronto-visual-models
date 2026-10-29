@@ -26,7 +26,11 @@ export interface VisualModelViewProps {
    * Must match chartSourceKey(model); never causes a fetch.
    */
   chartRows?: ResolvedChartRows;
-  /** Dataset-only timeline source rows already authorized and read by the host. */
+  /**
+   * Dataset timeline rows already authorized and read by the host.
+   * The key must equal timelineSourceKey(model), and every row needs a unique
+   * string rowId plus the fields declared by the model's timeline mapping.
+   */
   timelineRows?: ResolvedTimelineRows;
   /** Controlled source-row selection, kept separate from persisted VisualTarget identities. */
   sourceSelected?: SourceRowTarget | null;

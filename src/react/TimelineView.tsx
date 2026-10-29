@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TimelineContent } from "../semantic.ts";
 import { modelTargets } from "../targets.ts";
-import { useVisTimeline, titleMarkup, type TimeWindow } from "../engines/vis-timeline.ts";
+import { useVisTimeline, type TimeWindow } from "../engines/vis-timeline.ts";
 import { prepareHostTimeline, type PreparedHostTimeline } from "../render/host-timeline.ts";
 import type { SourceRowTarget } from "../source-snapshot.ts";
 import type { AdapterProps } from "./types.ts";
@@ -56,7 +56,12 @@ function TimelineSurface(props: AdapterProps & { view: Accepted }) {
   // Keep the handler live, but capture the exact source snapshot in the
   // acknowledgement for the frame associated with this dataKey.
   const liveReady = useRef(props.ready);
-  liveReady.current = props.ready;
+  // A concurrent render may be abandoned while an older frame is still
+  // painting. Update the callback only after the new React commit so the
+  // old frame cannot acknowledge itself using an uncommitted model revision.
+  useLayoutEffect(() => {
+    liveReady.current = props.ready;
+  }, [props.ready]);
   const acknowledge = useMemo(() => () => liveReady.current(source), [dataKey, source]);
   const onSelect = useCallback(
     (ids: string[]) => {
@@ -100,7 +105,9 @@ function TimelineSurface(props: AdapterProps & { view: Accepted }) {
     items: content.events.map((event) => ({
       id: event.id,
       content: event.label,
-      title: titleMarkup(event.label),
+      // useVisTimeline escapes this text once. Pre-escaping would render
+      // literal HTML entities in tooltips (including ampersands and line breaks).
+      title: event.label,
       start: event.start,
       ...(event.end === undefined ? {} : { end: event.end }),
       group: event.lane,

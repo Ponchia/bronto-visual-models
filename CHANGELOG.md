@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Avoid double-escaping authored and dataset timeline tooltips, update drawn-frame
+  callback references only after React commits, and share the source revision
+  validator across charts and timelines. The sourceSnapshotKey helper now
+  validates model JSON before probing source kind; malformed direct inputs
+  throw instead of returning undefined.
+
 - Render pre-authorized dataset timelines as derived read-only rows with
   exact source identity and revision guards, stable row selections and drawn
   acknowledgements while retaining authored model content and undo.

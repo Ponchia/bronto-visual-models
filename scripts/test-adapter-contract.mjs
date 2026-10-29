@@ -92,11 +92,18 @@ export async function testAdapterContract(browser, directory) {
     await api.filter({ hasText: "API Gateway" }).waitFor();
     await page.getByRole("button", { name: "Add diagram node" }).click();
     await page.getByTestId("revision").filter({ hasText: "Revision 4" }).waitFor();
-    assert.equal(await page.locator(".react-flow__node").count(), 3);
+    await page.waitForFunction(() => document.querySelectorAll(".react-flow__node").length === 3);
     await page.getByLabel("Diagram link label").fill("verifies");
     await page.getByRole("button", { name: "Add diagram link" }).click();
     await page.getByTestId("revision").filter({ hasText: "Revision 5" }).waitFor();
-    assert.equal(await page.locator(".react-flow__edge").count(), 2);
+    // The controlled model revision can commit before React Flow finishes its
+    // next measured paint. Wait for both authored relationships to materialize.
+    await page.waitForFunction(() => {
+      const content = JSON.parse(document.querySelector('[data-testid="saved-model"]').textContent);
+      return (
+        content.edges.length === 2 && document.querySelectorAll(".react-flow__edge").length === 2
+      );
+    });
 
     await page.getByRole("button", { name: "Toggle edit refusal" }).click();
     await page.getByLabel("Diagram item label").fill("Should not save");

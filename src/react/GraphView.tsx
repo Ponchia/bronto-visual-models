@@ -74,7 +74,15 @@ const Entity = memo(function Entity({ id, data }: NodeProps<GraphFlowNode>) {
   }));
   const updateNodeInternals = useUpdateNodeInternals();
   const portGeometry = JSON.stringify(ports.map(({ id, side, offset }) => ({ id, side, offset })));
+  // React Flow's own ResizeObserver measures a newly mounted node and its
+  // handles. Forcing a second measurement on the same first paint can provoke
+  // a WebKit ResizeObserver loop when the surrounding authoring pane resizes.
+  // Explicitly remeasure only when a *mounted* node changes port geometry.
+  const measuredPorts = useRef({ id, portGeometry });
   useEffect(() => {
+    if (measuredPorts.current.id === id && measuredPorts.current.portGeometry === portGeometry)
+      return;
+    measuredPorts.current = { id, portGeometry };
     updateNodeInternals(id);
   }, [id, portGeometry, updateNodeInternals]);
   return (

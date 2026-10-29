@@ -58,14 +58,30 @@ export function ModelViewFrame(
     [props.onError, identity],
   );
   const ready = useCallback(
-    () =>
+    (source?: { sourceKey: string; revision: string; digest: string } | number) => {
+      // Bound chart data may recover at the same model revision. Only a
+      // successfully drawn bound chart clears that frame's prior error.
+      // Other renderers (notably React Flow on canvas resize) must not
+      // mutate host-frame state during their readiness/measurement cycle.
+      if (model.renderer === "vega-lite" && source && typeof source === "object")
+        setFailure((previous) => (previous?.identity === identity ? null : previous));
       props.onReady?.({
         id: model.id,
         generation: model.generation,
         revision: model.revision,
         projection: projection ?? model.renderer,
-      }),
-    [props.onReady, model.id, model.generation, model.revision, projection, model.renderer],
+        ...(source && typeof source === "object" ? { source } : {}),
+      });
+    },
+    [
+      props.onReady,
+      model.id,
+      model.generation,
+      model.revision,
+      projection,
+      model.renderer,
+      identity,
+    ],
   );
   const selected = props.selected
     ? resolveModelTarget(model, props.selected, undefined, registry)

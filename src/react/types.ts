@@ -6,6 +6,7 @@ import type { VisualFamilyResolver } from "../family-resolver.ts";
 import type { VisualModel, VisualTarget } from "../model.ts";
 import type { ModelEdit } from "../operations.ts";
 import type { VisualViewAdapterRegistry } from "./view-adapters.ts";
+import type { ResolvedChartRows } from "../chart-source.ts";
 export interface VisualModelViewProps {
   model: VisualModel;
   projection?: string;
@@ -18,6 +19,11 @@ export interface VisualModelViewProps {
   c4Routing?: C4Routing;
   /** Optional derived routes returned by layoutDiagram; stale content/lifetimes are ignored. */
   diagramRouting?: DiagramRouting;
+  /**
+   * Chart-only rows already authorized, resolved and revisioned by the host.
+   * Must match chartSourceKey(model); never causes a fetch.
+   */
+  chartRows?: ResolvedChartRows;
   registry?: VisualFamilyResolver;
   /** Trusted host adapters for family-declared visualizations; can override a built-in viewer. */
   viewAdapters?: VisualViewAdapterRegistry;
@@ -34,12 +40,15 @@ export interface VisualModelViewProps {
     generation: string;
     revision: number;
     projection: string;
+    /** Present only after bound rows were actually drawn. */
+    source?: { sourceKey: string; revision: string; digest: string };
   }): void;
   onError?(message: string): void;
 }
 export interface AdapterProps extends VisualModelViewProps {
   tokens: RendererTokens;
   projection: string;
-  ready(): void;
+  /** Animation-frame callers may supply their timestamp; it carries no source identity. */
+  ready(source?: { sourceKey: string; revision: string; digest: string } | number): void;
   report(message: string): void;
 }

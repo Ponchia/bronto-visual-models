@@ -195,6 +195,16 @@ can be expanded to read their complete original value. These are local reading
 controls, not new persistent identities or unrequested downloads.
 [Exploration guide](docs/exploration.md).
 
+## Host-provided data, without a hidden fetch
+
+Dataset-bound or connected chart models can receive rows already resolved
+by an authorized host. Pass `chartRows` with `chartSourceKey(model)`, a
+source revision and the bounded rows to `VisualModelView`. The same chart
+renderer refuses stale source keys, unsafe resource references and invalid
+rows. It acknowledges the exact drawn source revision separately from the
+model's own revision. No dataset access is implemented inside the library.
+[Connected chart contract](docs/charts.md#host-resolved-chart-rows).
+
 ## Truthful chart encodings
 
 `chartEncodingGuidance(content)` flags common semantic pitfalls without changing

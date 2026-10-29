@@ -47,7 +47,15 @@ export function ModelViewFrame(
   const [reading, setReading] = useState(false);
   const compatibility = modelCompatibility(model, registry);
   const projection = resolveVisualProjection(model, props.projection, registry);
-  const identity = `${model.id}:${model.generation}:${model.revision}:${projection}`;
+  // Dataset timeline failures belong to one supplied source snapshot, not
+  // only to the authored model revision. Withdrawing an invalid snapshot
+  // returns to an informational notice without retaining its old error.
+  // Ordinary diagrams, authored timelines and charts retain their identity.
+  const timelineSourceIdentity =
+    model.renderer === "timeline" && model.content.datasource
+      ? `:${props.timelineRows?.sourceKey ?? "none"}:${props.timelineRows?.revision ?? "none"}`
+      : "";
+  const identity = `${model.id}:${model.generation}:${model.revision}:${projection}${timelineSourceIdentity}`;
   const [failure, setFailure] = useState<{ identity: string; message: string } | null>(null);
   const error = failure?.identity === identity ? failure.message : null;
   const report = useCallback(
@@ -59,11 +67,15 @@ export function ModelViewFrame(
   );
   const ready = useCallback(
     (source?: { sourceKey: string; revision: string; digest: string } | number) => {
-      // Bound chart data may recover at the same model revision. Only a
-      // successfully drawn bound chart clears that frame's prior error.
-      // Other renderers (notably React Flow on canvas resize) must not
-      // mutate host-frame state during their readiness/measurement cycle.
-      if (model.renderer === "vega-lite" && source && typeof source === "object")
+      // Bound chart and timeline data can recover at the same authored model
+      // revision. Only an acknowledged source frame clears the earlier
+      // snapshot error. Other renderers (notably React Flow on resize) must
+      // not mutate the host-frame state during their measurement cycle.
+      if (
+        (model.renderer === "vega-lite" || model.renderer === "timeline") &&
+        source &&
+        typeof source === "object"
+      )
         setFailure((previous) => (previous?.identity === identity ? null : previous));
       props.onReady?.({
         id: model.id,

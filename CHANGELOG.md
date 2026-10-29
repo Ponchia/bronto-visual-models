@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Render pre-authorized dataset timelines as derived read-only rows with
+  exact source identity and revision guards, stable row selections and drawn
+  acknowledgements while retaining authored model content and undo.
+
 - Override the development-only `markdownlint` transitive `re2js` pin to patched
   2.8.7 for GHSA-gg6h-894w-4m9c (CVE-2026-116795); no runtime dependency changes.
 - Accept pre-authorized, revisioned host chart rows through an explicit

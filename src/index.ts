@@ -36,5 +36,6 @@ export * from "./memory.ts";
 
 export * from "./chart-guidance.ts";
 export * from "./chart-source.ts";
+export * from "./source-snapshot.ts";
 
 export * from "./c4.ts";

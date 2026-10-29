@@ -1,3 +1,17 @@
+import type { VisualFamilyResolver } from "./family-resolver.ts";
+import type { VisualModel } from "./model.ts";
+import { sourceSnapshotKey, type ResolvedSourceRows } from "./source-snapshot.ts";
+
+export type ResolvedTimelineRows = ResolvedSourceRows;
+
+/** Dataset timeline source identity, not a permission or a row read. */
+export function timelineSourceKey(
+  model: Pick<VisualModel, "id" | "generation" | "renderer" | "content">,
+  registry?: VisualFamilyResolver,
+): string | undefined {
+  return model.renderer === "timeline" ? sourceSnapshotKey(model, registry) : undefined;
+}
+
 const field = { type: "string", minLength: 1, maxLength: 64, pattern: "^[A-Za-z][A-Za-z0-9_]*$" };
 export const TIMELINE_SOURCE_FIELDS = {
   datasource: { type: "string", enum: ["dataset"] },

@@ -213,6 +213,27 @@ edit. `onReady` includes `source: { sourceKey, revision, digest }` after
 a bound chart is actually drawn; other viewers and existing callers are
 unchanged. See [the connected chart guide](charts.md#host-resolved-chart-rows).
 
+## Dataset timelines as source-row views
+
+`timelineSourceKey(model)` identifies the authored dataset binding.
+Both `timelineSourceKey` and `chartSourceKey` use the general
+`sourceSnapshotKey(model)` fingerprint contract; the chart key remains unchanged.
+`VisualModelView` accepts `timelineRows={{ sourceKey, revision, rows }}`
+containing authorized records with unique `rowId` and the mapped fields
+declared in `model.content.fields`. The viewer derives lanes/events without
+changing the saved model or reading any data service.
+
+Dataset timeline events are always **read-only**, even when the host supplies
+`onEdit`. Source selection uses `onSourceSelect(selection)` and the
+optional controlled `sourceSelected`, separate from `VisualTarget`.
+A `SourceRowTarget` names `modelId`, `generation`, `sourceKey`,
+`revision`, `rowId` and optional `entityId`; selections from a prior
+source snapshot cannot highlight current events. A successfully drawn
+`onReady` receives `source: { sourceKey, revision, digest }` while
+authored timeline clients retain the original callback shape. A missing
+host snapshot is an informational status notice, not an `onError` callback.
+[Timeline details](standalone-views.md#host-resolved-timelines).
+
 ## Routed connector caches and chart advice
 
 `VisualModelView` accepts `diagramRouting`, the derived cache from a

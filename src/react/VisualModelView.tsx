@@ -22,9 +22,7 @@ export function VisualModelView(props: VisualModelViewProps) {
           : projection === "diagram" || projection === "network"
             ? Graph
             : null
-        : props.model.renderer === "timeline" &&
-            !props.model.content.datasource &&
-            projection === "timeline"
+        : props.model.renderer === "timeline" && projection === "timeline"
           ? Timeline
           : props.model.renderer === "gantt" && projection === "gantt"
             ? Gantt

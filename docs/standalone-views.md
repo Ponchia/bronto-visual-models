@@ -96,3 +96,53 @@ creation and selected-record details. It retains authored shape, tone and
 line styles (diagram renderer version 2), with guarded writes and a read-only
 mode. Creating an item at the camera center does not auto-layout the rest of
 the model. Large datasets still need host-side aggregation/windowing.
+
+## Host-resolved timelines
+
+The author saves a `timeline` model with `datasource: "dataset"`,
+`params.dataset`, optional revision/range filters, and explicit
+`fields` mapping. Instead of copying source events into the document,
+the authorized host passes rows with the matching source key:
+
+```tsx
+import { timelineSourceKey } from "@ponchia/visual-models";
+import { VisualModelView } from "@ponchia/visual-models/react";
+
+const sourceKey = timelineSourceKey(model);
+if (sourceKey) {
+  const timelineRows = { sourceKey, revision: "snapshot-42", rows: authorizedRows };
+  // <VisualModelView model={model} timelineRows={timelineRows}
+  //   sourceSelected={selectedSourceRow}
+  //   onSourceSelect={setSelectedSourceRow} onReady={onDrawn} />
+}
+```
+
+A row needs a unique string `rowId`, nonempty mapped label and start
+instant. The mapped lane, optional end and entity ID are validated.
+Numeric times are epoch milliseconds; ISO text needs a timezone offset.
+A snapshot supports at most 1,000 events, 32 lanes and the existing JSON
+byte budget. Narrow the source time range or aggregate when larger.
+
+The `timelineSourceKey` is a source-lifetime fingerprint, **not an
+authorization token**. A new dataset binding, parameter, mapping or model
+generation invalidates old rows. New host snapshots update the visible
+events without incrementing the authored model revision. After drawing,
+`onReady` acknowledges the source key, host revision and exact row digest.
+An invalid or stale snapshot refuses rendering without quoting private row
+values or changing the saved timeline. Withdrawing a refused snapshot clears
+its former alert. Missing host rows show a passive
+status notice rather than a host error callback, preserving the behavior
+of existing unresolved dataset timelines.
+
+Source events cannot be edited through `onEdit`. Derived source selection
+uses `onSourceSelect` and `SourceRowTarget`, which includes the original
+source `rowId`, source revision and optional entity identity; the view
+ignores an old selection for a newer source snapshot. Authored timelines
+still use their existing `VisualTarget` selection and guarded editors.
+Local pan/zoom survives refreshing one source, and is reset on a different
+source binding.
+
+The independently installed packed React consumer tests source refresh,
+stale-key refusal, text inertness, source-row identity, read-only behavior,
+a strict CSP and zero unexpected network requests. The library neither
+fetches the dataset nor grants permission to read it.

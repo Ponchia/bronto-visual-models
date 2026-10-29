@@ -9,6 +9,7 @@ import { testRoutingContract } from "./test-routing-contract.mjs";
 import { testReactContract } from "./test-react-contract.mjs";
 import { testChartContract } from "./test-chart-contract.mjs";
 import { testHostChartContract } from "./test-host-chart-contract.mjs";
+import { testHostTimelineContract } from "./test-host-timeline-contract.mjs";
 import { testSurfaceContract } from "./test-surface-contract.mjs";
 import { testExplorationContract } from "./test-exploration-contract.mjs";
 import { chromium, firefox, webkit } from "playwright";
@@ -443,6 +444,7 @@ try {
   results.push(await testRoutingContract(browser, output));
   results.push(await testChartContract(browser, output));
   results.push(await testHostChartContract(browser, output));
+  results.push(await testHostTimelineContract(browser, output));
   results.push(await testSurfaceContract(browser, output));
   results.push(await testExplorationContract(browser, output));
   results.push(await testC4Contract(browser, output));

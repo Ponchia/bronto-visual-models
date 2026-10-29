@@ -1,4 +1,13 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type CSSProperties,
+} from "react";
 import {
   ReactFlow,
   Background,
@@ -14,17 +23,40 @@ import {
 } from "@xyflow/react";
 import RoutedEdge, { type RoutedFlowEdge } from "./RoutedEdge.tsx";
 import { diagramRoutingMatches, placeDiagramLabels } from "../render/diagram-routing.ts";
-import type { GraphContent, GraphNode } from "../semantic.ts";
+import type { GraphContent, GraphNode, GraphTone } from "../semantic.ts";
 import { modelTargets } from "../targets.ts";
 import { graphPorts } from "../render/graph-ports.ts";
 import { networkData, canonicalElementId } from "../render/network-model.ts";
 import type { AdapterProps } from "./types.ts";
+import type { RendererTokens } from "@ponchia/ui/renderer";
+import GraphAuthoring from "./GraphAuthoring.tsx";
+import type { VisualTarget } from "../model.ts";
+
+const graphTone = (tone: GraphTone | undefined, tokens: RendererTokens): string => {
+  switch (tone) {
+    case "accent":
+      return tokens.accent;
+    case "info":
+      return tokens.info;
+    case "success":
+      return tokens.success;
+    case "warning":
+      return tokens.warning;
+    case "danger":
+      return tokens.danger;
+    default:
+      return tokens.edge;
+  }
+};
+
 import { graphInteractionIndex, graphSelection } from "../render/graph-index.ts";
 import GraphFinder from "./GraphFinder.tsx";
 
 type NodeData = {
   label: string;
   group?: boolean;
+  shape?: GraphNode["shape"];
+  description?: string;
   ports?: GraphNode["ports"];
   routePorts?: Array<{ portId: string; offset: number }>;
 };
@@ -46,10 +78,17 @@ const Entity = memo(function Entity({ id, data }: NodeProps<GraphFlowNode>) {
     updateNodeInternals(id);
   }, [id, portGeometry, updateNodeInternals]);
   return (
-    <div className={`bvm-entity ${data.group ? "bvm-group" : ""}`}>
+    <div
+      className={`bvm-entity ${data.group ? "bvm-group" : ""} bvm-shape-${data.shape ?? "rounded"}`}
+    >
       <span className="bvm-entity-label" title={data.label}>
         {data.label}
       </span>
+      {!data.group && data.description && (
+        <span className="bvm-entity-description" title={data.description}>
+          {data.description}
+        </span>
+      )}
       {ports.map((port) => (
         <span key={port.id}>
           {(["target", "source"] as const).map((type) => (
@@ -75,9 +114,10 @@ const nodeTypes = { entity: Entity };
 const edgeTypes = { routed: RoutedEdge };
 
 export default function GraphView(props: AdapterProps) {
-  const { model, projection, onEdit, onSelect, selected, registry, tokens, report } = props;
+  const { model, projection, onEdit, onSelect, registry, tokens, report } = props;
   const content = model.content as unknown as GraphContent;
   const network = projection === "network";
+  const [localSelected, setLocalSelected] = useState<VisualTarget | null>(null);
   const [moving, setMoving] = useState(false);
   const [readingEdges, setReadingEdges] = useState(false);
   const [keyboardStatus, setKeyboardStatus] = useState("");
@@ -136,15 +176,33 @@ export default function GraphView(props: AdapterProps) {
     () => new Map(targets.map((target) => [`${target.collection}:${target.elementId}`, target])),
     [targets],
   );
-  const selection = useRef({ onSelect, targetIndex });
-  selection.current = { onSelect, targetIndex };
-  const select = useCallback(
-    (collection: string, id: string) =>
-      selection.current.onSelect?.(
-        selection.current.targetIndex.get(`${collection}:${id}`) ?? null,
-      ),
-    [],
-  );
+  const selected =
+    props.selected !== undefined
+      ? props.selected
+      : localSelected?.modelId === model.id && localSelected.generation === model.generation
+        ? (() => {
+            const now = targetIndex.get(`${localSelected.collection}:${localSelected.elementId}`);
+            return now && now.incarnation === localSelected.incarnation ? now : null;
+          })()
+        : null;
+  const selection = useRef({
+    onSelect,
+    targetIndex,
+    setLocalSelected,
+    controlled: props.selected !== undefined,
+  });
+  selection.current = {
+    onSelect,
+    targetIndex,
+    setLocalSelected,
+    controlled: props.selected !== undefined,
+  };
+  const select = useCallback((collection: string, id: string) => {
+    const current = selection.current;
+    const target = current.targetIndex.get(`${collection}:${id}`) ?? null;
+    if (!current.controlled) current.setLocalSelected(target);
+    current.onSelect?.(target);
+  }, []);
   const baseNodes = useMemo(() => {
     const layout = network ? networkData(content, "") : undefined;
     const positions = new Map(
@@ -157,6 +215,8 @@ export default function GraphView(props: AdapterProps) {
         data: {
           label: node.label,
           group: node.group,
+          shape: node.shape,
+          description: node.description,
           ports: node.ports,
           routePorts: index.routePorts.get(node.id),
         },
@@ -174,8 +234,9 @@ export default function GraphView(props: AdapterProps) {
           height: network ? 65 : (node.height ?? 90),
           background: tokens.panel,
           color: tokens.text,
-          borderColor: tokens.edge,
-        },
+          borderColor: graphTone(node.tone, tokens),
+          "--bvm-entity-tone": graphTone(node.tone, tokens),
+        } as CSSProperties,
         selected: false,
       }),
     );
@@ -228,10 +289,15 @@ export default function GraphView(props: AdapterProps) {
             font: `12px ${tokens.sans}`,
             select: () => select("edges", edge.id),
           },
-          markerEnd: { type: MarkerType.ArrowClosed, color: tokens.edge },
+          markerEnd: { type: MarkerType.ArrowClosed, color: graphTone(edge.tone, tokens) },
           style: {
-            stroke: tokens.edge,
+            stroke: graphTone(edge.tone, tokens),
             strokeWidth: 1.8,
+            ...(edge.line === "dashed"
+              ? { strokeDasharray: "8 5" }
+              : edge.line === "dotted"
+                ? { strokeDasharray: "2 5" }
+                : {}),
           },
           labelStyle: { fill: tokens.text },
           labelBgStyle: { fill: tokens.panel },
@@ -285,7 +351,7 @@ export default function GraphView(props: AdapterProps) {
         event.preventDefault();
         event.stopPropagation();
         if (latest.current.props.active === false) return;
-        if (event.key === "Escape") selection.current.onSelect?.(null);
+        if (event.key === "Escape") select("", "");
         else select(node ? "nodes" : "edges", id);
         return;
       }
@@ -351,6 +417,16 @@ export default function GraphView(props: AdapterProps) {
     },
     [select],
   );
+  const canvas = useRef<HTMLDivElement>(null);
+  const nodePosition = useCallback(() => {
+    const rect = canvas.current?.getBoundingClientRect();
+    if (!rect || !flow) return { x: 0, y: 0 };
+    const point = flow.screenToFlowPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    });
+    return { x: Math.round(point.x - 90), y: Math.round(point.y - 45) };
+  }, [flow]);
   return (
     <div
       className="bvm-graph-shell"
@@ -362,7 +438,16 @@ export default function GraphView(props: AdapterProps) {
         reveal={reveal}
         report={report}
       />
-      <div className="bvm-graph-canvas" onKeyDownCapture={keyboard}>
+      {onEdit && !network && props.active !== false && (
+        <GraphAuthoring
+          model={model}
+          selected={selected}
+          onEdit={onEdit}
+          report={report}
+          newNodePosition={nodePosition}
+        />
+      )}
+      <div className="bvm-graph-canvas" ref={canvas} onKeyDownCapture={keyboard}>
         <ReactFlow<GraphFlowNode, RoutedFlowEdge>
           nodes={nodes}
           onInit={setFlow}
@@ -380,7 +465,7 @@ export default function GraphView(props: AdapterProps) {
           onNodesChange={(changes) => setNodes((current) => applyNodeChanges(changes, current))}
           onNodeClick={(_event, node) => select("nodes", node.id)}
           onEdgeClick={(_event, edge) => select("edges", edge.id)}
-          onPaneClick={() => onSelect?.(null)}
+          onPaneClick={() => select("", "")}
           onNodeDragStart={() => {
             setMoving(true);
             dragging.current = true;

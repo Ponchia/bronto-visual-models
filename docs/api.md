@@ -70,6 +70,74 @@ The portable graph grammar permits explicit HTTP(S), local paths and fragments;
 a host can require only its own resource routes. The reference graph view does
 not automatically navigate links.
 
+## Trusted renderer extensions
+
+The model-family registry and the UI-adapter registry are separate. A family can
+declare its own adapter and projections without adding cases to
+`VisualModelView`. The host installs executable React components explicitly,
+once per application; saved model JSON never contains a module path or component.
+
+```tsx
+import { createVisualRegistry, VISUAL_FAMILIES } from "@ponchia/visual-models";
+import { createVisualViewAdapters, VisualModelView } from "@ponchia/visual-models/react";
+import type { AdapterProps } from "@ponchia/visual-models/react";
+
+// myScorecardFamily implements the documented VisualFamily schema and declares
+// adapters: [{ adapter: "scorecard", capabilities: ["select", "edit"] }].
+const registry = createVisualRegistry([...VISUAL_FAMILIES, myScorecardFamily]);
+const viewAdapters = createVisualViewAdapters([
+  { id: "scorecard", load: () => import("./ScorecardView.tsx") },
+]);
+// <VisualModelView
+//   model={model} registry={registry} viewAdapters={viewAdapters}
+//   selected={selected} onSelect={setSelected} onEdit={commitAuthorizedEdit}
+// />
+```
+
+A definition provides either a direct React component or a lazy `load`
+function returning `{ default: Component }`. IDs must be unique lowercase
+slugs. The registry is immutable and instance-local. Construct it outside React
+render so the same lazy component identity survives model updates; a loader
+is only called when that view mounts. A host may deliberately override a built-in
+adapter (for example, a connected-data chart), or leave all built-in adapters
+unmodified. If no installed adapter matches a model-family declaration, the
+reference viewer shows an unavailable notice and preserves the model.
+
+The custom component receives `AdapterProps`: a controlled model, selection
+and edit callbacks, theme tokens, activity state, `ready()` and `report()`.
+It must report ready only after it has presented the current revision.
+Passing `onEdit` is not authorization; the host still checks and commits writes.
+Custom components and lazy loaders are **trusted application code**, not an
+untrusted plugin sandbox. Install no component from saved document content,
+URLs or arbitrary user-supplied code.
+
+The independently packed React consumer verifies lazy loading, typed custom
+family operations, host override of the built-in diagram, read-only behavior
+and guarded updates in an actual browser.
+
+## Diagram appearance and authoring
+
+Diagram renderer version 2 adds bounded optional appearance fields:
+`nodes[].shape` (`box`, `rounded`, `pill`, `database`, `queue`),
+`nodes[].tone` and `edges[].tone` (`neutral`, `accent`, `info`,
+`success`, `warning`, `danger`), and `edges[].line` (`solid`,
+`dashed`, `dotted`). These are theme-aware semantic tokens, not CSS,
+HTML, SVG or executable expressions. Existing version-1 diagrams load;
+a successful edit updates their renderer version. Older builds refuse version-2
+documents instead of silently dropping newer authored fields.
+
+The reference diagram now offers an **Author diagram** disclosure with node
+creation at the viewport center, explicit relationship creation and a selected
+item's label, description, shape, tone and line inspector. All changes go through
+the host `onEdit` callback with generation/revision or field-value
+preconditions. An edit does not take effect until the host supplies the new
+model. Draft fields are held while unrelated revisions arrive; use **Reload
+fields** after a conflicting edit. Without `onEdit`, the authoring controls are
+absent. A host without controlled selection can use the diagram's local selection
+for inspection. This is an initial authoring surface, not a replacement for
+large-graph virtualisation, gesture-based link creation, domain importers or
+a full node-component plugin API.
+
 ## Views and targets
 
 `modelTargets` and `resolveModelTarget` resolve canonical element identity.

@@ -7,3 +7,7 @@ site-dist/
 playwright-report/
 test-results/
 .DS_Store
+
+# Source-locked npm publisher downloads
+/tooling/publisher/source/
+/tooling/publisher/.source-*/

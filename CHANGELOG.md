@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.8
 
+- Accept `@ponchia/ui` 0.19 as the optional design-system peer (`^0.19.0`, which
+  adds the opt-in scope identity tier). Development and the packed consumers
+  qualify against 0.19.0.
 - Publish each automated beta archive to npm under the `beta` dist-tag after the
   GitHub prerelease is verified: the same bytes, npm OIDC with provenance, the
   source-locked npm publisher Bronto UI and Annotations use, and a read-only

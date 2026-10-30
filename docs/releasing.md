@@ -2,10 +2,10 @@
 
 ## GitHub archive beta
 
-The current distribution is a GitHub Release containing the installable npm
-archive. Publishing a repository and publishing an npm registry version are
-separate actions. No npm login or token is needed by users installing the public
-release URL. The committed package lock records the archive's integrity.
+Each beta is a GitHub Release containing the installable npm archive, and the
+same bytes on npm under the `beta` dist-tag (see [npm registry](#npm-registry)).
+Publishing a repository and publishing an npm registry version are separate
+actions. Users need no npm login or token for either. The committed package lock records the archive's integrity.
 
 1. Update `package.json` and `CHANGELOG.md` together. Never replace a released
    archive with different contents under the same version.
@@ -178,16 +178,25 @@ the publish, not a reusable workflow it calls.
 
 ### First publication
 
-Bootstrap with the last released archive. It is already qualified, attested and
-recorded in `docs/distribution.json`, so npm and GitHub serve the same bytes. Use
-the source-locked publisher, not a locally installed npm, and keep its login in a
+Done on 30 October 2026: 0.1.0-beta.7 was published this way from its GitHub
+release archive (SHA-256 `8f5079f3…`). It has no provenance, and npm also pointed
+`latest` at it because a new package needs one; the beta workflow never moves
+`latest`. 0.1.0-beta.8, released on GitHub before automated releases were
+enabled, reached npm the same way. The procedure also serves a fork or a newly
+scoped package.
+
+Publish an already released archive: it is qualified, attested and listed in its
+release's `SHA256SUMS`, so npm and GitHub serve the same bytes. Use the
+source-locked publisher, not a locally installed npm, and keep its login in a
 throwaway config:
 
 ```sh
-VERSION=0.1.0-beta.7
+VERSION=0.1.0-beta.8   # an existing GitHub prerelease
 TARBALL="$PWD/ponchia-visual-models-$VERSION.tgz"
-gh release download "v$VERSION" -R Ponchia/bronto-visual-models -p "ponchia-visual-models-$VERSION.tgz"
-sha256sum "$TARBALL"   # must equal sha256 in docs/distribution.json
+gh release download "v$VERSION" -R Ponchia/bronto-visual-models \
+  -p "ponchia-visual-models-$VERSION.tgz" -p SHA256SUMS
+sha256sum -c SHA256SUMS
+gh release verify-asset "v$VERSION" "$TARBALL" -R Ponchia/bronto-visual-models
 PUBLISHER="$(mktemp -d)"
 node scripts/source-publisher.mjs prepare "$PUBLISHER/npm"
 node scripts/source-publisher.mjs audit "$PUBLISHER/npm" "$PUBLISHER/audit.json"

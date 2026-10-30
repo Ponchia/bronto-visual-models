@@ -33,8 +33,15 @@ family and is extracted from Spatial's production implementation.
 
 ## Install the beta
 
-The package name is `@ponchia/visual-models`. Beta archives are distributed through
-GitHub Releases; npm registry publication is not required to install them.
+Betas are on npm as [`@ponchia/visual-models`](https://www.npmjs.com/package/@ponchia/visual-models)
+under the `beta` dist-tag:
+
+```sh
+npm install @ponchia/visual-models@beta
+```
+
+Each npm beta is the same archive as its checksum-verified GitHub prerelease,
+which you can also install directly:
 
 ```sh
 npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.8/ponchia-visual-models-0.1.0-beta.8.tgz

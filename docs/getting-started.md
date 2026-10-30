@@ -8,7 +8,7 @@ Spatial installation or private data is required.
 mkdir visual-models-first-run
 cd visual-models-first-run
 npm init -y
-npm install --ignore-scripts --omit=optional https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.8/ponchia-visual-models-0.1.0-beta.8.tgz
+npm install --ignore-scripts --omit=optional @ponchia/visual-models@0.1.0-beta.8
 ```
 
 Save the [first-model example](../examples/first-model.mjs) as `first-model.mjs`

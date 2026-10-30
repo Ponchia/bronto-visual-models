@@ -9,6 +9,10 @@
 - Advertise the published beta.8 archive in the distribution manifest, README and
   getting-started guide, which now runs the host-data example from the installed
   archive; source development continues as 0.1.0-beta.9-dev.0.
+- Install from npm: `@ponchia/visual-models` is on the registry under `beta`.
+  0.1.0-beta.7 and 0.1.0-beta.8 were published from their GitHub release archives
+  (same bytes, no provenance). The README and first-model guide use npm; the
+  release archive URL remains documented.
 
 ## 0.1.0-beta.8
 

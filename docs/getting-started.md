@@ -8,12 +8,12 @@ Spatial installation or private data is required.
 mkdir visual-models-first-run
 cd visual-models-first-run
 npm init -y
-npm install --ignore-scripts --omit=optional https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.7/ponchia-visual-models-0.1.0-beta.7.tgz
+npm install --ignore-scripts --omit=optional https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.8/ponchia-visual-models-0.1.0-beta.8.tgz
 ```
 
 Save the [first-model example](../examples/first-model.mjs) as `first-model.mjs`
 in that directory and run `node first-model.mjs`. The example uses the core APIs
-available in beta.7; newer source checkouts also include it in the packed archive.
+available in beta.8, and the archive ships it as `examples/first-model.mjs`.
 It creates a graph, previews a change without writing, commits the change,
 retries the same key, refuses a stale edit and undoes the committed rename.
 Each step asserts the result rather than merely printing an optimistic message.
@@ -33,24 +33,24 @@ Use [standalone views](standalone-views.md) for React integration, and read
 `MemoryModelStore` is not durable by itself. A successful local example does not
 establish production authorization, collaborative storage or deployment safety.
 
-## Work with host-owned chart and timeline data (source preview)
+## Work with host-owned chart and timeline data
 
-The next beta's source tree includes a [runnable host-data example](../examples/host-source.mjs)
+The beta.8 archive includes a [runnable host-data example](../examples/host-source.mjs)
 and [sample JSON rows](../examples/host-source.json). This is a second,
 more realistic workflow: a host reads its own file, prepares both a chart
 and a timeline from the same rows, then refreshes the source without
 writing dataset records into either visual model.
 
-This is a **source-preview example**, not part of the currently published
-beta.7 archive. Run from a checked-out current source tree:
+Run it from the directory where you installed the archive above:
 
 ```sh
-npm ci --ignore-scripts
-npm run build
-node examples/host-source.mjs
+node node_modules/@ponchia/visual-models/examples/host-source.mjs
 # Optionally substitute a trusted local JSON file:
-node examples/host-source.mjs /absolute/path/to/local-rows.json
+node node_modules/@ponchia/visual-models/examples/host-source.mjs /absolute/path/to/local-rows.json
 ```
+
+From a checked-out source tree, run `npm ci --ignore-scripts`, `npm run build`
+and then `node examples/host-source.mjs`.
 
 Rows must carry a unique `rowId`, a `label`, a timezone-qualified
 `started` timestamp, and mapped `team`, `service`,

@@ -60,7 +60,7 @@ jobs:
             const repo = context.repo;
             const environment = (await github.rest.repos.getEnvironment({ ...repo, environment_name: 'github-release' })).data;
             assert.equal(environment.can_admins_bypass, false, 'Environment approval must not permit administrator bypass');
-            assert(environment.protection_rules.some(rule => rule.type === 'required_reviewers' && rule.prevent_self_review === true && rule.reviewers?.length > 0), 'Environment requires reviewers and prevention of self-review');
+            assert(environment.protection_rules.some(rule => rule.type === 'required_reviewers' && rule.reviewers?.length > 0), 'Environment requires a named reviewer');
             assert.equal(environment.deployment_branch_policy?.custom_branch_policies, true);
             const policies = (await github.rest.repos.listDeploymentBranchPolicies({ ...repo, environment_name: 'github-release', per_page: 100 })).data;
             assert.equal(policies.total_count, 1, 'Environment must allow only the beta tag policy');

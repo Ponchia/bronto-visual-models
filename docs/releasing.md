@@ -43,9 +43,10 @@ Automation stays off until a maintainer completes these prerequisites:
 2. Create an active repository tag `ruleset` covering `refs/tags/v*` (or all tags),
    with update and deletion restrictions, no exclusions and no bypass actors.
    The publisher checks this through the API and refuses absent or unreadable rules.
-3. Create the `github-release` environment with required reviewers, prevent
-   self-review, disable administrator bypass, and select custom deployment policies with exactly one tag policy
-   named `v0.1.0-beta.*`. The publisher verifies these protections. Reviewers must
+3. Create the `github-release` environment with a required reviewer, disable
+   administrator bypass, and select custom deployment policies with exactly one tag policy
+   named `v0.1.0-beta.*`. The publisher verifies these protections. Self-review
+   is allowed so a sole maintainer can approve their own tag run. Reviewers must
    check the source SHA, qualified run and package version before approving.
    Enable GitHub immutable releases in repository settings to lock published
    assets as well as tags. These settings are maintainer actions, not workflow actions.
@@ -68,11 +69,11 @@ same run, verifies the source/tag/version/checksum again, and signs provenance
 using GitHub OIDC. It has no checkout, build, dependency installation, npm token
 or package lifecycle script execution.
 
-A sole maintainer cannot approve a run they initiated when self-review is
-prevented. Before enabling automation, establish a separately authorized tag
-initiator or an independent eligible reviewer; do not add collaborators or remove
-self-review prevention just to unblock a release. Keep the opt-in variable off
-until that approval path has been reviewed.
+A sole maintainer approves their own tag runs: the maintainer decided on 30
+October 2026 that `github-release` and `npm-publish` require Ponchia's review
+without self-review prevention, as Bronto UI, Annotations and Layout do. The
+approval stays a deliberate human step: check the source SHA, the qualified run
+and the version before approving.
 
 The publisher creates a draft, uploads the archive, `SHA256SUMS`,
 `release-evidence.json` (source, run, SHA-256 and npm SHA-512 integrity), and
@@ -116,6 +117,16 @@ granted, archive signed or release published during this configuration work.
 Until that path exists, betas use the manual GitHub archive steps above: an
 independently reviewed version PR, CI on the exact merged commit, then a
 maintainer-created tag and prerelease carrying that run's archive and checksums.
+
+### Changed on 30 October 2026
+
+The maintainer chose sole-maintainer self-approval. `github-release` still
+requires Ponchia's review and disallows administrator bypass but no longer
+prevents self-review, and the publisher guard no longer demands it. The new
+`npm-publish` environment has the same reviewer, no administrator bypass and the
+`v0.1.0-beta.*` tag policy. `ENABLE_BETA_RELEASES` is set to `true` once this
+guard change is on `main`, so the next beta tag publishes the GitHub prerelease
+and then npm, each after its environment approval.
 
 ## npm registry
 

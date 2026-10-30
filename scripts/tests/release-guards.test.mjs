@@ -197,6 +197,14 @@ function fixture() {
   return state;
 }
 
+test("a sole maintainer may approve their own tag run", async () => {
+  // Decision of 30 October 2026: the required review is the gate, not who gives it.
+  const state = fixture();
+  state.environment.protection_rules[0].prevent_self_review = false;
+  await state.guard();
+  assert.deepEqual(state.effects, []);
+});
+
 test("valid beta on main passes the actual publisher guard", async () => {
   const state = fixture();
   await state.guard();
@@ -214,8 +222,8 @@ const refusals = {
   "environment without required review": (state) => {
     state.environment.protection_rules = [];
   },
-  "environment permitting self-review": (state) => {
-    state.environment.protection_rules[0].prevent_self_review = false;
+  "environment without a named reviewer": (state) => {
+    state.environment.protection_rules[0].reviewers = [];
   },
   "environment without custom policies": (state) => {
     state.environment.deployment_branch_policy.custom_branch_policies = false;

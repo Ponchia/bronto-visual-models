@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Let the sole maintainer approve their own beta tag runs. The release guard
+  still requires a named reviewer and no administrator bypass on
+  `github-release`, but no longer requires self-review prevention. Automated
+  GitHub and npm beta releases are switched on.
 - Advertise the published beta.8 archive in the distribution manifest, README and
   getting-started guide, which now runs the host-data example from the installed
   archive; source development continues as 0.1.0-beta.9-dev.0.

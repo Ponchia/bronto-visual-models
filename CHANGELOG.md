@@ -47,6 +47,16 @@
   requests. Verify independent source-refresh acknowledgements and stale
   refusals in a packed browser consumer.
 
+- Avoid a redundant port measurement when a diagram first mounts.
+- Let applications install trusted, lazy React adapters for their own model
+  families with `createVisualViewAdapters`, separate from the model-family
+  registry; adapters are controlled components that receive `AdapterProps`.
+- Move the `diagram` family to version 2: nodes gain optional `shape` and
+  `tone`, and edges optional `tone` and `line`. The record collections are
+  unchanged (nodes, edges); existing version-1 diagrams stay valid and are
+  stamped version 2 only when their content is next written. The reference
+  diagram gains an **Author diagram** inspector whose writes stay guarded.
+
 - Advertise the published beta.7 archive in the distribution manifest, README and
   getting-started guide; source development continues as 0.1.0-beta.8-dev.0.
 

@@ -210,3 +210,194 @@ jobs:
     with:
       sha256: ${{ needs.package.outputs.sha256 }}
       qualification: ${{ toJSON(needs) }}
+  # npm beta release. Runs only after the Beta archive release job published and
+  # verified the same qualified archive as a GitHub prerelease; the registry gets
+  # exactly those bytes under the `beta` dist-tag and `latest` is never moved.
+  # The FIRST version must be bootstrapped by an npm owner
+  # (docs/releasing.md#npm-registry): npm only trusts OIDC for existing packages.
+  # The runner's npm never publishes: npm 11.21.1 and 12.2.1 bundle Undici
+  # 6.29.0 (Ponchia/bronto-ui#234). This read-only job prepares the unchanged
+  # npm source pinned in tooling/publisher/source.json with its separately
+  # locked dependencies and audits the complete installed graph before the
+  # privileged job can start. It is read-only and runs on every push and pull
+  # request, so a publisher advisory surfaces before a release tag does.
+  npm-publisher-readiness:
+    name: Source-locked npm publisher audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out only the reviewed publisher tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/source-publisher.mjs
+            /scripts/extract-publisher-source.py
+            /scripts/audit-publishing-tooling.mjs
+            /tooling/publisher/
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          check-latest: true
+          package-manager-cache: false
+      - name: Prepare and audit the source-locked publisher
+        shell: bash
+        env:
+          npm_config_cache: ${{ runner.temp }}/publisher-audit-cache
+        run: |
+          set -euo pipefail
+          node scripts/source-publisher.mjs prepare "$RUNNER_TEMP/vm-publisher"
+          node scripts/source-publisher.mjs audit "$RUNNER_TEMP/vm-publisher" "$RUNNER_TEMP/publisher-audit.json"
+
+  npm-publish:
+    name: Publish the released archive to npm
+    needs: [package, release-archive, npm-publisher-readiness]
+    if: github.repository == 'Ponchia/bronto-visual-models' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.ENABLE_BETA_RELEASES == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm-publish
+    concurrency:
+      group: npm-beta-release
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      version: ${{ steps.candidate.outputs.version }}
+      archive: ${{ steps.candidate.outputs.archive }}
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          check-latest: true
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      # Package source is never checked out here: only the publisher tooling,
+      # which is prepared and audited again because this job runs it.
+      - name: Check out only the reviewed publisher tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: publisher
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/source-publisher.mjs
+            /scripts/extract-publisher-source.py
+            /scripts/audit-publishing-tooling.mjs
+            /tooling/publisher/
+      - name: Prepare and audit the source-locked publisher
+        shell: bash
+        env:
+          npm_config_cache: ${{ runner.temp }}/publisher-audit-cache
+        run: |
+          set -euo pipefail
+          node publisher/scripts/source-publisher.mjs prepare "$RUNNER_TEMP/vm-publisher"
+          node publisher/scripts/source-publisher.mjs audit "$RUNNER_TEMP/vm-publisher" "$RUNNER_TEMP/publisher-audit.json"
+          version="$(node "$RUNNER_TEMP/vm-publisher/source/bin/npm-cli.js" --version)"
+          echo "Source-locked npm $version"
+          node -e 'const v=process.argv[1].split(".").map(Number);if(v[0]<11||(v[0]===11&&(v[1]<5||(v[1]===5&&v[2]<1))))process.exit(1)' "$version"
+      - name: Download the archive the GitHub release verified
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-package
+          path: candidate
+      - name: Verify archive bytes, package identity and registry state
+        id: candidate
+        shell: bash
+        env:
+          EXPECTED_SHA256: ${{ needs.package.outputs.sha256 }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          npm_cli="$RUNNER_TEMP/vm-publisher/source/bin/npm-cli.js"
+          if [[ ! "$RELEASE_TAG" =~ ^v0\.1\.0-beta\.(0|[1-9][0-9]*)$ ]]; then
+            echo '::error::Only v0.1.0-beta.N tags may publish'; exit 2
+          fi
+          version="${RELEASE_TAG#v}"
+          archive="ponchia-visual-models-$version.tgz"
+          cd candidate
+          test "$(ls)" = "$archive"
+          test "$(sha256sum "$archive" | cut -d' ' -f1)" = "$EXPECTED_SHA256"
+          node - "$archive" "$version" <<'NODE'
+          const { execFileSync } = require("node:child_process");
+          const [path, version] = process.argv.slice(2);
+          const pkg = JSON.parse(execFileSync("tar", ["-xOf", path, "package/package.json"], { encoding: "utf8" }));
+          if (pkg.name !== "@ponchia/visual-models" || pkg.version !== version ||
+              pkg.repository?.url !== "git+https://github.com/Ponchia/bronto-visual-models.git" || pkg.private)
+            throw Error("Refusing wrong npm scope, version, upstream repository or a private package");
+          NODE
+          # The registry does not authorize first releases via OIDC.
+          if ! node "$npm_cli" view @ponchia/visual-models name --json --registry https://registry.npmjs.org > /dev/null 2> "$RUNNER_TEMP/npm-name.log"; then
+            echo '::error::@ponchia/visual-models is not bootstrapped on npm or npm is unreachable. Follow docs/releasing.md#npm-registry.'
+            exit 2
+          fi
+          if node "$npm_cli" view "@ponchia/visual-models@$version" version --json --registry https://registry.npmjs.org > /dev/null 2> "$RUNNER_TEMP/npm-version.log"; then
+            echo '::error::This version already exists in npm; refusing a second publish'; exit 2
+          fi
+          grep -q 'E404' "$RUNNER_TEMP/npm-version.log" || {
+            echo '::error::npm lookup failed for a reason other than a missing version'; exit 2;
+          }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+      - name: Publish the verified archive under the beta dist-tag (npm OIDC)
+        shell: bash
+        env:
+          ARCHIVE: ${{ steps.candidate.outputs.archive }}
+        run: |
+          set -euo pipefail
+          cd candidate
+          # No package source, dependencies or lifecycle scripts in the OIDC job.
+          # npm matches the top-level workflow, so these jobs live in ci.yml:
+          # trusted publisher Ponchia/bronto-visual-models, ci.yml, npm-publish.
+          node "$RUNNER_TEMP/vm-publisher/source/bin/npm-cli.js" publish "./$ARCHIVE" --ignore-scripts --provenance --access public --tag beta --registry https://registry.npmjs.org
+          echo 'npm accepted publication. The read-only registry job must still pass; never publish again to recover it.' >> "$GITHUB_STEP_SUMMARY"
+
+  # No publishing authority here. Rerun this job alone after propagation errors.
+  npm-verify-registry:
+    name: Verify the registry serves the same bytes
+    needs: [package, npm-publish]
+    if: github.repository == 'Ponchia/bronto-visual-models' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.ENABLE_BETA_RELEASES == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-package
+          path: candidate
+      - name: Compare registry integrity, bytes, beta tag and provenance
+        shell: bash
+        env:
+          EXPECTED_SHA256: ${{ needs.package.outputs.sha256 }}
+          VERSION: ${{ needs.npm-publish.outputs.version }}
+          ARCHIVE: ${{ needs.npm-publish.outputs.archive }}
+        run: |
+          set -euo pipefail
+          test "$(sha256sum "candidate/$ARCHIVE" | cut -d' ' -f1)" = "$EXPECTED_SHA256"
+          mkdir -p "$RUNNER_TEMP/registry"
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "@ponchia/visual-models@$VERSION" --json --registry https://registry.npmjs.org > "$RUNNER_TEMP/registry/view.json" 2> /dev/null; then break; fi
+            [ "$attempt" -lt 6 ] || { echo '::error::The published version is not visible yet; rerun this job only.'; exit 1; }
+            sleep 20
+          done
+          (cd "$RUNNER_TEMP/registry" && npm pack "@ponchia/visual-models@$VERSION" --ignore-scripts --registry https://registry.npmjs.org > /dev/null)
+          test "$(sha256sum "$RUNNER_TEMP/registry/$ARCHIVE" | cut -d' ' -f1)" = "$EXPECTED_SHA256"
+          node - "$RUNNER_TEMP/registry/view.json" "candidate/$ARCHIVE" "$VERSION" <<'NODE'
+          const fs = require("node:fs");
+          const { createHash } = require("node:crypto");
+          const [viewPath, archive, version] = process.argv.slice(2);
+          const view = JSON.parse(fs.readFileSync(viewPath, "utf8"));
+          const integrity = `sha512-${createHash("sha512").update(fs.readFileSync(archive)).digest("base64")}`;
+          if (view.version !== version || view.dist?.integrity !== integrity) throw Error("Registry integrity differs from the released archive");
+          if (view["dist-tags"]?.beta !== version) throw Error("beta dist-tag does not point at this version");
+          if (!view.dist?.attestations?.provenance) throw Error("Registry metadata advertises no provenance attestation");
+          NODE
+          echo "Registry serves the released archive ($EXPECTED_SHA256) under beta with provenance." >> "$GITHUB_STEP_SUMMARY"

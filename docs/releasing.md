@@ -117,13 +117,83 @@ Until that path exists, betas use the manual GitHub archive steps above: an
 independently reviewed version PR, CI on the exact merged commit, then a
 maintainer-created tag and prerelease carrying that run's archive and checksums.
 
-## Optional npm registry publication
+## npm registry
 
-The package metadata declares public scope access. Registry publication still
-requires an authenticated publisher or an npm trusted-publisher configuration for
-this repository. Do not claim an npm version exists because a GitHub archive does.
-Use an explicit beta dist-tag for prereleases, retain provenance where supported,
-and verify the registry version and integrity after publication.
+Since 30 October 2026, CI publishes each automated beta archive to npm as
+`@ponchia/visual-models` under the `beta` dist-tag; `latest` is never moved.
+
+- `npm-publish` runs only after `release-archive` has published and verified the
+  GitHub prerelease, under the same opt-in gate. It receives the same
+  `npm-package` artifact, checks its SHA-256, package identity and that the
+  version is new, and publishes it with npm OIDC trusted publishing and provenance.
+  It never checks out package source, installs dependencies or runs scripts.
+- The publisher is the source-locked npm that Bronto UI, Annotations and Layout
+  use: the unchanged npm 11.21.1 source pinned in `tooling/publisher/source.json`,
+  its dependencies from `tooling/publisher/package-lock.json` (overriding only
+  `undici` and `ip-address`), and a complete audit in the read-only
+  `npm-publisher-readiness` job, which runs on every push and pull request, and
+  again before publishing. Registry npm 11.21.1
+  and 12.2.1 bundle Undici 6.29.0 with a high-severity advisory
+  ([Bronto UI issue 234](https://github.com/Ponchia/bronto-ui/issues/234)), so the
+  runner's npm never publishes. `npm run publisher:readiness` runs the same
+  preparation locally and packs this package with it.
+- `npm-verify-registry` has no publishing authority. It compares the registry's
+  integrity and downloaded bytes with the archive and checks the `beta` tag and
+  provenance attestation. Rerun only that job after propagation delays; never
+  publish a version twice.
+
+Because these jobs follow `release-archive`, they run only while
+`ENABLE_BETA_RELEASES` is `true`. The approval-path decision above therefore also
+decides automated npm releases.
+
+### npm prerequisites (maintainer actions)
+
+1. Create the `npm-publish` environment with required reviewers and custom
+   deployment policies limited to the `v0.1.0-beta.*` tag policy, matching
+   `github-release`.
+2. Bootstrap the first version (below). npm only trusts OIDC for an existing package.
+3. Configure the trusted publisher with normal interactive account authentication:
+
+| Setting | Value |
+| --- | --- |
+| Provider | GitHub Actions |
+| Organization/user | `Ponchia` |
+| Repository | `bronto-visual-models` |
+| Workflow | `ci.yml` |
+| Environment | `npm-publish` |
+
+The jobs live in `ci.yml` because npm matches the top-level workflow that runs
+the publish, not a reusable workflow it calls.
+
+### First publication
+
+Bootstrap with the last released archive. It is already qualified, attested and
+recorded in `docs/distribution.json`, so npm and GitHub serve the same bytes. Use
+the source-locked publisher, not a locally installed npm, and keep its login in a
+throwaway config:
+
+```sh
+VERSION=0.1.0-beta.7
+TARBALL="$PWD/ponchia-visual-models-$VERSION.tgz"
+gh release download "v$VERSION" -R Ponchia/bronto-visual-models -p "ponchia-visual-models-$VERSION.tgz"
+sha256sum "$TARBALL"   # must equal sha256 in docs/distribution.json
+PUBLISHER="$(mktemp -d)"
+node scripts/source-publisher.mjs prepare "$PUBLISHER/npm"
+node scripts/source-publisher.mjs audit "$PUBLISHER/npm" "$PUBLISHER/audit.json"
+NPM_CLI="$PUBLISHER/npm/source/bin/npm-cli.js"
+export npm_config_userconfig="$PUBLISHER/npmrc"
+node "$NPM_CLI" login --auth-type=web --registry=https://registry.npmjs.org
+node "$NPM_CLI" whoami --registry=https://registry.npmjs.org
+node "$NPM_CLI" publish "$TARBALL" --ignore-scripts --access public --tag beta \
+  --provenance=false --registry=https://registry.npmjs.org
+node "$NPM_CLI" logout --registry=https://registry.npmjs.org
+rm -rf "$PUBLISHER"
+```
+
+Complete browser and 2FA challenges interactively; never paste a password or token
+into an issue, transcript or repository. A local bootstrap has no hosted
+provenance; do not claim it does. Check `npm view @ponchia/visual-models dist-tags`
+afterwards. Do not move dist-tags by hand to hide an unexpected state.
 
 Changing a release channel must not create two independently edited source trees.
 The public repository remains the sole owner of extracted algorithms.

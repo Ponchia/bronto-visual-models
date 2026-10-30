@@ -146,7 +146,7 @@ jobs:
               ...repo, tag_name: tag, target_commitish: evidence.source,
               name: `Bronto Visual Models ${evidence.version}`, draft: true,
               prerelease: true, make_latest: 'false',
-              body: `Qualified archive from ${evidence.source}.\n\nCI: ${evidence.run}\n\nSHA-256: ${evidence.sha256}\n\nSee release-evidence.json and provenance.sigstore.json. This beta does not change the npm registry.`,
+              body: `Qualified archive from ${evidence.source}.\n\nCI: ${evidence.run}\n\nSHA-256: ${evidence.sha256}\n\nSee release-evidence.json and provenance.sigstore.json. CI then publishes this exact archive to npm under the beta dist-tag; latest is unchanged.`,
             })).data;
             // Keep the accepted draft identity even if an upload or publication
             // response fails. Recovery must inspect this release, not create another.

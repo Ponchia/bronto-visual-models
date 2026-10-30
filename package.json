@@ -73,6 +73,7 @@
     "demo": "vite demo --host 127.0.0.1",
     "site:build": "vite build demo --base=/bronto-visual-models/ --outDir ../site-dist",
     "prepack": "npm run build",
+    "publisher:readiness": "node scripts/source-publisher.mjs readiness",
     "site:build:packed": "node scripts/build-packed-demo.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",

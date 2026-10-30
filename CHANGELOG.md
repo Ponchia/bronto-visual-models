@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Publish each automated beta archive to npm under the `beta` dist-tag after the
+  GitHub prerelease is verified: the same bytes, npm OIDC with provenance, the
+  source-locked npm publisher Bronto UI and Annotations use, and a read-only
+  registry comparison. The first registry version is bootstrapped by an owner.
 - Add a runnable, independently packed Node host-data example using public
   APIs to validate and present the same local JSON rows through bound chart
   and timeline models without persisting external data or invoking UI engines.

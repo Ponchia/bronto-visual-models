@@ -1,6 +1,6 @@
 {
   "name": "@ponchia/visual-models",
-  "version": "0.1.0-beta.8-dev.0",
+  "version": "0.1.0-beta.8",
   "description": "Persistent, editable visual artifacts with identified elements, guarded operations and optional React renderers.",
   "type": "module",
   "license": "MIT",
@@ -87,7 +87,7 @@
     "lib0": "0.2.119"
   },
   "peerDependencies": {
-    "@ponchia/ui": "^0.16.3 || ^0.17.0 || ^0.18.1",
+    "@ponchia/ui": "^0.16.3 || ^0.17.0 || ^0.18.1 || ^0.19.0",
     "@xyflow/react": "^12.12.0",
     "d3-sankey": "^0.12.3",
     "react": "^19.0.0",
@@ -141,7 +141,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@biomejs/biome": "2.5.15",
-    "@ponchia/ui": "0.18.1",
+    "@ponchia/ui": "0.19.0",
     "@types/d3-sankey": "0.12.5",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",

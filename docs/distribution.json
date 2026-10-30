@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "version": "0.1.0-beta.7",
-  "source": "b6b05017ddd7b59e5defca0762e1f204b40755d0",
-  "ciRun": 40875765245,
-  "archive": "ponchia-visual-models-0.1.0-beta.7.tgz",
-  "bytes": 489283,
-  "sha256": "8f5079f3a03c363fe5886367ada819e8100c084d83b532700dcdd076ed78bb57",
-  "integrity": "sha512-WP4JZ/L4vR/nYU5EgkqziDwLXAru9/4h3J//ZNpGmsN21q0H+3sva7Kb/0q8SqkiO9ln5hfm70kqGK3XuiVedg=="
+  "version": "0.1.0-beta.8",
+  "source": "0e8f9ce9e2e19182ebf402cdc98d1d1b3402574d",
+  "ciRun": 41055553189,
+  "archive": "ponchia-visual-models-0.1.0-beta.8.tgz",
+  "bytes": 528448,
+  "sha256": "097f4fe52724475d40b1a8792ce69a5c2911377b3b6310d19a8e0468a0305fb9",
+  "integrity": "sha512-lTFrZMOSHWQC1FTDu3iXZO180UjUknekPZojPmZzmlIPBKTrrtnLc9fMsidoG9X1wSLL+O+PhEijozYtGjHaOA=="
 }

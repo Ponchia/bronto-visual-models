@@ -37,7 +37,7 @@ The package name is `@ponchia/visual-models`. Beta archives are distributed thro
 GitHub Releases; npm registry publication is not required to install them.
 
 ```sh
-npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.7/ponchia-visual-models-0.1.0-beta.7.tgz
+npm install https://github.com/Ponchia/bronto-visual-models/releases/download/v0.1.0-beta.8/ponchia-visual-models-0.1.0-beta.8.tgz
 ```
 
 Core requires Node 22.18+ or a modern browser. UI engines are optional peers;
@@ -51,7 +51,7 @@ For the reference React views and stylesheet, also install their peers:
 npm install react react-dom @xyflow/react vega vega-lite vega-interpreter vega-tooltip vis-timeline vis-data @ponchia/ui
 ```
 
-The verified public archive is **0.1.0-beta.7**. This source prepares the next
+The verified public archive is **0.1.0-beta.8**. This source prepares the next
 development version; publication and source versions are deliberately separate.
 Start with the [first-model walkthrough](docs/getting-started.md) for a complete
 headless example with executable assertions, or use the interactive demo above.
@@ -213,9 +213,9 @@ selection. No dataset access is implemented inside the library.
 A [runnable host-data example](examples/host-source.mjs) loads one local
 JSON snapshot into both chart and timeline source views without storing
 the records in the models. The
-[getting-started guide](docs/getting-started.md#work-with-host-owned-chart-and-timeline-data-source-preview)
-shows how to run it from a current source checkout; the published beta.7
-does not contain these new source-view APIs.
+[getting-started guide](docs/getting-started.md#work-with-host-owned-chart-and-timeline-data)
+shows how to run it from the published beta.8 archive, which ships these
+source-view APIs and the example.
 
 ## Explore charts with local selections
 

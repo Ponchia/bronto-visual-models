@@ -91,6 +91,6 @@ test("the bootstrap and trusted publisher are documented with the source-locked 
   assert.match(docs, /node scripts\/source-publisher\.mjs prepare/);
   assert.match(docs, /"\$NPM_CLI" publish "\$TARBALL" --ignore-scripts --access public --tag beta/);
   assert.match(docs, /--provenance=false/);
-  assert.match(docs, /\| Workflow \| `ci\.yml` \|/);
-  assert.match(docs, /\| Environment \| `npm-publish` \|/);
+  assert.match(docs, /\|\s*Workflow\s*\|\s*`ci\.yml`\s*\|/);
+  assert.match(docs, /\|\s*Environment\s*\|\s*`npm-publish`\s*\|/);
 });

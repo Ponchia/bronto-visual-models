@@ -17,7 +17,7 @@ and capacity checks, before any subscriber is notified.
 
 This optimization changes neither the snapshot format (version 1) nor the model
 format (version 2). It does not eliminate the cost of validating, cloning,
-diffing and serializing the *edited* model or the cost of persisting a full file
+diffing and serializing the _edited_ model or the cost of persisting a full file
 snapshot. Production persistence still needs the host's transactional storage.
 
 ## React and rendering

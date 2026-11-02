@@ -7,30 +7,36 @@ second chart model or an implicit dataset service.
 ## Create and display
 
 ```tsx
-import { MemoryModelStore } from '@ponchia/visual-models';
-import { VisualModelView, useVisualModel } from '@ponchia/visual-models/react';
-import '@ponchia/visual-models/styles.css';
+import { MemoryModelStore } from "@ponchia/visual-models";
+import { VisualModelView, useVisualModel } from "@ponchia/visual-models/react";
+import "@ponchia/visual-models/styles.css";
 
 const store = new MemoryModelStore();
 await store.execute({
-  type: 'create', key: 'create-throughput',
+  type: "create",
+  key: "create-throughput",
   model: {
-    id: 'throughput', title: 'Example throughput', renderer: 'vega-lite',
+    id: "throughput",
+    title: "Example throughput",
+    renderer: "vega-lite",
     content: {
       spec: {
-        mark: 'bar',
+        mark: "bar",
         encoding: {
-          x: { field: 'service', type: 'nominal' },
-          y: { field: 'requests', type: 'quantitative' },
+          x: { field: "service", type: "nominal" },
+          y: { field: "requests", type: "quantitative" },
         },
       },
-      values: [{ service: 'Orders', requests: 120 }, { service: 'Search', requests: 180 }],
+      values: [
+        { service: "Orders", requests: 120 },
+        { service: "Search", requests: 180 },
+      ],
     },
   },
 });
 
 // Inside a component; store remains stable across renders.
-const model = useVisualModel(store, 'throughput');
+const model = useVisualModel(store, "throughput");
 model && <VisualModelView model={model} height={360} />;
 ```
 
@@ -75,7 +81,7 @@ if (sourceKey) {
 
 `chartRows` is a **trusted host input**. It authorizes nothing: a source key
 is an SHA-256 fingerprint of the model's identity, generation, renderer,
-source kind and declared source inputs. It is a *staleness guard*, never a
+source kind and declared source inputs. It is a _staleness guard_, never a
 credential or proof that the host checked a permission. The package cannot
 query a dataset or resolve a connector. The host must enforce authorization
 before every read and must replace the supplied snapshot when the source
@@ -185,10 +191,7 @@ edits, opening links or selecting persistent `VisualTarget` elements.
       }
     }
   },
-  "values": [
-    { "service": "API", "requests": 43 },
-    { "service": "Worker", "requests": 26 }
-  ]
+  "values": [{ "service": "API", "requests": 43 }, { "service": "Worker", "requests": 26 }]
 }
 ```
 
@@ -204,7 +207,7 @@ The following continue to **refuse** rather than execute: `bind`, custom
 event streams (`on`, string `clear`), expression-based toggles, parameter
 initialization (`value`), signal/DOM references, nested selection definitions
 and obsolete `selection` grammar. Top-level `content.params` remains a
-*host source binding* and is still refused by the inline chart. Connected
+_host source binding_ and is still refused by the inline chart. Connected
 charts may use these safe `spec.params` when their host supplies
 `chartRows` through the separate source-authorization contract.
 

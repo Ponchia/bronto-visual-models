@@ -7,17 +7,23 @@ It belongs to the headless core and does not import a renderer, run a transform,
 fetch rows or send data anywhere.
 
 ```ts
-import { chartEncodingGuidance, chartMarkChoices } from '@ponchia/visual-models';
+import { chartEncodingGuidance, chartMarkChoices } from "@ponchia/visual-models";
 
 const guidance = chartEncodingGuidance({
-  spec: { mark: 'line', encoding: {
-    x: { field: 'service', type: 'nominal' },
-    y: { field: 'requests', type: 'quantitative' },
-  } },
-  values: [{ service: 'Billing', requests: 90 }, { service: 'Orders', requests: 110 }],
+  spec: {
+    mark: "line",
+    encoding: {
+      x: { field: "service", type: "nominal" },
+      y: { field: "requests", type: "quantitative" },
+    },
+  },
+  values: [
+    { service: "Billing", requests: 90 },
+    { service: "Orders", requests: 110 },
+  ],
 });
 // guidance.notes contains a nominal-path note. Input remains unchanged.
-chartMarkChoices('nominal'); // ['bar', 'point']
+chartMarkChoices("nominal"); // ['bar', 'point']
 ```
 
 ## What is checked

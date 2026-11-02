@@ -18,15 +18,15 @@ callback. The library does not fetch datasets, credentials or assets.
 For schedule-only applications, import the dedicated entry and base stylesheet:
 
 ```tsx
-import { GanttModelView } from '@ponchia/visual-models/react/gantt';
-import '@ponchia/visual-models/base.css';
+import { GanttModelView } from "@ponchia/visual-models/react/gantt";
+import "@ponchia/visual-models/base.css";
 
 <GanttModelView
   model={schedule}
   selected={selected}
   onSelect={setSelected}
   onEdit={(patch) => commitAuthorizedEdit(schedule.id, patch)}
-/>
+/>;
 ```
 
 Install `react`, `react-dom` and `@ponchia/ui` alongside the package; the latter

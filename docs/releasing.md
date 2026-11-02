@@ -165,13 +165,13 @@ decides automated npm releases.
 2. Bootstrap the first version (below). npm only trusts OIDC for an existing package.
 3. Configure the trusted publisher with normal interactive account authentication:
 
-| Setting | Value |
-| --- | --- |
-| Provider | GitHub Actions |
-| Organization/user | `Ponchia` |
-| Repository | `bronto-visual-models` |
-| Workflow | `ci.yml` |
-| Environment | `npm-publish` |
+| Setting           | Value                  |
+| ----------------- | ---------------------- |
+| Provider          | GitHub Actions         |
+| Organization/user | `Ponchia`              |
+| Repository        | `bronto-visual-models` |
+| Workflow          | `ci.yml`               |
+| Environment       | `npm-publish`          |
 
 The jobs live in `ci.yml` because npm matches the top-level workflow that runs
 the publish, not a reusable workflow it calls.

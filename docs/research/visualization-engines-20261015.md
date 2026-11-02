@@ -50,17 +50,17 @@ need dedicated visual assessment. This limitation must remain explicit.
 
 ## Family-by-family assessment
 
-| Family/use case | Decision | Important boundary |
-| --- | --- | --- |
-| Editable diagrams | React Flow plus optional ELK | Preserve IDs, nested parents, explicit port sides and authored sizes. Keep auto-layout opt-in and undoable. |
-| Network exploration | Keep the bounded current projection; evaluate Sigma + Graphology only for demonstrated scale needs | GPU rendering and network analysis do not replace our guarded document model. Do not lose groups or pretend derived positions are authored coordinates. |
-| Analytical charts | Keep Vega-Lite as the persisted grammar | Data source authority stays with the host. In-process spec execution is not a computational sandbox. |
-| Highly specialized dashboard charts | Consider ECharts as a separate adapter when needed | ECharts 6 offers new chart types, theme switching and matrix coordinates, but an ECharts option tree is not a drop-in equivalent to a Vega-Lite spec. |
-| Exploratory charts in code | Observable Plot is a good candidate for a code-oriented host | Its JavaScript marks/scales API is attractive, but accepting arbitrary callbacks in stored visual JSON would cross a different execution boundary. |
-| Timelines | Retain vis-timeline for temporal items and ranges | Preserve explicit instants, timezone qualification and local exploration. Do not conflate temporal events with task-dependency semantics. |
-| Quantitative flow | Retain D3 Sankey for valid flow data | A Sankey encodes directed flow in an acyclic network, not arbitrary links. Preserve measures and units; never silently drop cycles to make the image fit. |
-| Infographics | Keep AntV Infographic as a candidate engine for narrative templates | Its design/data/theme/resource split is useful. Preserve identified source items and disclose unsupported resources or semantic omissions. |
-| Geographic layers | deck.gl for analytical layers; MapLibre for a basemap when justified | GeoJSON/world coordinates are authored; view cameras and GPU buffers are not. Tile/asset requests need explicit host authorization. |
+| Family/use case                     | Decision                                                                                           | Important boundary                                                                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editable diagrams                   | React Flow plus optional ELK                                                                       | Preserve IDs, nested parents, explicit port sides and authored sizes. Keep auto-layout opt-in and undoable.                                               |
+| Network exploration                 | Keep the bounded current projection; evaluate Sigma + Graphology only for demonstrated scale needs | GPU rendering and network analysis do not replace our guarded document model. Do not lose groups or pretend derived positions are authored coordinates.   |
+| Analytical charts                   | Keep Vega-Lite as the persisted grammar                                                            | Data source authority stays with the host. In-process spec execution is not a computational sandbox.                                                      |
+| Highly specialized dashboard charts | Consider ECharts as a separate adapter when needed                                                 | ECharts 6 offers new chart types, theme switching and matrix coordinates, but an ECharts option tree is not a drop-in equivalent to a Vega-Lite spec.     |
+| Exploratory charts in code          | Observable Plot is a good candidate for a code-oriented host                                       | Its JavaScript marks/scales API is attractive, but accepting arbitrary callbacks in stored visual JSON would cross a different execution boundary.        |
+| Timelines                           | Retain vis-timeline for temporal items and ranges                                                  | Preserve explicit instants, timezone qualification and local exploration. Do not conflate temporal events with task-dependency semantics.                 |
+| Quantitative flow                   | Retain D3 Sankey for valid flow data                                                               | A Sankey encodes directed flow in an acyclic network, not arbitrary links. Preserve measures and units; never silently drop cycles to make the image fit. |
+| Infographics                        | Keep AntV Infographic as a candidate engine for narrative templates                                | Its design/data/theme/resource split is useful. Preserve identified source items and disclose unsupported resources or semantic omissions.                |
+| Geographic layers                   | deck.gl for analytical layers; MapLibre for a basemap when justified                               | GeoJSON/world coordinates are authored; view cameras and GPU buffers are not. Tile/asset requests need explicit host authorization.                       |
 
 Sources: [Sigma][sigma], [ECharts 6][echarts6], [ECharts accessibility][echarts-aria],
 [Observable Plot][plot], [vis-timeline][timeline], [D3 Sankey][sankey],
@@ -123,11 +123,11 @@ The retained [local measurement](layout-benchmark-20261015.json) uses Node 24.17
 on ARM64, elkjs 0.12.0 and Dagre 3.1.1. All reported cases had zero overlapping
 node rectangles. This says nothing about edge crossings or label overlaps.
 
-| Synthetic graph | ELK Brandes–Köpf bounds | Tuned ELK bounds | Tuned median | Raw Dagre median |
-| --- | --- | --- | --- | --- |
-| 60 nodes / 99 edges | 1,664 × 3,104 | 1,664 × 1,302 | 121.4 ms | 81.1 ms |
-| 180 nodes / 339 edges | 5,120 × 7,544 | 5,120 × 1,407 | 328.2 ms | 332.5 ms |
-| 300 nodes / 579 edges | 8,576 × 12,044 | 8,576 × 1,407 | 702.1 ms | 565.8 ms |
+| Synthetic graph       | ELK Brandes–Köpf bounds | Tuned ELK bounds | Tuned median | Raw Dagre median |
+| --------------------- | ----------------------- | ---------------- | ------------ | ---------------- |
+| 60 nodes / 99 edges   | 1,664 × 3,104           | 1,664 × 1,302    | 121.4 ms     | 81.1 ms          |
+| 180 nodes / 339 edges | 5,120 × 7,544           | 5,120 × 1,407    | 328.2 ms     | 332.5 ms         |
+| 300 nodes / 579 edges | 8,576 × 12,044          | 8,576 × 1,407    | 702.1 ms     | 565.8 ms         |
 
 Network-simplex placement dramatically reduced whitespace in these **flat**
 fixtures, but it was not uniformly faster: at 300 nodes, the original ELK strategy

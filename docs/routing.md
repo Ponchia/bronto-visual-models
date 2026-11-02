@@ -7,8 +7,12 @@ inserted into model JSON, receipts or undo records.
 
 ```tsx
 const proposal = await layoutDiagram(savedModel);
-const command = { type: 'edit' as const, id: savedModel.id,
-  key: 'arrange-architecture-02', patch: proposal.patch };
+const command = {
+  type: "edit" as const,
+  id: savedModel.id,
+  key: "arrange-architecture-02",
+  patch: proposal.patch,
+};
 const preview = await store.preview(command);
 
 // Show the proposal without saving it.

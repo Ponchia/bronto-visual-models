@@ -6,22 +6,36 @@ a commit, a reserved revision or permission to bypass the host's authorization.
 ## Preview, review, then execute
 
 ```ts
-import { MemoryModelStore, type ModelCommand } from '@ponchia/visual-models';
+import { MemoryModelStore, type ModelCommand } from "@ponchia/visual-models";
 
 const store = new MemoryModelStore();
 await store.execute({
-  type: 'create', key: 'seed',
+  type: "create",
+  key: "seed",
   model: {
-    id: 'architecture', title: 'Architecture', renderer: 'diagram',
-    content: { nodes: [{ id: 'api', label: 'API', x: 0, y: 0 }], edges: [] },
+    id: "architecture",
+    title: "Architecture",
+    renderer: "diagram",
+    content: { nodes: [{ id: "api", label: "API", x: 0, y: 0 }], edges: [] },
   },
 });
 const command: ModelCommand = {
-  type: 'edit', id: 'architecture', key: 'rename-api',
+  type: "edit",
+  id: "architecture",
+  key: "rename-api",
   patch: {
-    items: [{ field: 'nodes', set: [{
-      id: 'api', label: 'Orders API', expect: { label: 'API' },
-    }] }],
+    items: [
+      {
+        field: "nodes",
+        set: [
+          {
+            id: "api",
+            label: "Orders API",
+            expect: { label: "API" },
+          },
+        ],
+      },
+    ],
   },
 };
 
@@ -49,14 +63,14 @@ operation on the same store inside its authorizer.
 
 ## Result contract
 
-| Field | Meaning |
-| --- | --- |
-| `effect` | Always `"none"`: no store commit happened. |
-| `base` | Source ID, renderer, generation and revision at evaluation time; `null` for a fresh create. For a fork, this names the source, not the proposed new model. |
-| `model` | Candidate document. On a replay, the current saved target, which may be newer than the original receipt. |
-| `replayed` | The same key, command and actor already committed. No new changes are proposed. |
-| `changes` | Bounded summaries of affected records, fields, orders and cascades. Empty for a replay. |
-| `changesOmitted` | Number of additional changes not listed in the bounded summary. |
+| Field            | Meaning                                                                                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `effect`         | Always `"none"`: no store commit happened.                                                                                                                 |
+| `base`           | Source ID, renderer, generation and revision at evaluation time; `null` for a fresh create. For a fork, this names the source, not the proposed new model. |
+| `model`          | Candidate document. On a replay, the current saved target, which may be newer than the original receipt.                                                   |
+| `replayed`       | The same key, command and actor already committed. No new changes are proposed.                                                                            |
+| `changes`        | Bounded summaries of affected records, fields, orders and cascades. Empty for a replay.                                                                    |
+| `changesOmitted` | Number of additional changes not listed in the bounded summary.                                                                                            |
 
 A new candidate's timestamps and lifetime tokens are provisional. An eventual
 create or fork can mint different tokens. A preview does not promise that future

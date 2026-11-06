@@ -131,7 +131,9 @@ and then npm, each after its environment approval.
 ## npm registry
 
 Since 30 October 2026, CI publishes each automated beta archive to npm as
-`@ponchia/visual-models` under the `beta` dist-tag; `latest` is never moved.
+`@ponchia/visual-models` under the `beta` dist-tag. Since 6 November 2026 a
+separate job then owns the dist-tags, including `latest` (see
+[dist-tags](#dist-tags)).
 
 - `npm-publish` runs only after `release-archive` has published and verified the
   GitHub prerelease, under the same opt-in gate. It receives the same
@@ -165,16 +167,41 @@ decides automated npm releases.
 2. Bootstrap the first version (below). npm only trusts OIDC for an existing package.
 3. Configure the trusted publisher with normal interactive account authentication:
 
-| Setting           | Value                  |
-| ----------------- | ---------------------- |
-| Provider          | GitHub Actions         |
-| Organization/user | `Ponchia`              |
-| Repository        | `bronto-visual-models` |
-| Workflow          | `ci.yml`               |
-| Environment       | `npm-publish`          |
+| Setting           | Value                                 |
+| ----------------- | ------------------------------------- |
+| Provider          | GitHub Actions                        |
+| Organization/user | `Ponchia`                             |
+| Repository        | `bronto-visual-models`                |
+| Workflow          | `ci.yml`                              |
+| Environment       | `npm-publish`                         |
+| Allowed actions   | Allow npm publish, Allow npm dist-tag |
 
 The jobs live in `ci.yml` because npm matches the top-level workflow that runs
-the publish, not a reusable workflow it calls.
+the publish, not a reusable workflow it calls. npm expires a new trusted
+publisher 48 hours after creation unless a publish succeeds through it, so
+recreate it only when a beta can be tagged within that window. The 30 October
+entry expired unused (0.1.0-beta.8 reached npm by bootstrap) and was recreated
+on 6 November 2026.
+
+### Dist-tags
+
+The maintainer decided on 6 November 2026 that the release workflow owns the
+dist-tags, so nobody moves them by hand. After `npm-verify-registry`, the
+separately approved `npm-sync-dist-tags` job runs `scripts/sync-dist-tags.mjs`
+with the same audited publisher, authenticated by the trusted publisher's
+**Allow npm dist-tag** permission. It applies one policy:
+
+- While the package has no stable version, `latest` follows the newest beta, so
+  `npm install @ponchia/visual-models` receives it.
+- `latest` never moves backwards, and never to a prerelease once a stable
+  version exists.
+- A prerelease channel tag (`next`, `beta`, `rc`, `alpha`, `canary`) that points
+  below `latest` is removed. Other tags are never touched.
+
+The job refuses a registry read that does not yet include the released version
+and confirms the resulting tags before it succeeds. It never publishes. Rerun it
+alone to reapply the policy; with nothing to change it is a no-op. `--dry-run`
+prints the plan without changing anything.
 
 ### First publication
 

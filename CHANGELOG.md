@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.9
 
+- First automated release to npm through trusted publishing: the archive
+  carries npm provenance, and the new dist-tag job moves `latest` to it.
 - The release workflow now owns the npm dist-tags. A separately approved
   `npm-sync-dist-tags` job runs after registry verification, through the trusted
   publisher's new "Allow npm dist-tag" permission and the same audited

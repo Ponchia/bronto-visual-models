@@ -9,7 +9,8 @@ const job = (name, next) =>
   ci.slice(ci.indexOf(`  ${name}:\n`), next ? ci.indexOf(`  ${next}:\n`) : undefined);
 const readiness = job("npm-publisher-readiness", "npm-publish");
 const publish = job("npm-publish", "npm-verify-registry");
-const verify = job("npm-verify-registry");
+const verify = job("npm-verify-registry", "npm-sync-dist-tags");
+const sync = job("npm-sync-dist-tags");
 const sparse = (block) =>
   [...block.matchAll(/sparse-checkout: \|\n((?: {12}\S[^\n]*\n)+)/g)].map((m) =>
     m[1].trim().split(/\s+/),
@@ -24,7 +25,7 @@ const gate =
   "if: github.repository == 'Ponchia/bronto-visual-models' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.ENABLE_BETA_RELEASES == 'true'";
 
 test("npm jobs run only on opted-in beta tags, after the verified GitHub release", () => {
-  for (const block of [publish, verify]) assert.ok(block.includes(gate));
+  for (const block of [publish, verify, sync]) assert.ok(block.includes(gate));
   // The read-only audit runs on every change so publisher drift fails early.
   assert.doesNotMatch(readiness, /\n {4}if:/);
   assert.match(publish, /needs: \[package, release-archive, npm-publisher-readiness\]/);
@@ -93,4 +94,40 @@ test("the bootstrap and trusted publisher are documented with the source-locked 
   assert.match(docs, /--provenance=false/);
   assert.match(docs, /\|\s*Workflow\s*\|\s*`ci\.yml`\s*\|/);
   assert.match(docs, /\|\s*Environment\s*\|\s*`npm-publish`\s*\|/);
+});
+
+test("dist-tags follow the policy in a separately approved OIDC job that never publishes", () => {
+  assert.match(sync, /needs: \[npm-publish, npm-verify-registry\]/);
+  assert.match(sync, /environment: npm-publish\n/);
+  assert.match(sync, /permissions:\n\s+contents: read\n\s+id-token: write\n/);
+  assert.match(sync, /group: npm-beta-release\n/);
+  assert.deepEqual(
+    sparse(sync),
+    [[...publisherFiles, "/scripts/sync-dist-tags.mjs"]],
+    "Publisher tooling and the tag policy only",
+  );
+  assert.equal(sync.match(/actions\/checkout@/g)?.length, 1);
+  assert.match(
+    sync,
+    /node publisher\/scripts\/source-publisher\.mjs prepare "\$RUNNER_TEMP\/vm-publisher"/,
+  );
+  assert.match(
+    sync,
+    /node publisher\/scripts\/source-publisher\.mjs audit "\$RUNNER_TEMP\/vm-publisher"/,
+  );
+  const audit = sync.indexOf("source-publisher.mjs audit");
+  assert.ok(
+    audit >= 0 && audit < sync.indexOf("sync-dist-tags.mjs --package"),
+    "audit before OIDC",
+  );
+  assert.match(
+    sync,
+    /node publisher\/scripts\/sync-dist-tags\.mjs --package @ponchia\/visual-models --version "\$VERSION"/,
+  );
+  assert.match(sync, /--npm-cli "\$RUNNER_TEMP\/vm-publisher\/source\/bin\/npm-cli\.js"/);
+  assert.doesNotMatch(
+    sync,
+    /npm-cli\.js" publish|\bnpm (?:publish|install|ci)\b|continue-on-error:|always\(\)|secrets\.|contents: write/,
+  );
+  assert.match(docs, /Allow npm dist-tag/);
 });

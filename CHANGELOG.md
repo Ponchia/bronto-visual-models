@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The release workflow now owns the npm dist-tags. A separately approved
+  `npm-sync-dist-tags` job runs after registry verification, through the trusted
+  publisher's new "Allow npm dist-tag" permission and the same audited
+  publisher. While no stable version exists, `latest` follows the newest beta;
+  `latest` never moves backwards; a `next`, `beta`, `rc`, `alpha` or `canary` tag
+  below `latest` is removed. Rerunning the job reapplies the policy.
 - Let the sole maintainer approve their own beta tag runs. The release guard
   still requires a named reviewer and no administrator bypass on
   `github-release`, but no longer requires self-review prevention. Automated

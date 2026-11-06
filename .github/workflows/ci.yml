@@ -212,7 +212,7 @@ jobs:
       qualification: ${{ toJSON(needs) }}
   # npm beta release. Runs only after the Beta archive release job published and
   # verified the same qualified archive as a GitHub prerelease; the registry gets
-  # exactly those bytes under the `beta` dist-tag and `latest` is never moved.
+  # exactly those bytes under the `beta` dist-tag; npm-sync-dist-tags then owns `latest`.
   # The FIRST version must be bootstrapped by an npm owner
   # (docs/releasing.md#npm-registry): npm only trusts OIDC for existing packages.
   # The runner's npm never publishes: npm 11.21.1 and 12.2.1 bundle Undici
@@ -401,3 +401,60 @@ jobs:
           if (!view.dist?.attestations?.provenance) throw Error("Registry metadata advertises no provenance attestation");
           NODE
           echo "Registry serves the released archive ($EXPECTED_SHA256) under beta with provenance." >> "$GITHUB_STEP_SUMMARY"
+
+  # Owns the dist-tags once the registry serves the released archive: while no
+  # stable version exists, `latest` follows the newest beta, and a prerelease
+  # channel tag below `latest` is removed (scripts/sync-dist-tags.mjs). The
+  # trusted publisher allows npm dist-tag for ci.yml and npm-publish. It is a
+  # separate approval so a tag failure never hides the publication; rerun this
+  # job alone to reapply the policy. It never publishes.
+  npm-sync-dist-tags:
+    name: Apply the npm dist-tag policy
+    needs: [npm-publish, npm-verify-registry]
+    if: github.repository == 'Ponchia/bronto-visual-models' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.ENABLE_BETA_RELEASES == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm-publish
+    concurrency:
+      group: npm-beta-release
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          check-latest: true
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Check out only the reviewed publisher tooling and tag policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: publisher
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/source-publisher.mjs
+            /scripts/extract-publisher-source.py
+            /scripts/audit-publishing-tooling.mjs
+            /tooling/publisher/
+            /scripts/sync-dist-tags.mjs
+      - name: Prepare and audit the source-locked publisher
+        shell: bash
+        env:
+          npm_config_cache: ${{ runner.temp }}/publisher-audit-cache
+        run: |
+          set -euo pipefail
+          node publisher/scripts/source-publisher.mjs prepare "$RUNNER_TEMP/vm-publisher"
+          node publisher/scripts/source-publisher.mjs audit "$RUNNER_TEMP/vm-publisher" "$RUNNER_TEMP/publisher-audit.json"
+      - name: Apply the dist-tag policy (npm OIDC)
+        shell: bash
+        env:
+          VERSION: ${{ needs.npm-publish.outputs.version }}
+          npm_config_cache: ${{ runner.temp }}/dist-tag-cache
+        run: |
+          set -euo pipefail
+          node publisher/scripts/sync-dist-tags.mjs --package @ponchia/visual-models --version "$VERSION" \
+            --npm-cli "$RUNNER_TEMP/vm-publisher/source/bin/npm-cli.js" | tee "$RUNNER_TEMP/dist-tags.txt"
+          { echo '### npm dist-tags'; echo '```'; cat "$RUNNER_TEMP/dist-tags.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

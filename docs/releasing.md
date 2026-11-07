@@ -142,8 +142,9 @@ separate job then owns the dist-tags, including `latest` (see
   It never checks out package source, installs dependencies or runs scripts.
 - The publisher is the source-locked npm that Bronto UI, Annotations and Layout
   use: the unchanged npm 11.21.1 source pinned in `tooling/publisher/source.json`,
-  its dependencies from `tooling/publisher/package-lock.json` (overriding only
-  `undici` and `ip-address`), and a complete audit in the read-only
+  its dependencies from `tooling/publisher/package-lock.json` (pinning patched
+  `undici` and `ip-address`, plus `glob` 14.0.2 and `minimatch` 11.0.1
+  through GHSA-referenced exact compatibility replacements), and a complete audit in the read-only
   `npm-publisher-readiness` job, which runs on every push and pull request, and
   again before publishing. Registry npm 11.21.1
   and 12.2.1 bundle Undici 6.29.0 with a high-severity advisory
